@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Photo Toolkit Pro v25</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- PDF Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+  <div id="loader">
+    <div class="spinner"></div>
+    <h2>Smart Photo Toolkit Pro</h2>
+  </div>
+
+  <button class="menu-btn" id="menuBtn">☰</button>
+  <div class="overlay" id="overlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-icon">📸</div>
+      <div>
+        <h2>SPT Pro</h2>
+        <p>v25 Restore Live</p>
+      </div>
+    </div>
+
+    <button class="nav-item active" data-tool="home">🏠 Home</button>
+    <button class="nav-item" data-tool="compressor">🖼️ Image Compressor</button>
+    <button class="nav-item" data-tool="namedate">🏷️ Name / Date Photo</button>
+    <button class="nav-item" data-tool="passport">👤 Passport Photo</button>
+    <button class="nav-item" data-tool="aadhaar">🪪 Aadhaar Print</button>
+    <button class="nav-item" data-tool="pdfresizer">📄 PDF Resizer</button>
+    <button class="nav-item" data-tool="dashboard">👤 Dashboard</button>
+    <button class="nav-item" data-tool="login">🔐 Login / Signup</button>
+    <button class="nav-item" data-tool="admin">📊 Admin</button>
+    <button class="nav-item" data-tool="feedback">💬 Feedback</button>
+    <button class="nav-item" data-tool="payment">💳 Payment</button>
+    <button class="nav-item" data-tool="premium">👑 Premium</button>
+  </aside>
+
+  <main class="main">
+    <header class="header">
+      <div>
+        <h1>Smart Photo Toolkit Pro</h1>
+        <p>Passport Photo, Aadhaar Print, PDF Resize aur Document Tools.</p>
+      </div>
+      <span class="version">v25.0</span>
+    </header>
+
+    <section class="cards">
+      <div class="card" data-tool="compressor">
+        <b>🖼️</b>
+        <h3>Image Compressor</h3>
+        <p>20KB, 50KB, 100KB ya custom size.</p>
+      </div>
+      <div class="card" data-tool="namedate">
+        <b>🏷️</b>
+        <h3>Name / Date</h3>
+        <p>Photo ke niche text add karo.</p>
+      </div>
+      <div class="card" data-tool="passport">
+        <b>👤</b>
+        <h3>Passport Photo</h3>
+        <p>A4 top row 5 photos, 35×45mm.</p>
+      </div>
+      <div class="card" data-tool="aadhaar">
+        <b>🪪</b>
+        <h3>Aadhaar Print</h3>
+        <p>Drag crop + PDF download.</p>
+      </div>
+      <div class="card" data-tool="pdfresizer">
+        <b>📄</b>
+        <h3>PDF Resizer</h3>
+        <p>Real PDF compressor + resize.</p>
+      </div>
+    </section>
+
+    <section class="workspace" id="workspace">
+      <h2>Welcome 👋</h2>
+      <p>Tool select karo aur kaam start karo.</p>
+
+      <div class="stats">
+        <div><strong>📄 PDF Output</strong><span>Passport/Aadhaar PDF download.</span></div>
+        <div><strong>🖨️ Print Ready</strong><span>A4 layout professional.</span></div>
+        <div><strong>📱 Mobile</strong><span>Phone friendly tools.</span></div>
+      </div>
+    </section>
+  </main>
+
+<script src="script.js"></script>
+</body>
+</html>
