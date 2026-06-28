@@ -1,64 +1,546 @@
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--dark:#0f172a;--blue:#2563eb;--bg:#f4f7fb;--card:#fff;--text:#182230;--muted:#667085;--line:#e5e7eb;--orange:#f97316;--green:#16a34a}
-body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-#loader{position:fixed;inset:0;background:white;z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
-.spinner{width:44px;height:44px;border-radius:50%;border:5px solid #dbe3f0;border-top-color:var(--blue);animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;background:var(--dark);color:white;padding:18px;z-index:50;transition:.25s;overflow:auto}
-.brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}.brand-icon{width:46px;height:46px;border-radius:14px;background:#1d4ed8;display:grid;place-items:center;font-size:24px}.brand h2{font-size:20px}.brand p{font-size:12px;color:#cbd5e1}
-.nav-item{width:100%;display:block;border:0;background:transparent;color:#e5e7eb;text-align:left;padding:13px 14px;border-radius:12px;font-weight:800;cursor:pointer;margin-bottom:8px}.nav-item.active,.nav-item:hover{background:var(--blue);color:white}
-.menu-btn{display:none;position:fixed;top:12px;left:12px;z-index:80;border:0;background:var(--blue);color:white;border-radius:12px;padding:10px 14px;font-size:20px}.overlay{display:none}
-.main{margin-left:260px;padding:26px}.header{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:22px}.header h1{font-size:30px}.header p{color:var(--muted);margin-top:6px}.version{background:#e8f0ff;color:#1d4ed8;padding:10px 14px;border-radius:999px;font-weight:900}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:22px}.card{background:var(--card);border-radius:18px;padding:20px;box-shadow:0 10px 26px rgba(16,24,40,.08);cursor:pointer;transition:.2s}.card:hover{transform:translateY(-4px)}.card b{font-size:34px}.card h3{margin:12px 0 7px}.card p{font-size:14px;color:var(--muted);line-height:1.45}
-.workspace{background:var(--card);border-radius:18px;box-shadow:0 10px 26px rgba(16,24,40,.08);padding:22px;min-height:330px}.workspace h2{margin-bottom:7px}.workspace>p,.tool-subtitle{color:var(--muted);margin-bottom:15px}
-.stats,.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}.stats div,.info-grid div{background:#f8fafc;border:1px solid var(--line);border-radius:16px;padding:16px}.stats strong{display:block;margin-bottom:5px}.stats span{color:var(--muted);font-size:14px}
-.tool-box,.result-card,.crop-panel{background:#f8fafc;border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:14px}.tool-box{display:grid;gap:12px}.tool-box label{font-weight:900}.tool-box input,.tool-box select,.tool-box button{width:100%;padding:13px;border:1px solid #d0d5dd;border-radius:12px;font-size:15px}
-.tool-box button,.download-btn,.print-btn,.tab-btn,.pdf-btn{background:var(--blue);color:white;border:0;border-radius:12px;padding:13px 18px;text-decoration:none;font-weight:900;text-align:center;display:inline-block;cursor:pointer;margin-top:10px}
-.print-btn{background:var(--green)}.pdf-btn{background:#7c3aed}.tab-row{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.tab-btn{background:#e8f0ff;color:#1d4ed8;margin:0}.tab-btn.active{background:var(--blue);color:white}
-.upload-box{border:2px dashed #93c5fd!important;background:#eff6ff!important;padding:22px!important;text-align:center;cursor:pointer}.upload-box input{display:none}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.preview-img{max-width:100%;border-radius:14px;border:1px solid var(--line);margin-top:12px}.small-note{background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:10px;margin-top:10px}
-.controls{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}.controls label{font-weight:800;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}.controls input{width:100%}
-.canvas-box{background:#111;border-radius:16px;padding:10px;overflow:auto;text-align:center}.crop-canvas{background:white;max-width:100%;border-radius:10px}
-.drag-crop-wrap{position:relative;display:inline-block;max-width:100%;touch-action:none}.drag-crop-wrap canvas{display:block}.drag-crop-box{position:absolute;border:3px solid #f97316;background:rgba(249,115,22,.08);cursor:move;touch-action:none}.drag-handle{position:absolute;width:22px;height:22px;right:-12px;bottom:-12px;background:#f97316;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:nwse-resize}
-.print-area{background:white;border:1px solid #ddd;margin-top:15px;padding:5mm 4mm;width:210mm;min-height:297mm;max-width:100%;overflow:hidden}
-.passport-single-row{display:flex;gap:3mm;justify-content:flex-start;align-items:flex-start;flex-wrap:nowrap;margin-top:0;margin-left:6mm}.photo-item{text-align:center;flex:0 0 auto}.pass-photo{width:35mm;height:45mm;object-fit:cover;border:1px solid #000;background:#fff;display:block}.caption{font-size:8px;font-weight:700;margin-top:1mm;line-height:1.1;width:35mm}
-.aadhaar-wrap{display:flex;gap:8mm;flex-wrap:wrap;align-items:flex-start}.aadhaar-card{width:85.6mm;height:54mm;object-fit:contain;border:1px solid #333;background:white}.aadhaar-single{height:54mm;width:auto;max-width:180mm;object-fit:contain;border:1px solid #333;background:white}.top-center{display:flex;justify-content:center;align-items:flex-start}.top-left{display:flex;justify-content:flex-start;align-items:flex-start}
-.action-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-@media(max-width:1000px){.cards{grid-template-columns:repeat(2,1fr)}.stats,.info-grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}.controls{grid-template-columns:1fr}}
-@media(max-width:700px){.menu-btn{display:block}.sidebar{transform:translateX(-105%)}.sidebar.open{transform:translateX(0)}.overlay.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40}.main{margin-left:0;padding:68px 14px 18px}.header{display:block}.header h1{font-size:24px}.version{display:inline-block;margin-top:10px}.cards{grid-template-columns:1fr}.workspace{padding:16px}.print-area{padding:8mm 2mm}.passport-single-row{gap:2mm}.pass-photo{width:27mm;height:35mm}.caption{width:27mm}}
-@media print{body{background:white}.sidebar,.menu-btn,.overlay,.header,.cards,.tool-box,#loader,.download-btn,.print-btn,.pdf-btn,.tab-row,.crop-panel,.small-note,.action-row{display:none!important}.main{margin:0;padding:0}.workspace{box-shadow:none;border-radius:0;padding:0}.print-area{border:0;width:210mm;min-height:297mm;margin:0;padding:5mm 4mm}.result-card{border:0;background:white;padding:0;margin:0}}
+/* =====================================================
+   Smart Photo Toolkit Pro v27
+   css/main.css — PART 1
+   Base Layout + Sidebar + Header + Cards
+===================================================== */
 
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+:root{
+  --dark:#0f172a;
+  --dark2:#111827;
+  --blue:#2563eb;
+  --blue2:#1d4ed8;
+  --sky:#0ea5e9;
+  --purple:#7c3aed;
+  --orange:#f97316;
+  --green:#16a34a;
+  --red:#dc2626;
+
+  --bg:#f4f7fb;
+  --card:#ffffff;
+  --text:#182230;
+  --muted:#667085;
+  --line:#e5e7eb;
+  --soft:#f8fafc;
+
+  --shadow:0 10px 26px rgba(16,24,40,.08);
+  --shadow2:0 18px 45px rgba(15,23,42,.14);
+  --radius:18px;
+}
+
+body{
+  font-family:Arial,Helvetica,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+}
+
+body.dark{
+  --bg:#0b1220;
+  --card:#111827;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --line:#263244;
+  --soft:#0f172a;
+}
+
+/* Loader */
+#loader{
+  position:fixed;
+  inset:0;
+  background:white;
+  z-index:9999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:12px;
+}
+
+body.dark #loader{
+  background:#0f172a;
+  color:#fff;
+}
+
+.spinner{
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  border:5px solid #dbe3f0;
+  border-top-color:var(--blue);
+  animation:spin .8s linear infinite;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+/* Sidebar */
+.sidebar{
+  position:fixed;
+  left:0;
+  top:0;
+  bottom:0;
+  width:260px;
+  background:linear-gradient(180deg,#0f172a,#111827);
+  color:white;
+  padding:18px;
+  z-index:50;
+  transition:.25s;
+  overflow:auto;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:22px;
+}
+
+.brand-icon{
+  width:46px;
+  height:46px;
+  border-radius:14px;
+  background:#1d4ed8;
+  display:grid;
+  place-items:center;
+  font-size:24px;
+  box-shadow:0 8px 20px rgba(37,99,235,.35);
+}
+
+.brand h2{
+  font-size:20px;
+  line-height:1.1;
+}
+
+.brand p{
+  font-size:12px;
+  color:#cbd5e1;
+  margin-top:3px;
+}
+
+/* Navigation */
+.nav-item{
+  width:100%;
+  display:block;
+  border:0;
+  background:transparent;
+  color:#e5e7eb;
+  text-align:left;
+  padding:13px 14px;
+  border-radius:12px;
+  font-weight:800;
+  cursor:pointer;
+  margin-bottom:8px;
+  transition:.18s;
+}
+
+.nav-item.active,
+.nav-item:hover{
+  background:var(--blue);
+  color:white;
+}
+
+.nav-item:active{
+  transform:scale(.98);
+}
+
+/* Mobile menu */
+.menu-btn{
+  display:none;
+  position:fixed;
+  top:12px;
+  left:12px;
+  z-index:80;
+  border:0;
+  background:var(--blue);
+  color:white;
+  border-radius:12px;
+  padding:10px 14px;
+  font-size:20px;
+  box-shadow:var(--shadow);
+}
+
+.overlay{
+  display:none;
+}
+
+/* Main */
+.main{
+  margin-left:260px;
+  padding:26px;
+}
+
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  margin-bottom:22px;
+}
+
+.header h1{
+  font-size:30px;
+  line-height:1.15;
+}
+
+.header p{
+  color:var(--muted);
+  margin-top:6px;
+}
+
+.header-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.version{
+  background:#e8f0ff;
+  color:#1d4ed8;
+  padding:10px 14px;
+  border-radius:999px;
+  font-weight:900;
+}
+
+body.dark .version{
+  background:#172554;
+  color:#bfdbfe;
+}
+
+.small-btn{
+  border:0;
+  background:var(--card);
+  color:var(--text);
+  border-radius:12px;
+  padding:10px 13px;
+  font-weight:900;
+  cursor:pointer;
+  box-shadow:var(--shadow);
+}
+
+/* Cards */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:16px;
+  margin-bottom:22px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:var(--radius);
+  padding:20px;
+  box-shadow:var(--shadow);
+  cursor:pointer;
+  transition:.2s;
+  border:1px solid rgba(229,231,235,.8);
+}
+
+body.dark .card{
+  border-color:#263244;
+}
+
+.card:hover{
+  transform:translateY(-4px);
+  box-shadow:var(--shadow2);
+}
+
+.card b{
+  font-size:34px;
+}
+
+.card h3{
+  margin:12px 0 7px;
+}
+
+.card p{
+  font-size:14px;
+  color:var(--muted);
+  line-height:1.45;
+}
+
+/* Workspace */
+.workspace{
+  background:var(--card);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:22px;
+  min-height:330px;
+  border:1px solid rgba(229,231,235,.8);
+}
+
+body.dark .workspace{
+  border-color:#263244;
+}
+
+.workspace h2{
+  margin-bottom:7px;
+}
+
+.workspace > p,
+.tool-subtitle{
+  color:var(--muted);
+  margin-bottom:15px;
+}
+
+/* Home stats */
+.stats,
+.info-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:14px;
+  margin-top:18px;
+}
+
+.stats div,
+.info-grid div{
+  background:var(--soft);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:16px;
+}
+
+.stats strong{
+  display:block;
+  margin-bottom:5px;
+}
+
+.stats span{
+  color:var(--muted);
+  font-size:14px;
+}
+
+/* Buttons common */
+.download-btn,
+.print-btn,
+.tab-btn,
+.pdf-btn,
+.open-btn,
+.primary-btn,
+.secondary-btn{
+  border:0;
+  border-radius:12px;
+  padding:13px 18px;
+  text-decoration:none;
+  font-weight:900;
+  text-align:center;
+  display:inline-block;
+  cursor:pointer;
+  margin-top:10px;
+}
+
+.primary-btn,
+.download-btn{
+  background:var(--blue);
+  color:white;
+}
+
+.print-btn{
+  background:var(--green);
+  color:white;
+}
+
+.pdf-btn{
+  background:var(--purple);
+  color:white;
+}
 
 .open-btn{
-  background:#0ea5e9!important;
+  background:var(--sky)!important;
   color:#fff!important;
 }
-.pdf-frame{
+
+.secondary-btn{
+  background:#eef2ff;
+  color:#1d4ed8;
+}
+
+/* End of PART 1 */
+/* =====================================================
+   Smart Photo Toolkit Pro v27
+   css/main.css — PART 2
+   Tools + Forms + Upload + Preview
+===================================================== */
+
+.tool-box,
+.result-card,
+.crop-panel{
+  background:var(--soft);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:16px;
+  margin-top:14px;
+}
+
+.tool-box{
+  display:grid;
+  gap:12px;
+}
+
+.tool-box label{
+  font-weight:900;
+  display:block;
+}
+
+.tool-box input,
+.tool-box select,
+.tool-box textarea,
+.tool-box button{
   width:100%;
-  min-height:420px;
+  padding:13px;
   border:1px solid #d0d5dd;
+  border-radius:12px;
+  font-size:15px;
+  outline:none;
+  transition:.2s;
+}
+
+.tool-box input:focus,
+.tool-box select:focus,
+.tool-box textarea:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 4px rgba(37,99,235,.15);
+}
+
+.tool-box button{
+  background:var(--blue);
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.tool-box button:hover{
+  background:var(--blue2);
+}
+
+.row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.action-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+
+.upload-box{
+  border:2px dashed #93c5fd!important;
+  background:#eff6ff!important;
+  padding:24px!important;
+  text-align:center;
+  cursor:pointer;
+  border-radius:16px;
+  transition:.25s;
+}
+
+.upload-box:hover{
+  background:#dbeafe!important;
+}
+
+.upload-box input{
+  display:none;
+}
+
+.preview-img{
+  max-width:100%;
   border-radius:14px;
-  background:white;
+  border:1px solid var(--line);
   margin-top:12px;
 }
 
-
-.pdf-preview-note{
-  background:#ecfdf5;
-  border:1px solid #bbf7d0;
-  color:#14532d;
+.canvas-box{
+  background:#111;
+  border-radius:16px;
   padding:10px;
-  border-radius:12px;
-  margin-top:10px;
+  overflow:auto;
+  text-align:center;
 }
+
+.crop-canvas{
+  background:#fff;
+  max-width:100%;
+  border-radius:10px;
+}
+
+.drag-crop-wrap{
+  position:relative;
+  display:inline-block;
+  max-width:100%;
+  touch-action:none;
+}
+
+.drag-crop-wrap canvas{
+  display:block;
+}
+
+.drag-crop-box{
+  position:absolute;
+  border:3px solid #f97316;
+  background:rgba(249,115,22,.08);
+  cursor:move;
+  touch-action:none;
+}
+
+.drag-handle{
+  position:absolute;
+  width:22px;
+  height:22px;
+  right:-12px;
+  bottom:-12px;
+  background:#f97316;
+  border:3px solid #fff;
+  border-radius:50%;
+  cursor:nwse-resize;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+
 .crop-size-label{
   position:absolute;
   left:6px;
   top:6px;
-  background:rgba(0,0,0,.65);
+  background:rgba(0,0,0,.7);
   color:#fff;
   padding:4px 8px;
   border-radius:8px;
   font-size:12px;
+}
+
+.controls{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  margin-top:12px;
+}
+
+.controls label{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+  font-weight:800;
+}
+
+.controls input{
+  width:100%;
+  margin-top:6px;
+}
+
+.small-note{
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  border-radius:12px;
+  padding:10px;
+  margin-top:10px;
 }
 
 .warning-box{
@@ -70,6 +552,7 @@ body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--tex
   margin-top:10px;
   line-height:1.5;
 }
+
 .success-box{
   background:#ecfdf5;
   border:1px solid #86efac;
@@ -77,23 +560,6 @@ body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--tex
   padding:12px;
   border-radius:12px;
   margin-top:10px;
-}
-
-.preset-row{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(90px,1fr));
-  gap:8px;
-}
-.preset-btn{
-  background:#eef2ff!important;
-  color:#1d4ed8!important;
-  border:1px solid #c7d2fe!important;
-  padding:10px!important;
-  margin:0!important;
-}
-.preset-btn.active{
-  background:#2563eb!important;
-  color:#fff!important;
 }
 
 .progress-box{
@@ -106,6 +572,159 @@ body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--tex
   font-weight:700;
 }
 
+.pdf-frame{
+  width:100%;
+  min-height:420px;
+  border:1px solid #d0d5dd;
+  border-radius:14px;
+  background:#fff;
+  margin-top:12px;
+}
+
+.pdf-preview-note{
+  background:#ecfdf5;
+  border:1px solid #bbf7d0;
+  color:#14532d;
+  padding:10px;
+  border-radius:12px;
+  margin-top:10px;
+}
+
+.preset-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(90px,1fr));
+  gap:8px;
+}
+
+.preset-btn{
+  background:#eef2ff!important;
+  color:#1d4ed8!important;
+  border:1px solid #c7d2fe!important;
+  padding:10px!important;
+  margin:0!important;
+}
+
+.preset-btn.active{
+  background:#2563eb!important;
+  color:#fff!important;
+}
+
+.login-box,
+.signup-box,
+.profile-box,
+.dashboard-box,
+.admin-box{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:20px;
+  margin-top:18px;
+  box-shadow:var(--shadow);
+}
+
+.badge{
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+}
+
+.badge.free{
+  background:#e5e7eb;
+}
+
+.badge.premium{
+  background:#fef3c7;
+  color:#92400e;
+}
+
+.table-responsive{
+  overflow:auto;
+  margin-top:15px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+table th,
+table td{
+  border:1px solid var(--line);
+  padding:12px;
+  text-align:left;
+}
+
+table th{
+  background:#eff6ff;
+}
+
+body.dark table th{
+  background:#172554;
+}
+
+.hidden{
+  display:none!important;
+}
+
+/* End of PART 2 */
+
+/* =====================================================
+   Smart Photo Toolkit Pro v27
+   css/main.css — PART 3
+   Print Layout + Responsive + Final
+===================================================== */
+
+/* Print Area */
+
+.print-area{
+  background:white;
+  border:1px solid #ddd;
+  margin-top:15px;
+  padding:5mm 4mm;
+  width:210mm;
+  min-height:297mm;
+  max-width:100%;
+  overflow:hidden;
+  color:#000;
+}
+
+/* Passport Photo */
+
+.passport-single-row{
+  display:flex;
+  gap:3mm;
+  justify-content:flex-start;
+  align-items:flex-start;
+  flex-wrap:nowrap;
+  margin-top:0;
+  margin-left:6mm;
+}
+
+.photo-item{
+  text-align:center;
+  flex:0 0 auto;
+}
+
+.pass-photo{
+  width:35mm;
+  height:45mm;
+  object-fit:cover;
+  border:1px solid #000;
+  background:#fff;
+  display:block;
+}
+
+.caption{
+  font-size:8px;
+  font-weight:700;
+  margin-top:1mm;
+  line-height:1.1;
+  width:35mm;
+  color:#000;
+}
+
 .passport-final-note{
   background:#ecfdf5;
   border:1px solid #86efac;
@@ -114,6 +733,7 @@ body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--tex
   border-radius:12px;
   margin-top:10px;
 }
+
 .passport-guide{
   background:#eff6ff;
   border:1px solid #bfdbfe;
@@ -123,8 +743,352 @@ body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--tex
   margin-top:10px;
   font-weight:700;
 }
-@media(max-width:700px){
-  .passport-single-row{gap:2mm;margin-left:2mm}
-  .pass-photo{width:32mm;height:41mm}
-  .caption{width:32mm}
+
+/* Aadhaar Print */
+
+.aadhaar-wrap{
+  display:flex;
+  gap:8mm;
+  flex-wrap:wrap;
+  align-items:flex-start;
 }
+
+.aadhaar-card{
+  width:85.6mm;
+  height:54mm;
+  object-fit:contain;
+  border:1px solid #333;
+  background:white;
+}
+
+.aadhaar-single{
+  height:54mm;
+  width:auto;
+  max-width:180mm;
+  object-fit:contain;
+  border:1px solid #333;
+  background:white;
+}
+
+.top-center{
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
+
+.top-left{
+  display:flex;
+  justify-content:flex-start;
+  align-items:flex-start;
+}
+
+/* Login / Signup / Dashboard */
+
+.auth-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+.auth-card,
+.dashboard-card,
+.admin-card,
+.payment-card,
+.premium-card{
+  background:var(--soft);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:16px;
+  margin-top:14px;
+}
+
+.auth-card h3,
+.dashboard-card h3,
+.admin-card h3,
+.payment-card h3,
+.premium-card h3{
+  margin-bottom:10px;
+}
+
+.form-group{
+  display:grid;
+  gap:7px;
+  margin-bottom:12px;
+}
+
+.form-group label{
+  font-weight:900;
+  font-size:14px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select{
+  width:100%;
+  padding:13px;
+  border:1px solid #d0d5dd;
+  border-radius:12px;
+  font-size:15px;
+}
+
+.badge{
+  display:inline-block;
+  padding:7px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  background:#e8f0ff;
+  color:#1d4ed8;
+}
+
+.badge.green{
+  background:#dcfce7;
+  color:#166534;
+}
+
+.badge.red{
+  background:#fee2e2;
+  color:#991b1b;
+}
+
+.badge.orange{
+  background:#ffedd5;
+  color:#9a3412;
+}
+
+/* Tables */
+
+.table-wrap{
+  width:100%;
+  overflow:auto;
+  border:1px solid var(--line);
+  border-radius:14px;
+  margin-top:12px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:var(--card);
+}
+
+th,
+td{
+  padding:12px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
+  font-size:14px;
+}
+
+th{
+  background:var(--soft);
+  font-weight:900;
+}
+
+/* Toast */
+
+.toast{
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  background:#111827;
+  color:#fff;
+  padding:13px 16px;
+  border-radius:14px;
+  box-shadow:var(--shadow2);
+  z-index:99999;
+  max-width:320px;
+  display:none;
+}
+
+.toast.show{
+  display:block;
+  animation:toastIn .25s ease;
+}
+
+@keyframes toastIn{
+  from{transform:translateY(20px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+
+/* Animation */
+
+.fade-in{
+  animation:fadeIn .22s ease;
+}
+
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* Responsive */
+
+@media(max-width:1000px){
+  .cards{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .stats,
+  .info-grid{
+    grid-template-columns:1fr;
+  }
+
+  .row,
+  .auth-grid{
+    grid-template-columns:1fr;
+  }
+
+  .controls{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:700px){
+  .menu-btn{
+    display:block;
+  }
+
+  .sidebar{
+    transform:translateX(-105%);
+  }
+
+  .sidebar.open{
+    transform:translateX(0);
+  }
+
+  .overlay.show{
+    display:block;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.35);
+    z-index:40;
+  }
+
+  .main{
+    margin-left:0;
+    padding:68px 14px 18px;
+  }
+
+  .header{
+    display:block;
+  }
+
+  .header h1{
+    font-size:24px;
+  }
+
+  .version{
+    display:inline-block;
+    margin-top:10px;
+  }
+
+  .cards{
+    grid-template-columns:1fr;
+  }
+
+  .workspace{
+    padding:16px;
+  }
+
+  .print-area{
+    padding:8mm 2mm;
+  }
+
+  .passport-single-row{
+    gap:2mm;
+    margin-left:2mm;
+  }
+
+  .pass-photo{
+    width:32mm;
+    height:41mm;
+  }
+
+  .caption{
+    width:32mm;
+  }
+
+  .toast{
+    left:14px;
+    right:14px;
+    bottom:14px;
+    max-width:none;
+  }
+}
+
+/* Print */
+
+@media print{
+  body{
+    background:white;
+  }
+
+  .sidebar,
+  .menu-btn,
+  .overlay,
+  .header,
+  .cards,
+  .tool-box,
+  #loader,
+  .download-btn,
+  .print-btn,
+  .pdf-btn,
+  .tab-row,
+  .crop-panel,
+  .small-note,
+  .action-row,
+  .toast{
+    display:none!important;
+  }
+
+  .main{
+    margin:0;
+    padding:0;
+  }
+
+  .workspace{
+    box-shadow:none;
+    border-radius:0;
+    padding:0;
+    border:0;
+  }
+
+  .print-area{
+    border:0;
+    width:210mm;
+    min-height:297mm;
+    margin:0;
+    padding:5mm 4mm;
+  }
+
+  .result-card{
+    border:0;
+    background:white;
+    padding:0;
+    margin:0;
+  }
+}
+
+/* Final */
+.hidden{
+  display:none!important;
+}
+
+.center{
+  text-align:center;
+}
+
+.mt-10{
+  margin-top:10px;
+}
+
+.mt-15{
+  margin-top:15px;
+}
+
+.mt-20{
+  margin-top:20px;
+}
+
+/* End of PART 3 */
