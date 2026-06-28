@@ -1,496 +1,1498 @@
-window.addEventListener("load",()=>{setTimeout(()=>{const l=document.getElementById("loader");if(l)l.style.display="none"},450);initApp()});
-if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";}
-const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s); const workspace=$("#workspace");
-let passState={img:null,cropped:""}; let aadPdfCanvas=null; let aadDrag={x:20,y:300,w:560,h:150,drag:false,resize:false,startX:0,startY:0,start:{}};
-let lastPassportPDF=null, lastAadhaarPDF=null; let lastPassportUrl='', lastAadhaarUrl='';
+/* =====================================================
+   Smart Photo Toolkit Pro v27
+   js/main.js — PART 1
+   App Init + Navigation + Auth + Compressor + Name Date
+===================================================== */
 
-function initApp(){ $("#menuBtn").onclick=toggleMenu; $("#overlay").onclick=toggleMenu; $$(".nav-item,.card").forEach(el=>el.onclick=()=>openTool(el.dataset.tool));}
-function toggleMenu(){ $("#sidebar").classList.toggle("open"); $("#overlay").classList.toggle("show");}
-function closeMenu(){ if(innerWidth<700){$("#sidebar").classList.remove("open");$("#overlay").classList.remove("show");}}
-function setActive(tool){ $$(".nav-item").forEach(i=>i.classList.toggle("active",i.dataset.tool===tool)); closeMenu();}
-function openTool(tool){setActive(tool); if(tool==="home")return home(); if(tool==="compressor")return imageCompressor(); if(tool==="namedate")return nameDateTool(); if(tool==="passport")return passportTool(); if(tool==="aadhaar")return aadhaarTool(); if(tool==="pdfresizer")return pdfResizerTool(); if(tool==="premium")return premiumTool();}
-function home(){workspace.innerHTML=`<h2>Welcome 👋</h2><p>Tool select karo aur kaam start karo.</p><div class="stats"><div><strong>📄 PDF Output</strong><span>Passport/Aadhaar PDF download.</span></div><div><strong>🖨️ Print Ready</strong><span>A4 layout professional.</span></div><div><strong>📱 Mobile</strong><span>PDF Resize added.</span></div></div>`}
-function premiumTool(){workspace.innerHTML=`<h2>👑 Premium System</h2><p class="tool-subtitle">Next phase me login + 10 free uses + payment gateway add hoga.</p>`}
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    const l = document.getElementById("loader");
+    if (l) l.style.display = "none";
+  }, 450);
 
-/* Compressor */
-function imageCompressor(){workspace.innerHTML=`<h2>🖼️ Image Compressor</h2><p class="tool-subtitle">Photo upload karo aur target KB select karo.</p><div class="tool-box"><label class="upload-box"><input type="file" id="imageInput" accept="image/*"><span>📤 Tap to Upload Image</span></label><label>Target Size</label><select id="targetSize"><option value="20">20 KB</option><option value="50">50 KB</option><option value="100" selected>100 KB</option><option value="200">200 KB</option><option value="custom">Custom KB</option></select><input type="number" id="customSize" placeholder="Enter custom KB" style="display:none"><button onclick="compressToTarget()">Compress Image</button></div><div id="compressOutput"></div>`; $("#targetSize").onchange=e=>$("#customSize").style.display=e.target.value==="custom"?"block":"none";}
-async function compressToTarget(){const input=$("#imageInput"), output=$("#compressOutput"); if(!input.files[0])return alert("Pehle image upload karo."); let target=$("#targetSize").value==="custom"?Number($("#customSize").value):Number($("#targetSize").value); if(!target||target<5)return alert("Valid target KB enter karo."); output.innerHTML="<p>⏳ Compressing...</p>"; const file=input.files[0], img=await loadImage(await readFile(file)); let best="",bestSize=Infinity; for(let scale=1;scale>=0.08;scale-=0.035){let w=Math.max(80,Math.round(img.width*scale)),h=Math.max(80,Math.round(img.height*scale));let low=.03,high=.96;for(let i=0;i<14;i++){let q=(low+high)/2,data=drawImage(img,w,h,q),size=getSizeKB(data);if(size<=target){best=data;bestSize=size;low=q}else high=q} if(bestSize<=target&&bestSize>=target*.88)break} if(!best){best=drawImage(img,100,Math.round(img.height*100/img.width),.03);bestSize=getSizeKB(best)} output.innerHTML=`<div class="result-card"><h3>✅ Compression Complete</h3><p><b>Original:</b> ${formatBytes(file.size)}</p><p><b>Target:</b> ${target} KB</p><p><b>Compressed:</b> ${bestSize.toFixed(2)} KB</p><img src="${best}" class="preview-img"><button class="download-btn" onclick="forceDownload('${best}','compressed-image.jpg')">Download Image</button></div>`}
+  initApp();
+});
 
-/* Name Date */
-function nameDateTool(){workspace.innerHTML=`<h2>🏷️ Name / Date Photo</h2><p class="tool-subtitle">Photo ke niche name/date/custom text add karo.</p><div class="tool-box"><label class="upload-box"><input id="ndImage" type="file" accept="image/*"><span>📤 Upload Photo</span></label><div class="row"><input id="ndName" placeholder="Name"><input id="ndDate" type="date"></div><input id="ndText" placeholder="Custom text optional"><button onclick="makeNameDate()">Create Photo</button></div><div id="ndOutput"></div>`}
-async function makeNameDate(){const f=$("#ndImage").files[0]; if(!f)return alert("Photo upload karo."); const img=await loadImage(await readFile(f)); const c=document.createElement("canvas"),ctx=c.getContext("2d"); const w=900,h=Math.round(img.height*900/img.width),cap=110;c.width=w;c.height=h+cap;ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,w,h);ctx.fillStyle="#111";ctx.textAlign="center";ctx.font="bold 32px Arial";ctx.fillText($("#ndName").value||"",w/2,h+42);ctx.font="24px Arial";ctx.fillText($("#ndText").value||$("#ndDate").value||"",w/2,h+82);const data=c.toDataURL("image/jpeg",.92);$("#ndOutput").innerHTML=`<div class="result-card"><img class="preview-img" src="${data}"><button class="download-btn" onclick="forceDownload('${data}','name-date-photo.jpg')">Download Photo</button></div>`}
+if (window.pdfjsLib) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+}
 
-/* Passport */
-function passportTool(){passState={img:null,cropped:""};workspace.innerHTML=`<h2>👤 Passport Photo Maker</h2><p class="tool-subtitle">A4 PDF ke upar ek line me 6 photos. Border black rahega.</p><div class="tool-box"><label class="upload-box"><input id="passImage" type="file" accept="image/*"><span>📤 Upload Full Photo</span></label><div class="row"><input id="passName" placeholder="Name optional"><input id="passDate" type="date"></div><button onclick="generatePassportSheet()">✅ Generate Passport PDF Layout</button></div><div class="crop-panel"><div class="canvas-box"><canvas id="passCanvas" class="crop-canvas" width="350" height="450"></canvas></div><div class="controls"><label>Zoom <input id="passZoom" type="range" min="0.5" max="4" step="0.01" value="1.4"></label><label>Left / Right <input id="passX" type="range" min="-400" max="400" value="0"></label><label>Up / Down <input id="passY" type="range" min="-400" max="400" value="0"></label></div><div class="small-note">Tip: Face ko center me rakho. PDF me 5 photos 35×45mm ek hi line me A4 ke top par aayengi.</div></div><div id="passOutput"></div>`; $("#passImage").onchange=loadPassportImage;["passZoom","passX","passY"].forEach(id=>$("#"+id).oninput=updatePassportPreview);drawEmptyPassport();}
-function drawEmptyPassport(){const c=$("#passCanvas"),ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle="#777";ctx.textAlign="center";ctx.font="18px Arial";ctx.fillText("Upload photo",c.width/2,c.height/2)}
-async function loadPassportImage(){const f=$("#passImage").files[0]; if(!f)return; passState.img=await loadImage(await readFile(f)); $("#passZoom").value=1.4;$("#passX").value=0;$("#passY").value=0; updatePassportPreview();}
-function updatePassportPreview(){const c=$("#passCanvas"),ctx=c.getContext("2d"); if(!passState.img){drawEmptyPassport();return;} const zoom=Number($("#passZoom").value), x=Number($("#passX").value), y=Number($("#passY").value); ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height); const img=passState.img, frameRatio=c.width/c.height, imgRatio=img.width/img.height; let dw,dh;if(imgRatio>frameRatio){dh=c.height*zoom;dw=dh*imgRatio}else{dw=c.width*zoom;dh=dw/imgRatio} const dx=(c.width-dw)/2+x,dy=(c.height-dh)/2+y;ctx.drawImage(img,dx,dy,dw,dh);ctx.strokeStyle="#f97316";ctx.lineWidth=5;ctx.strokeRect(3,3,c.width-6,c.height-6);passState.cropped=c.toDataURL("image/jpeg",.95)}
-function generatePassportSheet(){if(!passState.cropped)return alert("Photo upload karo aur preview set karo."); const name=$("#passName").value||"",date=$("#passDate").value||""; let items=""; for(let i=0;i<5;i++){items+=`<div class="photo-item"><img class="pass-photo" src="${passState.cropped}">${(name||date)?`<div class="caption">${name}<br>${date}</div>`:""}</div>`}
- lastPassportPDF=createPassportPDF(passState.cropped,name,date);
- $("#passOutput").innerHTML=`<div class="result-card"><div class="action-row"><button class="open-btn" onclick="openPassportPDF()">📂 Open PDF</button><button class="pdf-btn" onclick="downloadPassportPDF()">📄 Download PDF</button><button class="print-btn" onclick="printPassportPDF()">🖨️ Print PDF</button></div><div class="passport-final-note">✅ Passport output: 35×45mm, 5 photos, white background, black border, A4 top aligned.</div><div class="print-area"><div class="passport-single-row">${items}</div></div></div>`}
-function createPassportPDF(src,name,date){const {jsPDF}=window.jspdf; const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"}); const photoW=35, photoH=45, gap=3, top=5; let x=6; for(let i=0;i<5;i++){pdf.setFillColor(255,255,255);pdf.rect(x,top,photoW,photoH,"F");pdf.addImage(src,"JPEG",x,top,photoW,photoH); pdf.setDrawColor(0); pdf.setLineWidth(0.3); pdf.rect(x,top,photoW,photoH); if(name||date){pdf.setFontSize(7); pdf.text(name,x+photoW/2,top+photoH+3,{align:"center"}); pdf.text(date,x+photoW/2,top+photoH+6,{align:"center"});} x+=photoW+gap;} return pdf;}
-function refreshPassportUrl(){
-  if(!lastPassportPDF)return "";
-  if(lastPassportUrl) URL.revokeObjectURL(lastPassportUrl);
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const workspace = $("#workspace");
+
+let passState = { img: null, cropped: "" };
+
+let aadPdfCanvas = null;
+let aadDrag = {
+  x: 20,
+  y: 300,
+  w: 560,
+  h: 150,
+  drag: false,
+  resize: false,
+  startX: 0,
+  startY: 0,
+  start: {}
+};
+
+let lastPassportPDF = null;
+let lastAadhaarPDF = null;
+let lastPassportUrl = "";
+let lastAadhaarUrl = "";
+
+function initApp() {
+  const menuBtn = $("#menuBtn");
+  const overlay = $("#overlay");
+  const themeToggle = $("#themeToggle");
+
+  if (menuBtn) menuBtn.onclick = toggleMenu;
+  if (overlay) overlay.onclick = toggleMenu;
+
+  $$(".nav-item,.card").forEach(el => {
+    el.onclick = () => openTool(el.dataset.tool);
+  });
+
+  if (themeToggle) {
+    themeToggle.onclick = () => {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("spt_theme", document.body.classList.contains("dark") ? "dark" : "light");
+    };
+  }
+
+  if (localStorage.getItem("spt_theme") === "dark") {
+    document.body.classList.add("dark");
+  }
+
+  home();
+}
+
+function toggleMenu() {
+  $("#sidebar")?.classList.toggle("open");
+  $("#overlay")?.classList.toggle("show");
+}
+
+function closeMenu() {
+  if (innerWidth < 700) {
+    $("#sidebar")?.classList.remove("open");
+    $("#overlay")?.classList.remove("show");
+  }
+}
+
+function setActive(tool) {
+  $$(".nav-item").forEach(i => {
+    i.classList.toggle("active", i.dataset.tool === tool);
+  });
+  closeMenu();
+}
+
+function openTool(tool) {
+  setActive(tool);
+
+  if (tool === "home") return home();
+  if (tool === "compressor") return imageCompressor();
+  if (tool === "namedate") return nameDateTool();
+  if (tool === "passport") return passportTool();
+  if (tool === "aadhaar") return aadhaarTool();
+  if (tool === "pdfresizer") return pdfResizerTool();
+
+  if (tool === "login") return loginTool();
+  if (tool === "dashboard") return dashboardTool();
+  if (tool === "admin") return adminTool();
+  if (tool === "feedback") return feedbackTool();
+  if (tool === "payment") return paymentTool();
+  if (tool === "premium") return premiumTool();
+
+  return home();
+}
+
+function showTool(tool) {
+  openTool(tool);
+}
+
+function home() {
+  workspace.innerHTML = `
+    <h2>Welcome 👋</h2>
+    <p>Tool select karo aur kaam start karo.</p>
+
+    <div class="stats">
+      <div>
+        <strong>📄 PDF Output</strong>
+        <span>Passport/Aadhaar PDF download.</span>
+      </div>
+      <div>
+        <strong>🖨️ Print Ready</strong>
+        <span>A4 layout professional.</span>
+      </div>
+      <div>
+        <strong>📱 Mobile Friendly</strong>
+        <span>Phone par smooth work.</span>
+      </div>
+    </div>
+  `;
+}
+
+/* ================= AUTH ================= */
+
+function loginTool() {
+  workspace.innerHTML = `
+    <h2>🔐 Login / Signup</h2>
+    <p class="tool-subtitle">Account banao, premium features aur dashboard use karo.</p>
+
+    <div class="auth-grid">
+      <div class="auth-card">
+        <h3>Login</h3>
+        <div class="form-group">
+          <label>Email</label>
+          <input id="loginEmail" type="email" placeholder="Email">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="loginPassword" type="password" placeholder="Password">
+        </div>
+        <button class="primary-btn" onclick="loginSubmit()">Login</button>
+      </div>
+
+      <div class="auth-card">
+        <h3>Signup</h3>
+        <div class="form-group">
+          <label>Name</label>
+          <input id="signupName" placeholder="Name">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input id="signupEmail" type="email" placeholder="Email">
+        </div>
+        <div class="form-group">
+          <label>Mobile</label>
+          <input id="signupMobile" placeholder="Mobile optional">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="signupPassword" type="password" placeholder="Password">
+        </div>
+        <button class="primary-btn" onclick="signupSubmit()">Create Account</button>
+      </div>
+    </div>
+
+    <div class="auth-card">
+      <h3>Forgot Password</h3>
+      <div class="row">
+        <input id="forgotEmail" type="email" placeholder="Registered Email">
+        <button class="secondary-btn" onclick="forgotSubmit()">Send OTP</button>
+      </div>
+
+      <div class="row mt-15">
+        <input id="resetEmail" type="email" placeholder="Email">
+        <input id="resetOtp" placeholder="OTP">
+      </div>
+
+      <div class="row mt-10">
+        <input id="resetPassword" type="password" placeholder="New Password">
+        <button class="primary-btn" onclick="resetSubmit()">Reset Password</button>
+      </div>
+    </div>
+  `;
+}
+
+function dashboardTool() {
+  if (typeof requireLogin === "function" && !requireLogin()) return;
+
+  const u = window.SPT?.user || {};
+
+  workspace.innerHTML = `
+    <h2>👤 Dashboard</h2>
+    <p class="tool-subtitle">Welcome, ${u.name || "User"}.</p>
+
+    <div class="stats">
+      <div><strong>Name</strong><span>${u.name || "-"}</span></div>
+      <div><strong>Email</strong><span>${u.email || "-"}</span></div>
+      <div><strong>Plan</strong><span>${u.premium ? "Premium 👑" : "Free"}</span></div>
+      <div><strong>Uses Left</strong><span>${u.usesLeft || "-"}</span></div>
+      <div><strong>Role</strong><span>${u.role || "User"}</span></div>
+      <div><strong>Status</strong><span>${u.status || "Active"}</span></div>
+    </div>
+
+    <div class="action-row">
+      <button class="secondary-btn" onclick="showTool('premium')">Upgrade Premium</button>
+      <button class="print-btn" onclick="SPT.logout()">Logout</button>
+    </div>
+  `;
+}
+
+function adminTool() {
+  if (typeof requireLogin === "function" && !requireLogin()) return;
+  if (typeof isAdmin === "function" && !isAdmin()) {
+    workspace.innerHTML = `<div class="warning-box">Admin access only.</div>`;
+    return;
+  }
+
+  workspace.innerHTML = `
+    <h2>📊 Admin Panel</h2>
+    <p class="tool-subtitle">Users, payments aur stats manage karo.</p>
+
+    <div class="action-row">
+      <button class="primary-btn" onclick="loadAdminStats()">Stats</button>
+      <button class="secondary-btn" onclick="loadUsers()">Users</button>
+      <button class="secondary-btn" onclick="loadPayments()">Payments</button>
+    </div>
+
+    <div id="adminContent" class="admin-card">
+      Admin option select karo.
+    </div>
+  `;
+}
+
+function feedbackTool() {
+  workspace.innerHTML = `
+    <h2>💬 Feedback</h2>
+    <p class="tool-subtitle">Problem ya suggestion bhejo.</p>
+
+    <div class="tool-box">
+      <input id="feedbackName" placeholder="Name">
+      <input id="feedbackEmail" type="email" placeholder="Email">
+      <select id="feedbackType">
+        <option>Feedback</option>
+        <option>Bug Report</option>
+        <option>Feature Request</option>
+      </select>
+      <textarea id="feedbackMessage" rows="5" placeholder="Message"></textarea>
+      <button onclick="submitFeedback()">Submit Feedback</button>
+    </div>
+  `;
+}
+
+function paymentTool() {
+  workspace.innerHTML = `
+    <h2>💳 Payment</h2>
+    <p class="tool-subtitle">Payment complete karke details submit karo.</p>
+
+    <div class="payment-card center">
+      <img src="assets/images/payment_qr.jpg" class="preview-img" style="max-width:260px">
+      <p class="small-note">UPI/QR payment ke baad transaction details submit karo.</p>
+    </div>
+
+    <div class="tool-box">
+      <select id="paymentPlan">
+        <option value="Monthly Premium">Monthly Premium</option>
+        <option value="Yearly Premium">Yearly Premium</option>
+      </select>
+      <input id="paymentAmount" type="number" placeholder="Amount">
+      <input id="paymentMethod" value="UPI / QR">
+      <input id="paymentTxn" placeholder="Transaction ID">
+      <input id="paymentScreenshot" placeholder="Screenshot URL optional">
+      <button onclick="submitPayment()">Submit Payment</button>
+    </div>
+  `;
+}
+
+function premiumTool() {
+  workspace.innerHTML = `
+    <h2>👑 Premium</h2>
+    <p class="tool-subtitle">Premium users ko unlimited tools aur priority features milenge.</p>
+
+    <div class="info-grid">
+      <div><strong>Free Plan</strong><span>Limited uses</span></div>
+      <div><strong>Monthly</strong><span>₹49 / 30 days</span></div>
+      <div><strong>Yearly</strong><span>₹199 / 365 days</span></div>
+    </div>
+
+    <div class="action-row">
+      <button class="primary-btn" onclick="showTool('payment')">Upgrade Now</button>
+      <button class="secondary-btn" onclick="showTool('dashboard')">My Dashboard</button>
+    </div>
+  `;
+}
+
+/* ================= IMAGE COMPRESSOR ================= */
+
+function imageCompressor() {
+  workspace.innerHTML = `
+    <h2>🖼️ Image Compressor</h2>
+    <p class="tool-subtitle">Photo upload karo aur target KB select karo.</p>
+
+    <div class="tool-box">
+      <label class="upload-box">
+        <input type="file" id="imageInput" accept="image/*">
+        <span>📤 Tap to Upload Image</span>
+      </label>
+
+      <label>Target Size</label>
+      <select id="targetSize">
+        <option value="20">20 KB</option>
+        <option value="50">50 KB</option>
+        <option value="100" selected>100 KB</option>
+        <option value="200">200 KB</option>
+        <option value="custom">Custom KB</option>
+      </select>
+
+      <input type="number" id="customSize" placeholder="Enter custom KB" style="display:none">
+      <button onclick="compressToTarget()">Compress Image</button>
+    </div>
+
+    <div id="compressOutput"></div>
+  `;
+
+  $("#targetSize").onchange = e => {
+    $("#customSize").style.display = e.target.value === "custom" ? "block" : "none";
+  };
+}
+
+async function compressToTarget() {
+  const input = $("#imageInput");
+  const output = $("#compressOutput");
+
+  if (!input.files[0]) return alert("Pehle image upload karo.");
+
+  let target = $("#targetSize").value === "custom"
+    ? Number($("#customSize").value)
+    : Number($("#targetSize").value);
+
+  if (!target || target < 5) return alert("Valid target KB enter karo.");
+
+  output.innerHTML = `<div class="progress-box">⏳ Compressing...</div>`;
+
+  const file = input.files[0];
+  const img = await loadImage(await readFile(file));
+
+  let best = "";
+  let bestSize = Infinity;
+
+  for (let scale = 1; scale >= 0.08; scale -= 0.035) {
+    let w = Math.max(80, Math.round(img.width * scale));
+    let h = Math.max(80, Math.round(img.height * scale));
+
+    let low = .03;
+    let high = .96;
+
+    for (let i = 0; i < 14; i++) {
+      let q = (low + high) / 2;
+      let data = drawImage(img, w, h, q);
+      let size = getSizeKB(data);
+
+      if (size <= target) {
+        best = data;
+        bestSize = size;
+        low = q;
+      } else {
+        high = q;
+      }
+    }
+
+    if (bestSize <= target && bestSize >= target * .88) break;
+  }
+
+  if (!best) {
+    best = drawImage(img, 100, Math.round(img.height * 100 / img.width), .03);
+    bestSize = getSizeKB(best);
+  }
+
+  if (typeof logToolUsage === "function") {
+    logToolUsage("Image Compressor", {
+      fileName: file.name,
+      originalSizeKB: Math.round(file.size / 1024),
+      outputSizeKB: bestSize.toFixed(2),
+      targetSizeKB: target
+    });
+  }
+
+  output.innerHTML = `
+    <div class="result-card fade-in">
+      <h3>✅ Compression Complete</h3>
+      <p><b>Original:</b> ${formatBytes(file.size)}</p>
+      <p><b>Target:</b> ${target} KB</p>
+      <p><b>Compressed:</b> ${bestSize.toFixed(2)} KB</p>
+      <img src="${best}" class="preview-img">
+      <button class="download-btn" onclick="forceDownload('${best}','compressed-image.jpg')">Download Image</button>
+    </div>
+  `;
+}
+
+/* ================= NAME DATE ================= */
+
+function nameDateTool() {
+  workspace.innerHTML = `
+    <h2>🏷️ Name / Date Photo</h2>
+    <p class="tool-subtitle">Photo ke niche name/date/custom text add karo.</p>
+
+    <div class="tool-box">
+      <label class="upload-box">
+        <input id="ndImage" type="file" accept="image/*">
+        <span>📤 Upload Photo</span>
+      </label>
+
+      <div class="row">
+        <input id="ndName" placeholder="Name">
+        <input id="ndDate" type="date">
+      </div>
+
+      <input id="ndText" placeholder="Custom text optional">
+      <button onclick="makeNameDate()">Create Photo</button>
+    </div>
+
+    <div id="ndOutput"></div>
+  `;
+}
+
+async function makeNameDate() {
+  const f = $("#ndImage").files[0];
+  if (!f) return alert("Photo upload karo.");
+
+  const img = await loadImage(await readFile(f));
+
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d");
+
+  const w = 900;
+  const h = Math.round(img.height * 900 / img.width);
+  const cap = 110;
+
+  c.width = w;
+  c.height = h + cap;
+
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(img, 0, 0, w, h);
+
+  ctx.fillStyle = "#111";
+  ctx.textAlign = "center";
+  ctx.font = "bold 32px Arial";
+  ctx.fillText($("#ndName").value || "", w / 2, h + 42);
+
+  ctx.font = "24px Arial";
+  ctx.fillText($("#ndText").value || $("#ndDate").value || "", w / 2, h + 82);
+
+  const data = c.toDataURL("image/jpeg", .92);
+
+  if (typeof logToolUsage === "function") {
+    logToolUsage("Name Date Photo", { fileName: f.name });
+  }
+
+  $("#ndOutput").innerHTML = `
+    <div class="result-card fade-in">
+      <img class="preview-img" src="${data}">
+      <button class="download-btn" onclick="forceDownload('${data}','name-date-photo.jpg')">Download Photo</button>
+    </div>
+  `;
+}
+
+/* End of PART 1 */
+/* =====================================================
+   Smart Photo Toolkit Pro v27
+   js/main.js — PART 2
+   Passport Photo Maker
+===================================================== */
+
+/* ================= PASSPORT ================= */
+
+function passportTool() {
+  passState = { img: null, cropped: "" };
+
+  workspace.innerHTML = `
+    <h2>👤 Passport Photo Maker</h2>
+    <p class="tool-subtitle">A4 PDF ke upar ek line me 5 photos. Border black rahega.</p>
+
+    <div class="tool-box">
+      <label class="upload-box">
+        <input id="passImage" type="file" accept="image/*">
+        <span>📤 Upload Full Photo</span>
+      </label>
+
+      <div class="row">
+        <input id="passName" placeholder="Name optional">
+        <input id="passDate" type="date">
+      </div>
+
+      <button onclick="generatePassportSheet()">✅ Generate Passport PDF Layout</button>
+    </div>
+
+    <div class="crop-panel">
+      <div class="canvas-box">
+        <canvas id="passCanvas" class="crop-canvas" width="350" height="450"></canvas>
+      </div>
+
+      <div class="controls">
+        <label>Zoom
+          <input id="passZoom" type="range" min="0.5" max="4" step="0.01" value="1.4">
+        </label>
+        <label>Left / Right
+          <input id="passX" type="range" min="-400" max="400" value="0">
+        </label>
+        <label>Up / Down
+          <input id="passY" type="range" min="-400" max="400" value="0">
+        </label>
+      </div>
+
+      <div class="small-note">
+        Tip: Face ko center me rakho. PDF me 5 photos 35×45mm ek hi line me A4 ke top par aayengi.
+      </div>
+    </div>
+
+    <div id="passOutput"></div>
+  `;
+
+  $("#passImage").onchange = loadPassportImage;
+
+  ["passZoom", "passX", "passY"].forEach(id => {
+    $("#" + id).oninput = updatePassportPreview;
+  });
+
+  drawEmptyPassport();
+}
+
+function drawEmptyPassport() {
+  const c = $("#passCanvas");
+  if (!c) return;
+
+  const ctx = c.getContext("2d");
+
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, c.width, c.height);
+
+  ctx.fillStyle = "#777";
+  ctx.textAlign = "center";
+  ctx.font = "18px Arial";
+  ctx.fillText("Upload photo", c.width / 2, c.height / 2);
+}
+
+async function loadPassportImage() {
+  const f = $("#passImage").files[0];
+  if (!f) return;
+
+  passState.img = await loadImage(await readFile(f));
+
+  $("#passZoom").value = 1.4;
+  $("#passX").value = 0;
+  $("#passY").value = 0;
+
+  updatePassportPreview();
+}
+
+function updatePassportPreview() {
+  const c = $("#passCanvas");
+  if (!c) return;
+
+  const ctx = c.getContext("2d");
+
+  if (!passState.img) {
+    drawEmptyPassport();
+    return;
+  }
+
+  const zoom = Number($("#passZoom").value);
+  const x = Number($("#passX").value);
+  const y = Number($("#passY").value);
+
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, c.width, c.height);
+
+  const img = passState.img;
+  const frameRatio = c.width / c.height;
+  const imgRatio = img.width / img.height;
+
+  let dw, dh;
+
+  if (imgRatio > frameRatio) {
+    dh = c.height * zoom;
+    dw = dh * imgRatio;
+  } else {
+    dw = c.width * zoom;
+    dh = dw / imgRatio;
+  }
+
+  const dx = (c.width - dw) / 2 + x;
+  const dy = (c.height - dh) / 2 + y;
+
+  ctx.drawImage(img, dx, dy, dw, dh);
+
+  ctx.strokeStyle = "#f97316";
+  ctx.lineWidth = 5;
+  ctx.strokeRect(3, 3, c.width - 6, c.height - 6);
+
+  passState.cropped = c.toDataURL("image/jpeg", .95);
+}
+
+function generatePassportSheet() {
+  if (!passState.cropped) return alert("Photo upload karo aur preview set karo.");
+
+  const name = $("#passName").value || "";
+  const date = $("#passDate").value || "";
+
+  let items = "";
+
+  for (let i = 0; i < 5; i++) {
+    items += `
+      <div class="photo-item">
+        <img class="pass-photo" src="${passState.cropped}">
+        ${
+          name || date
+            ? `<div class="caption">${name}<br>${date}</div>`
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  lastPassportPDF = createPassportPDF(passState.cropped, name, date);
+
+  if (typeof logToolUsage === "function") {
+    logToolUsage("Passport Photo Maker", {
+      toolType: "PDF",
+      outputSizeKB: "A4 PDF"
+    });
+  }
+
+  $("#passOutput").innerHTML = `
+    <div class="result-card fade-in">
+      <div class="action-row">
+        <button class="open-btn" onclick="openPassportPDF()">📂 Open PDF</button>
+        <button class="pdf-btn" onclick="downloadPassportPDF()">📄 Download PDF</button>
+        <button class="print-btn" onclick="printPassportPDF()">🖨️ Print PDF</button>
+      </div>
+
+      <div class="passport-final-note">
+        ✅ Passport output: 35×45mm, 5 photos, white background, black border, A4 top aligned.
+      </div>
+
+      <div class="print-area">
+        <div class="passport-single-row">
+          ${items}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function createPassportPDF(src, name, date) {
+  const { jsPDF } = window.jspdf;
+
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4"
+  });
+
+  const photoW = 35;
+  const photoH = 45;
+  const gap = 3;
+  const top = 5;
+
+  let x = 6;
+
+  for (let i = 0; i < 5; i++) {
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(x, top, photoW, photoH, "F");
+
+    pdf.addImage(src, "JPEG", x, top, photoW, photoH);
+
+    pdf.setDrawColor(0);
+    pdf.setLineWidth(0.3);
+    pdf.rect(x, top, photoW, photoH);
+
+    if (name || date) {
+      pdf.setFontSize(7);
+      pdf.text(name, x + photoW / 2, top + photoH + 3, { align: "center" });
+      pdf.text(date, x + photoW / 2, top + photoH + 6, { align: "center" });
+    }
+
+    x += photoW + gap;
+  }
+
+  return pdf;
+}
+
+function refreshPassportUrl() {
+  if (!lastPassportPDF) return "";
+
+  if (lastPassportUrl) URL.revokeObjectURL(lastPassportUrl);
+
   lastPassportUrl = URL.createObjectURL(lastPassportPDF.output("blob"));
   return lastPassportUrl;
 }
-function openPassportPDF(){
-  if(!lastPassportPDF)return alert("Pehle layout generate karo.");
-  const url=refreshPassportUrl();
-  const win=window.open(url,"_blank");
-  if(!win) alert("Popup blocked hai. Browser settings me popup allow karo, ya Download PDF try karo.");
+
+function openPassportPDF() {
+  if (!lastPassportPDF) return alert("Pehle layout generate karo.");
+
+  const url = refreshPassportUrl();
+  const win = window.open(url, "_blank");
+
+  if (!win) {
+    alert("Popup blocked hai. Browser settings me popup allow karo, ya Download PDF try karo.");
+  }
 }
-function downloadPassportPDF(){
-  if(!lastPassportPDF)return alert("Pehle layout generate karo.");
-  try{
-    const url=refreshPassportUrl();
-    const a=document.createElement("a");
-    a.href=url;
-    a.download="passport-photo-a4.pdf";
-    a.target="_blank";
+
+function downloadPassportPDF() {
+  if (!lastPassportPDF) return alert("Pehle layout generate karo.");
+
+  try {
+    const url = refreshPassportUrl();
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = "passport-photo-a4.pdf";
+    a.target = "_blank";
+
     document.body.appendChild(a);
     a.click();
     a.remove();
-  }catch(e){
+  } catch (e) {
     openPassportPDF();
   }
 }
-function printPassportPDF(){
-  if(!lastPassportPDF)return alert("Pehle layout generate karo.");
+
+function printPassportPDF() {
+  if (!lastPassportPDF) return alert("Pehle layout generate karo.");
+
   lastPassportPDF.autoPrint();
-  const url=URL.createObjectURL(lastPassportPDF.output("blob"));
-  window.open(url,"_blank");
+
+  const url = URL.createObjectURL(lastPassportPDF.output("blob"));
+  window.open(url, "_blank");
 }
 
-/* Aadhaar */
-function aadhaarTool(){workspace.innerHTML=`<h2>🪪 Aadhaar Print Tool</h2><p class="tool-subtitle">PDF me drag crop karo. Output PDF me download/print hoga.</p><div class="tab-row"><button class="tab-btn active" onclick="aadhaarMode('pdf',this)">UIDAI PDF Drag Crop</button><button class="tab-btn" onclick="aadhaarMode('full',this)">Full Image</button><button class="tab-btn" onclick="aadhaarMode('fb',this)">Front + Back</button></div><div id="aadhaarBox"></div><div id="aadOutput"></div>`;aadhaarMode("pdf",$(".tab-btn"))}
-function setTab(btn){$$(".tab-btn").forEach(b=>b.classList.remove("active")); if(btn)btn.classList.add("active")}
-function commonAadhaarOptions(){return `<div class="row"><select id="aadCopies"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option></select><select id="aadPos"><option value="top-center">Top Center</option><option value="top-left">Top Left</option></select></div>`}
-function aadhaarMode(mode,btn){setTab(btn);const box=$("#aadhaarBox");$("#aadOutput").innerHTML="";aadPdfCanvas=null;if(mode==="pdf"){box.innerHTML=`<div class="tool-box"><label>Upload UIDAI Aadhaar PDF</label><input id="aadPdf" type="file" accept="application/pdf" onchange="loadAadhaarPDF()">${commonAadhaarOptions()}<button onclick="makeAadhaarManualCrop()">Crop & Create PDF Layout</button><div class="small-note">PDF load hone ke baad orange box ko finger se move karo. Corner dot se resize karo.</div></div><div id="aadPdfCropUI"></div>`} if(mode==="full"){box.innerHTML=`<div class="tool-box"><label class="upload-box"><input id="aadFull" type="file" accept="image/*"><span>📤 Upload Full Aadhaar Image</span></label>${commonAadhaarOptions()}<button onclick="makeAadhaarFull()">Create PDF Layout</button></div>`} if(mode==="fb"){box.innerHTML=`<div class="tool-box"><label>Front Image</label><input id="aadFront" type="file" accept="image/*"><label>Back Image</label><input id="aadBack" type="file" accept="image/*">${commonAadhaarOptions()}<button onclick="makeAadhaarFrontBack()">Create PDF Layout</button></div>`}}
-async function loadAadhaarPDF(){
-  const f=$("#aadPdf").files[0];
-  if(!f)return;
-  if(!window.pdfjsLib)return alert("Internet on karke refresh karo. PDF library load nahi hui.");
-  $("#aadPdfCropUI").innerHTML="<p>⏳ PDF loading...</p>";
-  const buf=await f.arrayBuffer();
-  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
-  const page=await pdf.getPage(1);
-  const viewport=page.getViewport({scale:3});
-  const sourceCanvas=document.createElement("canvas");
-  const sctx=sourceCanvas.getContext("2d");
-  sourceCanvas.width=viewport.width;
-  sourceCanvas.height=viewport.height;
-  await page.render({canvasContext:sctx,viewport}).promise;
-  aadPdfCanvas=sourceCanvas;
+/* End of PART 2 */
+/* =====================================================
+   Smart Photo Toolkit Pro v27
+   js/main.js — PART 3
+   Aadhaar Print Tool
+===================================================== */
 
-  $("#aadPdfCropUI").innerHTML=`
-    <div class="crop-panel">
+/* ================= AADHAAR ================= */
+
+function aadhaarTool() {
+  workspace.innerHTML = `
+    <h2>🪪 Aadhaar Print Tool</h2>
+    <p class="tool-subtitle">PDF me drag crop karo. Output PDF me download/print hoga.</p>
+
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="aadhaarMode('pdf',this)">UIDAI PDF Drag Crop</button>
+      <button class="tab-btn" onclick="aadhaarMode('full',this)">Full Image</button>
+      <button class="tab-btn" onclick="aadhaarMode('fb',this)">Front + Back</button>
+    </div>
+
+    <div id="aadhaarBox"></div>
+    <div id="aadOutput"></div>
+  `;
+
+  aadhaarMode("pdf", $(".tab-btn"));
+}
+
+function setTab(btn) {
+  $$(".tab-btn").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+}
+
+function commonAadhaarOptions() {
+  return `
+    <div class="row">
+      <select id="aadCopies">
+        <option value="1">1 Copy</option>
+        <option value="2">2 Copies</option>
+        <option value="4">4 Copies</option>
+        <option value="6">6 Copies</option>
+      </select>
+
+      <select id="aadPos">
+        <option value="top-center">Top Center</option>
+        <option value="top-left">Top Left</option>
+      </select>
+    </div>
+  `;
+}
+
+function aadhaarMode(mode, btn) {
+  setTab(btn);
+
+  const box = $("#aadhaarBox");
+  $("#aadOutput").innerHTML = "";
+  aadPdfCanvas = null;
+
+  if (mode === "pdf") {
+    box.innerHTML = `
+      <div class="tool-box">
+        <label>Upload UIDAI Aadhaar PDF</label>
+        <input id="aadPdf" type="file" accept="application/pdf" onchange="loadAadhaarPDF()">
+
+        ${commonAadhaarOptions()}
+
+        <button onclick="makeAadhaarManualCrop()">Crop & Create PDF Layout</button>
+
+        <div class="small-note">
+          PDF load hone ke baad orange box ko finger se move karo. Corner dot se resize karo.
+        </div>
+      </div>
+
+      <div id="aadPdfCropUI"></div>
+    `;
+  }
+
+  if (mode === "full") {
+    box.innerHTML = `
+      <div class="tool-box">
+        <label class="upload-box">
+          <input id="aadFull" type="file" accept="image/*">
+          <span>📤 Upload Full Aadhaar Image</span>
+        </label>
+
+        ${commonAadhaarOptions()}
+
+        <button onclick="makeAadhaarFull()">Create PDF Layout</button>
+      </div>
+    `;
+  }
+
+  if (mode === "fb") {
+    box.innerHTML = `
+      <div class="tool-box">
+        <label>Front Image</label>
+        <input id="aadFront" type="file" accept="image/*">
+
+        <label>Back Image</label>
+        <input id="aadBack" type="file" accept="image/*">
+
+        ${commonAadhaarOptions()}
+
+        <button onclick="makeAadhaarFrontBack()">Create PDF Layout</button>
+      </div>
+    `;
+  }
+}
+
+async function loadAadhaarPDF() {
+  const f = $("#aadPdf").files[0];
+
+  if (!f) return;
+
+  if (!window.pdfjsLib) {
+    return alert("Internet on karke refresh karo. PDF library load nahi hui.");
+  }
+
+  $("#aadPdfCropUI").innerHTML = `<div class="progress-box">⏳ PDF loading...</div>`;
+
+  const buf = await f.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const page = await pdf.getPage(1);
+
+  const viewport = page.getViewport({ scale: 3 });
+  const sourceCanvas = document.createElement("canvas");
+  const sctx = sourceCanvas.getContext("2d");
+
+  sourceCanvas.width = viewport.width;
+  sourceCanvas.height = viewport.height;
+
+  await page.render({
+    canvasContext: sctx,
+    viewport
+  }).promise;
+
+  aadPdfCanvas = sourceCanvas;
+
+  $("#aadPdfCropUI").innerHTML = `
+    <div class="crop-panel fade-in">
       <h3>Drag Crop Box</h3>
-      <div class="small-note">Orange box ko Aadhaar card area par set karo. Final crop exactly isi box se banega.</div>
+
+      <div class="small-note">
+        Orange box ko Aadhaar card area par set karo. Final crop exactly isi box se banega.
+      </div>
+
       <div class="canvas-box">
         <div class="drag-crop-wrap" id="dragWrap">
           <canvas id="aadPreview" class="crop-canvas"></canvas>
+
           <div id="cropBox" class="drag-crop-box">
             <span class="crop-size-label">Crop Area</span>
             <div class="drag-handle" id="resizeHandle"></div>
           </div>
         </div>
       </div>
-      <div class="pdf-preview-note">Tip: Box ka border jahan dikh raha hai, final crop wahi exact area lega. Mobile scaling issue fix kiya gaya hai.</div>
-    </div>`;
 
-  const p=$("#aadPreview");
-  const pctx=p.getContext("2d");
-  const displayW=650;
-  const ratio=aadPdfCanvas.width/aadPdfCanvas.height;
-  p.width=displayW;
-  p.height=Math.round(displayW/ratio);
-  p.style.width=displayW+"px";
-  p.style.height=p.height+"px";
-  pctx.drawImage(aadPdfCanvas,0,0,p.width,p.height);
+      <div class="pdf-preview-note">
+        Tip: Box ka border jahan dikh raha hai, final crop wahi exact area lega. Mobile scaling issue fixed.
+      </div>
+    </div>
+  `;
 
-  aadDrag.x=Math.round(p.width*0.03);
-  aadDrag.y=Math.round(p.height*0.74);
-  aadDrag.w=Math.round(p.width*0.94);
-  aadDrag.h=Math.round(p.height*0.24);
+  const p = $("#aadPreview");
+  const pctx = p.getContext("2d");
+
+  const displayW = 650;
+  const ratio = aadPdfCanvas.width / aadPdfCanvas.height;
+
+  p.width = displayW;
+  p.height = Math.round(displayW / ratio);
+
+  p.style.width = displayW + "px";
+  p.style.height = p.height + "px";
+
+  pctx.drawImage(aadPdfCanvas, 0, 0, p.width, p.height);
+
+  aadDrag.x = Math.round(p.width * 0.03);
+  aadDrag.y = Math.round(p.height * 0.74);
+  aadDrag.w = Math.round(p.width * 0.94);
+  aadDrag.h = Math.round(p.height * 0.24);
+
   applyCropBox();
   initDragCrop();
 }
 
-function applyCropBox(){
-  const box=$("#cropBox");
-  if(!box)return;
-  box.style.left=aadDrag.x+"px";
-  box.style.top=aadDrag.y+"px";
-  box.style.width=aadDrag.w+"px";
-  box.style.height=aadDrag.h+"px";
+function applyCropBox() {
+  const box = $("#cropBox");
+  if (!box) return;
+
+  box.style.left = aadDrag.x + "px";
+  box.style.top = aadDrag.y + "px";
+  box.style.width = aadDrag.w + "px";
+  box.style.height = aadDrag.h + "px";
 }
 
-function getPoint(e){
-  if(e.touches && e.touches[0]) return {x:e.touches[0].clientX,y:e.touches[0].clientY};
-  return {x:e.clientX,y:e.clientY};
+function getPoint(e) {
+  if (e.touches && e.touches[0]) {
+    return {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    };
+  }
+
+  return {
+    x: e.clientX,
+    y: e.clientY
+  };
 }
 
-function initDragCrop(){
-  const box=$("#cropBox"), handle=$("#resizeHandle"), canvas=$("#aadPreview");
-  if(!box||!handle||!canvas)return;
+function initDragCrop() {
+  const box = $("#cropBox");
+  const handle = $("#resizeHandle");
+  const canvas = $("#aadPreview");
 
-  const startMove=(e,type)=>{
+  if (!box || !handle || !canvas) return;
+
+  const startMove = (e, type) => {
     e.preventDefault();
-    const p=getPoint(e);
-    aadDrag.drag=type==="move";
-    aadDrag.resize=type==="resize";
-    aadDrag.startX=p.x;
-    aadDrag.startY=p.y;
-    aadDrag.start={x:aadDrag.x,y:aadDrag.y,w:aadDrag.w,h:aadDrag.h};
+
+    const p = getPoint(e);
+
+    aadDrag.drag = type === "move";
+    aadDrag.resize = type === "resize";
+    aadDrag.startX = p.x;
+    aadDrag.startY = p.y;
+
+    aadDrag.start = {
+      x: aadDrag.x,
+      y: aadDrag.y,
+      w: aadDrag.w,
+      h: aadDrag.h
+    };
   };
 
-  box.onmousedown=e=>startMove(e,"move");
-  box.ontouchstart=e=>startMove(e,"move");
-  handle.onmousedown=e=>{e.stopPropagation();startMove(e,"resize")};
-  handle.ontouchstart=e=>{e.stopPropagation();startMove(e,"resize")};
+  box.onmousedown = e => startMove(e, "move");
+  box.ontouchstart = e => startMove(e, "move");
 
-  const move=e=>{
-    if(!aadDrag.drag&&!aadDrag.resize)return;
+  handle.onmousedown = e => {
+    e.stopPropagation();
+    startMove(e, "resize");
+  };
+
+  handle.ontouchstart = e => {
+    e.stopPropagation();
+    startMove(e, "resize");
+  };
+
+  const move = e => {
+    if (!aadDrag.drag && !aadDrag.resize) return;
+
     e.preventDefault();
-    const p=getPoint(e), dx=p.x-aadDrag.startX, dy=p.y-aadDrag.startY;
 
-    if(aadDrag.drag){
-      aadDrag.x=aadDrag.start.x+dx;
-      aadDrag.y=aadDrag.start.y+dy;
-    }
-    if(aadDrag.resize){
-      aadDrag.w=aadDrag.start.w+dx;
-      aadDrag.h=aadDrag.start.h+dy;
+    const p = getPoint(e);
+    const dx = p.x - aadDrag.startX;
+    const dy = p.y - aadDrag.startY;
+
+    if (aadDrag.drag) {
+      aadDrag.x = aadDrag.start.x + dx;
+      aadDrag.y = aadDrag.start.y + dy;
     }
 
-    aadDrag.w=Math.max(70,Math.min(aadDrag.w,canvas.width-aadDrag.x));
-    aadDrag.h=Math.max(45,Math.min(aadDrag.h,canvas.height-aadDrag.y));
-    aadDrag.x=Math.max(0,Math.min(aadDrag.x,canvas.width-aadDrag.w));
-    aadDrag.y=Math.max(0,Math.min(aadDrag.y,canvas.height-aadDrag.h));
+    if (aadDrag.resize) {
+      aadDrag.w = aadDrag.start.w + dx;
+      aadDrag.h = aadDrag.start.h + dy;
+    }
+
+    aadDrag.w = Math.max(70, Math.min(aadDrag.w, canvas.width - aadDrag.x));
+    aadDrag.h = Math.max(45, Math.min(aadDrag.h, canvas.height - aadDrag.y));
+
+    aadDrag.x = Math.max(0, Math.min(aadDrag.x, canvas.width - aadDrag.w));
+    aadDrag.y = Math.max(0, Math.min(aadDrag.y, canvas.height - aadDrag.h));
+
     applyCropBox();
   };
 
-  const stop=()=>{aadDrag.drag=false;aadDrag.resize=false;};
-  document.onmousemove=move;
-  document.onmouseup=stop;
-  document.ontouchmove=move;
-  document.ontouchend=stop;
+  const stop = () => {
+    aadDrag.drag = false;
+    aadDrag.resize = false;
+  };
+
+  document.onmousemove = move;
+  document.onmouseup = stop;
+  document.ontouchmove = move;
+  document.ontouchend = stop;
 }
 
-async function makeAadhaarManualCrop(){
-  if(!aadPdfCanvas)return alert("Pehle PDF upload karo.");
-  const preview=$("#aadPreview");
-  const box=$("#cropBox");
-  if(!preview || !box)return alert("Preview load nahi hua.");
+async function makeAadhaarManualCrop() {
+  if (!aadPdfCanvas) return alert("Pehle PDF upload karo.");
 
-  /*
-    v12 fix:
-    Crop is calculated from real visible DOM rectangles.
-    This fixes mobile CSS scaling mismatch.
-  */
-  const canvasRect=preview.getBoundingClientRect();
-  const boxRect=box.getBoundingClientRect();
+  const preview = $("#aadPreview");
+  const box = $("#cropBox");
 
-  let relX=(boxRect.left-canvasRect.left)/canvasRect.width;
-  let relY=(boxRect.top-canvasRect.top)/canvasRect.height;
-  let relW=boxRect.width/canvasRect.width;
-  let relH=boxRect.height/canvasRect.height;
+  if (!preview || !box) return alert("Preview load nahi hua.");
 
-  relX=Math.max(0,Math.min(relX,1));
-  relY=Math.max(0,Math.min(relY,1));
-  relW=Math.max(0.01,Math.min(relW,1-relX));
-  relH=Math.max(0.01,Math.min(relH,1-relY));
+  const canvasRect = preview.getBoundingClientRect();
+  const boxRect = box.getBoundingClientRect();
 
-  const cropped=cropCanvasKeepRatio(aadPdfCanvas,relX,relY,relW,relH);
-  const copies=Number($("#aadCopies").value),pos=$("#aadPos").value;
-  lastAadhaarPDF=await createAadhaarPDF([cropped],copies,pos,false);
-  $("#aadOutput").innerHTML=aadhaarPreviewHTML(`<img class="aadhaar-single" src="${cropped}">`,copies,pos);
+  let relX = (boxRect.left - canvasRect.left) / canvasRect.width;
+  let relY = (boxRect.top - canvasRect.top) / canvasRect.height;
+  let relW = boxRect.width / canvasRect.width;
+  let relH = boxRect.height / canvasRect.height;
+
+  relX = Math.max(0, Math.min(relX, 1));
+  relY = Math.max(0, Math.min(relY, 1));
+  relW = Math.max(0.01, Math.min(relW, 1 - relX));
+  relH = Math.max(0.01, Math.min(relH, 1 - relY));
+
+  const cropped = cropCanvasKeepRatio(aadPdfCanvas, relX, relY, relW, relH);
+  const copies = Number($("#aadCopies").value);
+  const pos = $("#aadPos").value;
+
+  lastAadhaarPDF = await createAadhaarPDF([cropped], copies, pos, false);
+
+  if (typeof logToolUsage === "function") {
+    logToolUsage("Aadhaar PDF Crop", { toolType: "PDF" });
+  }
+
+  $("#aadOutput").innerHTML = aadhaarPreviewHTML(
+    `<img class="aadhaar-single" src="${cropped}">`,
+    copies,
+    pos
+  );
 }
 
-function cropCanvasKeepRatio(src,xp,yp,wp,hp){const sx=src.width*xp,sy=src.height*yp,sw=src.width*wp,sh=src.height*hp; const c=document.createElement("canvas"),ctx=c.getContext("2d"); c.width=1200;c.height=Math.round(1200*sh/sw);ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(src,sx,sy,sw,sh,0,0,c.width,c.height);return c.toDataURL("image/jpeg",.95);}
-function aadhaarPreviewHTML(content,copies,pos){let all="";for(let i=0;i<copies;i++)all+=content;return `<div class="result-card"><div class="action-row"><button class="open-btn" onclick="openAadhaarPDF()">📂 Open PDF</button><button class="pdf-btn" onclick="downloadAadhaarPDF()">📄 Download PDF</button><button class="print-btn" onclick="printAadhaarPDF()">🖨️ Print PDF</button></div><div class="print-area ${pos}"><div class="aadhaar-wrap">${all}</div></div></div>`}
-async function makeAadhaarFull(){const f=$("#aadFull").files[0];if(!f)return alert("Full Aadhaar image upload karo.");const src=await readFile(f),copies=Number($("#aadCopies").value),pos=$("#aadPos").value;lastAadhaarPDF=await createAadhaarPDF([src],copies,pos,false);$("#aadOutput").innerHTML=aadhaarPreviewHTML(`<img class="aadhaar-single" src="${src}">`,copies,pos)}
-async function makeAadhaarFrontBack(){const f=$("#aadFront").files[0],b=$("#aadBack").files[0];if(!f&&!b)return alert("Front ya back image upload karo.");const front=f?await readFile(f):"",back=b?await readFile(b):"",copies=Number($("#aadCopies").value),pos=$("#aadPos").value;let imgs=[];if(front)imgs.push(front);if(back)imgs.push(back);lastAadhaarPDF=await createAadhaarPDF(imgs,copies,pos,true);let content=`${front?`<img class="aadhaar-card" src="${front}">`:""}${back?`<img class="aadhaar-card" src="${back}">`:""}`;$("#aadOutput").innerHTML=aadhaarPreviewHTML(content,copies,pos)}
-async function createAadhaarPDF(srcs,copies,pos,isCards){const {jsPDF}=window.jspdf; const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"}); let y=10; const gap=8; for(let copy=0;copy<copies;copy++){let dims=[]; for(const s of srcs){const img=await loadImage(s); const h=54; const w=isCards?85.6:h*img.width/img.height; dims.push({src:s,w,h});} const totalW=dims.reduce((a,d)=>a+d.w,0)+(dims.length-1)*gap; let x=pos==="top-left"?10:(210-totalW)/2; for(const d of dims){pdf.addImage(d.src,"JPEG",x,y,d.w,d.h); pdf.setDrawColor(60); pdf.setLineWidth(.25); pdf.rect(x,y,d.w,d.h); x+=d.w+gap;} y+=60;} return pdf;}
-function refreshAadhaarUrl(){
-  if(!lastAadhaarPDF)return "";
-  if(lastAadhaarUrl) URL.revokeObjectURL(lastAadhaarUrl);
+function cropCanvasKeepRatio(src, xp, yp, wp, hp) {
+  const sx = src.width * xp;
+  const sy = src.height * yp;
+  const sw = src.width * wp;
+  const sh = src.height * hp;
+
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d");
+
+  c.width = 1200;
+  c.height = Math.round(1200 * sh / sw);
+
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, c.width, c.height);
+
+  ctx.drawImage(src, sx, sy, sw, sh, 0, 0, c.width, c.height);
+
+  return c.toDataURL("image/jpeg", .95);
+}
+
+function aadhaarPreviewHTML(content, copies, pos) {
+  let all = "";
+
+  for (let i = 0; i < copies; i++) {
+    all += content;
+  }
+
+  return `
+    <div class="result-card fade-in">
+      <div class="action-row">
+        <button class="open-btn" onclick="openAadhaarPDF()">📂 Open PDF</button>
+        <button class="pdf-btn" onclick="downloadAadhaarPDF()">📄 Download PDF</button>
+        <button class="print-btn" onclick="printAadhaarPDF()">🖨️ Print PDF</button>
+      </div>
+
+      <div class="print-area ${pos}">
+        <div class="aadhaar-wrap">
+          ${all}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function makeAadhaarFull() {
+  const f = $("#aadFull").files[0];
+
+  if (!f) return alert("Full Aadhaar image upload karo.");
+
+  const src = await readFile(f);
+  const copies = Number($("#aadCopies").value);
+  const pos = $("#aadPos").value;
+
+  lastAadhaarPDF = await createAadhaarPDF([src], copies, pos, false);
+
+  if (typeof logToolUsage === "function") {
+    logToolUsage("Aadhaar Full Image", { toolType: "PDF", fileName: f.name });
+  }
+
+  $("#aadOutput").innerHTML = aadhaarPreviewHTML(
+    `<img class="aadhaar-single" src="${src}">`,
+    copies,
+    pos
+  );
+}
+
+async function makeAadhaarFrontBack() {
+  const f = $("#aadFront").files[0];
+  const b = $("#aadBack").files[0];
+
+  if (!f && !b) return alert("Front ya back image upload karo.");
+
+  const front = f ? await readFile(f) : "";
+  const back = b ? await readFile(b) : "";
+
+  const copies = Number($("#aadCopies").value);
+  const pos = $("#aadPos").value;
+
+  let imgs = [];
+  if (front) imgs.push(front);
+  if (back) imgs.push(back);
+
+  lastAadhaarPDF = await createAadhaarPDF(imgs, copies, pos, true);
+
+  if (typeof logToolUsage === "function") {
+    logToolUsage("Aadhaar Front Back", { toolType: "PDF" });
+  }
+
+  let content = `
+    ${front ? `<img class="aadhaar-card" src="${front}">` : ""}
+    ${back ? `<img class="aadhaar-card" src="${back}">` : ""}
+  `;
+
+  $("#aadOutput").innerHTML = aadhaarPreviewHTML(content, copies, pos);
+}
+
+/* End of PART 3 */
+/* =====================================================
+   Smart Photo Toolkit Pro v27
+   js/main.js — PART 4
+   Aadhaar PDF Output + PDF Resizer + Helper Functions
+===================================================== */
+
+async function createAadhaarPDF(srcs, copies, pos, isCards) {
+  const { jsPDF } = window.jspdf;
+
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4"
+  });
+
+  let y = 10;
+  const gap = 8;
+
+  for (let copy = 0; copy < copies; copy++) {
+    let dims = [];
+
+    for (const s of srcs) {
+      const img = await loadImage(s);
+      const h = 54;
+      const w = isCards ? 85.6 : h * img.width / img.height;
+
+      dims.push({
+        src: s,
+        w,
+        h
+      });
+    }
+
+    const totalW = dims.reduce((a, d) => a + d.w, 0) + (dims.length - 1) * gap;
+    let x = pos === "top-left" ? 10 : (210 - totalW) / 2;
+
+    for (const d of dims) {
+      pdf.addImage(d.src, "JPEG", x, y, d.w, d.h);
+      pdf.setDrawColor(60);
+      pdf.setLineWidth(.25);
+      pdf.rect(x, y, d.w, d.h);
+      x += d.w + gap;
+    }
+
+    y += 62;
+
+    if (y > 250 && copy < copies - 1) {
+      pdf.addPage();
+      y = 10;
+    }
+  }
+
+  return pdf;
+}
+
+function refreshAadhaarUrl() {
+  if (!lastAadhaarPDF) return "";
+
+  if (lastAadhaarUrl) URL.revokeObjectURL(lastAadhaarUrl);
+
   lastAadhaarUrl = URL.createObjectURL(lastAadhaarPDF.output("blob"));
   return lastAadhaarUrl;
 }
-function openAadhaarPDF(){
-  if(!lastAadhaarPDF)return alert("Pehle layout generate karo.");
-  const url=refreshAadhaarUrl();
-  const win=window.open(url,"_blank");
-  if(!win) alert("Popup blocked hai. Browser settings me popup allow karo, ya Download PDF try karo.");
+
+function openAadhaarPDF() {
+  if (!lastAadhaarPDF) return alert("Pehle Aadhaar layout generate karo.");
+
+  const url = refreshAadhaarUrl();
+  const win = window.open(url, "_blank");
+
+  if (!win) {
+    alert("Popup blocked hai. Browser settings me popup allow karo, ya Download PDF try karo.");
+  }
 }
-function downloadAadhaarPDF(){
-  if(!lastAadhaarPDF)return alert("Pehle layout generate karo.");
-  try{
-    const url=refreshAadhaarUrl();
-    const a=document.createElement("a");
-    a.href=url;
-    a.download="aadhaar-a4-print.pdf";
-    a.target="_blank";
+
+function downloadAadhaarPDF() {
+  if (!lastAadhaarPDF) return alert("Pehle Aadhaar layout generate karo.");
+
+  try {
+    const url = refreshAadhaarUrl();
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = "aadhaar-print-a4.pdf";
+    a.target = "_blank";
+
     document.body.appendChild(a);
     a.click();
     a.remove();
-  }catch(e){
+  } catch (e) {
     openAadhaarPDF();
   }
 }
-function printAadhaarPDF(){
-  if(!lastAadhaarPDF)return alert("Pehle layout generate karo.");
+
+function printAadhaarPDF() {
+  if (!lastAadhaarPDF) return alert("Pehle Aadhaar layout generate karo.");
+
   lastAadhaarPDF.autoPrint();
-  const url=URL.createObjectURL(lastAadhaarPDF.output("blob"));
-  window.open(url,"_blank");
+
+  const url = URL.createObjectURL(lastAadhaarPDF.output("blob"));
+  window.open(url, "_blank");
 }
 
+/* ================= PDF RESIZER ================= */
 
-/* PDF Tools: Safe Resize + Real Scanned PDF Compressor */
-function pdfResizerTool(){
-  workspace.innerHTML=`<h2>📄 PDF Tools</h2>
-  <p class="tool-subtitle">PDF resize aur real scanned PDF compressor. Target KB mode iLovePDF jaisa size reduce karne ki कोशिश karega.</p>
+function pdfResizerTool() {
+  workspace.innerHTML = `
+    <h2>📄 PDF Resizer</h2>
+    <p class="tool-subtitle">PDF upload karo aur target size ke according compress karo.</p>
 
-  <div class="tool-box">
-    <label>Upload PDF</label>
-    <input id="resizePdfInput" type="file" accept="application/pdf">
+    <div class="tool-box">
+      <label class="upload-box">
+        <input id="pdfInput" type="file" accept="application/pdf">
+        <span>📤 Upload PDF</span>
+      </label>
 
-    <label>PDF Mode</label>
-    <select id="pdfCompressMode" onchange="togglePdfToolMode()">
-      <option value="safe" selected>Safe Resize / Optimize - quality preserve</option>
-      <option value="target">Target KB Compress - scanned PDF compressor</option>
-    </select>
-
-    <div id="resizeSettingsBox">
-      <label>Output Page Size</label>
-      <select id="pdfPageSize" onchange="toggleCustomPdfSize()">
-        <option value="KEEP" selected>Keep Original Page Size</option>
-        <option value="A4">A4 - 210 × 297 mm</option>
-        <option value="A5">A5 - 148 × 210 mm</option>
-        <option value="LETTER">Letter - 216 × 279 mm</option>
-        <option value="LEGAL">Legal - 216 × 356 mm</option>
-        <option value="CUSTOM">Custom Size</option>
+      <label>Target Size</label>
+      <select id="pdfTargetSize">
+        <option value="100">100 KB</option>
+        <option value="200">200 KB</option>
+        <option value="500" selected>500 KB</option>
+        <option value="1024">1 MB</option>
+        <option value="custom">Custom KB</option>
       </select>
 
-      <div class="row" id="customPdfSizeBox" style="display:none">
-        <input id="customPdfW" type="number" placeholder="Width mm">
-        <input id="customPdfH" type="number" placeholder="Height mm">
-      </div>
+      <input type="number" id="pdfCustomSize" placeholder="Enter custom KB" style="display:none">
 
-      <label>Fit Mode</label>
-      <select id="pdfFitMode">
-        <option value="contain" selected>Fit inside page - no crop</option>
-        <option value="fill">Fill page - may crop edges</option>
-      </select>
-    </div>
+      <button onclick="compressPdfBasic()">Resize / Compress PDF</button>
 
-    <div id="targetKbPanel" style="display:none">
-      <label>Target PDF Size</label>
-      <div class="preset-row">
-        <button type="button" class="preset-btn" onclick="setPdfTargetKB(50,this)">50 KB</button>
-        <button type="button" class="preset-btn active" onclick="setPdfTargetKB(100,this)">100 KB</button>
-        <button type="button" class="preset-btn" onclick="setPdfTargetKB(200,this)">200 KB</button>
-        <button type="button" class="preset-btn" onclick="setPdfTargetKB(300,this)">300 KB</button>
-        <button type="button" class="preset-btn" onclick="setPdfTargetKB(500,this)">500 KB</button>
-      </div>
-      <input id="targetPdfKb" type="number" value="100" placeholder="Custom KB">
       <div class="warning-box">
-        Target KB mode scanned/image PDF ke liye hai. Ye pages ko image me convert karke compress karta hai.
-        Size kam hoga, lekin text selectable nahi rahega aur quality target ke hisab se reduce ho sakti hai.
+        Note: Browser-side PDF compression image-based PDF ke liye best work karta hai.
+        Text-only PDF ka size bahut kam na bhi ho sakta hai.
       </div>
     </div>
 
-    <button onclick="processPdfTool()">Process PDF</button>
+    <div id="pdfOutput"></div>
+  `;
 
-    <div class="warning-box">
-      Safe mode quality preserve karta hai, lekin size zyada kam nahi hota.
-      Target KB mode size kam karta hai, lekin quality aur text-selectable property par effect aa sakta hai.
-    </div>
-  </div>
-
-  <div id="pdfResizeOutput"></div>`;
+  $("#pdfTargetSize").onchange = e => {
+    $("#pdfCustomSize").style.display = e.target.value === "custom" ? "block" : "none";
+  };
 }
 
-function togglePdfToolMode(){
-  const mode=$("#pdfCompressMode").value;
-  $("#targetKbPanel").style.display=mode==="target"?"block":"none";
-  $("#resizeSettingsBox").style.display=mode==="safe"?"block":"none";
-}
+async function compressPdfBasic() {
+  const input = $("#pdfInput");
+  const output = $("#pdfOutput");
 
-function toggleCustomPdfSize(){
-  const box=$("#customPdfSizeBox");
-  if(box) box.style.display=$("#pdfPageSize").value==="CUSTOM"?"grid":"none";
-}
+  if (!input.files[0]) return alert("PDF upload karo.");
 
-function setPdfTargetKB(kb,btn){
-  $("#targetPdfKb").value=kb;
-  $$(".preset-btn").forEach(b=>b.classList.remove("active"));
-  if(btn) btn.classList.add("active");
-}
+  const file = input.files[0];
 
-function getPdfSizeMMForPage(originalPage){
-  const v=$("#pdfPageSize").value;
-  if(v==="KEEP") return [originalPage.getWidth()*25.4/72, originalPage.getHeight()*25.4/72];
-  if(v==="A4") return [210,297];
-  if(v==="A5") return [148,210];
-  if(v==="LETTER") return [216,279];
-  if(v==="LEGAL") return [216,356];
-  const w=Number($("#customPdfW").value), h=Number($("#customPdfH").value);
-  if(!w||!h||w<20||h<20) throw new Error("Valid custom width/height mm enter karo.");
-  return [w,h];
-}
+  let target = $("#pdfTargetSize").value === "custom"
+    ? Number($("#pdfCustomSize").value)
+    : Number($("#pdfTargetSize").value);
 
-function mmToPt(mm){ return mm*72/25.4; }
+  if (!target || target < 50) return alert("Valid target KB enter karo.");
 
-async function processPdfTool(){
-  const mode=$("#pdfCompressMode").value;
-  if(mode==="target") return compressPdfToTarget();
-  return safeResizePdf();
-}
+  if (!window.pdfjsLib || !window.jspdf) {
+    return alert("PDF library load nahi hui. Internet on karke refresh karo.");
+  }
 
-async function safeResizePdf(){
-  const input=$("#resizePdfInput");
-  const out=$("#pdfResizeOutput");
-  if(!input.files[0]) return alert("PDF upload karo.");
-  if(!window.PDFLib) return alert("PDF library load nahi hui. Internet on karke refresh karo.");
+  output.innerHTML = `<div class="progress-box">⏳ PDF processing...</div>`;
 
-  try{
-    out.innerHTML="<p>⏳ PDF safe processing...</p>";
-    const file=input.files[0];
-    const bytes=await file.arrayBuffer();
-    const srcDoc=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});
-    const newDoc=await PDFLib.PDFDocument.create();
-    const srcPages=srcDoc.getPages();
-    const embeddedPages=await newDoc.embedPages(srcPages);
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
 
-    for(let i=0;i<embeddedPages.length;i++){
-      const embedded=embeddedPages[i];
-      const originalPage=srcPages[i];
-      const [wmm,hmm]=getPdfSizeMMForPage(originalPage);
-      const targetW=mmToPt(wmm), targetH=mmToPt(hmm);
-      const page=newDoc.addPage([targetW,targetH]);
-      const sw=embedded.width, sh=embedded.height;
-      const fitMode=$("#pdfFitMode").value;
-      const scale=fitMode==="fill"?Math.max(targetW/sw,targetH/sh):Math.min(targetW/sw,targetH/sh);
-      const drawW=sw*scale, drawH=sh*scale;
-      page.drawPage(embedded,{x:(targetW-drawW)/2,y:(targetH-drawH)/2,width:drawW,height:drawH});
+  const { jsPDF } = window.jspdf;
+  const outPdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4"
+  });
+
+  let quality = .72;
+  let scale = 1.25;
+  let finalBlob = null;
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const tempPdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4"
+    });
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale });
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      await page.render({
+        canvasContext: ctx,
+        viewport
+      }).promise;
+
+      const imgData = canvas.toDataURL("image/jpeg", quality);
+
+      if (i > 1) tempPdf.addPage();
+
+      tempPdf.addImage(imgData, "JPEG", 0, 0, 210, 297);
     }
 
-    const outBytes=await newDoc.save({useObjectStreams:true, addDefaultPage:false});
-    showPdfResult(new Blob([outBytes],{type:"application/pdf"}), file.size, "processed-pdf.pdf", "Safe Resize / Optimize complete.");
-  }catch(err){
-    out.innerHTML=`<div class="result-card"><h3>❌ Error</h3><p>${err.message}</p></div>`;
-  }
-}
+    finalBlob = tempPdf.output("blob");
 
-async function compressPdfToTarget(){
-  const input=$("#resizePdfInput");
-  const out=$("#pdfResizeOutput");
-  if(!input.files[0]) return alert("PDF upload karo.");
-  if(!window.pdfjsLib || !window.jspdf) return alert("PDF libraries load nahi hui. Internet on karke refresh karo.");
+    const kb = finalBlob.size / 1024;
 
-  const file=input.files[0];
-  const targetKB=Number($("#targetPdfKb").value);
-  if(!targetKB || targetKB<10) return alert("Valid target KB enter karo.");
+    if (kb <= target || attempt === 4) {
+      const url = URL.createObjectURL(finalBlob);
 
-  try{
-    out.innerHTML=`<div class="progress-box">⏳ PDF compressing... Large PDF me time lag sakta hai.</div>`;
-
-    const bytes=await file.arrayBuffer();
-    const pdf=await pdfjsLib.getDocument({data:bytes}).promise;
-    let bestBlob=null, bestSize=Infinity, bestInfo="";
-
-    const attempts=[
-      {scale:1.8, quality:0.82},
-      {scale:1.5, quality:0.72},
-      {scale:1.25, quality:0.62},
-      {scale:1.0, quality:0.52},
-      {scale:0.85, quality:0.45},
-      {scale:0.7, quality:0.38},
-      {scale:0.58, quality:0.32}
-    ];
-
-    for(let a=0;a<attempts.length;a++){
-      const opt=attempts[a];
-      out.innerHTML=`<div class="progress-box">⏳ Compressing attempt ${a+1}/${attempts.length}... Scale ${opt.scale}, Quality ${Math.round(opt.quality*100)}%</div>`;
-      const blob=await renderPdfAsCompressedPdf(pdf,opt.scale,opt.quality);
-      const sizeKB=blob.size/1024;
-
-      if(sizeKB<bestSize){
-        bestSize=sizeKB;
-        bestBlob=blob;
-        bestInfo=`Scale ${opt.scale}, Quality ${Math.round(opt.quality*100)}%`;
+      if (typeof logToolUsage === "function") {
+        logToolUsage("PDF Resizer", {
+          toolType: "PDF",
+          fileName: file.name,
+          originalSizeKB: Math.round(file.size / 1024),
+          outputSizeKB: kb.toFixed(2),
+          targetSizeKB: target
+        });
       }
 
-      if(sizeKB<=targetKB) break;
+      output.innerHTML = `
+        <div class="result-card fade-in">
+          <h3>✅ PDF Ready</h3>
+          <p><b>Original:</b> ${formatBytes(file.size)}</p>
+          <p><b>Target:</b> ${target} KB</p>
+          <p><b>Output:</b> ${kb.toFixed(2)} KB</p>
+
+          <div class="action-row">
+            <a class="open-btn" href="${url}" target="_blank">📂 Open PDF</a>
+            <a class="pdf-btn" href="${url}" download="compressed-pdf.pdf">📄 Download PDF</a>
+          </div>
+
+          <iframe class="pdf-frame" src="${url}"></iframe>
+        </div>
+      `;
+      return;
     }
 
-    let msg=bestSize<=targetKB
-      ? `Target achieved. ${bestInfo}`
-      : `Best result ${bestSize.toFixed(2)} KB mila. Target ${targetKB} KB se kam karne ke liye aur quality reduce karni padegi.`;
+    quality -= .12;
+    scale -= .18;
 
-    showPdfResult(bestBlob, file.size, "compressed-pdf.pdf", msg, targetKB);
-  }catch(err){
-    out.innerHTML=`<div class="result-card"><h3>❌ Error</h3><p>${err.message}</p></div>`;
+    if (quality < .25) quality = .25;
+    if (scale < .65) scale = .65;
   }
 }
 
-async function renderPdfAsCompressedPdf(pdf, scale, quality){
-  const {jsPDF}=window.jspdf;
-  let doc=null;
+/* ================= HELPERS ================= */
 
-  for(let p=1;p<=pdf.numPages;p++){
-    const page=await pdf.getPage(p);
-    const viewport=page.getViewport({scale});
-    const canvas=document.createElement("canvas");
-    const ctx=canvas.getContext("2d",{alpha:false});
-    canvas.width=Math.max(200,Math.floor(viewport.width));
-    canvas.height=Math.max(200,Math.floor(viewport.height));
-    ctx.fillStyle="#fff";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    await page.render({canvasContext:ctx,viewport}).promise;
+function readFile(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.readAsDataURL(file);
+  });
+}
 
-    const imgData=canvas.toDataURL("image/jpeg",quality);
-    const wmm=canvas.width*25.4/96;
-    const hmm=canvas.height*25.4/96;
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
 
-    if(!doc) doc=new jsPDF({orientation:wmm>hmm?"landscape":"portrait",unit:"mm",format:[wmm,hmm]});
-    else doc.addPage([wmm,hmm], wmm>hmm?"landscape":"portrait");
+    img.onload = () => resolve(img);
+    img.onerror = reject;
 
-    doc.addImage(imgData,"JPEG",0,0,wmm,hmm);
+    img.src = src;
+  });
+}
+
+function drawImage(img, w, h, quality) {
+  const c = document.createElement("canvas");
+  const ctx = c.getContext("2d");
+
+  c.width = w;
+  c.height = h;
+
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.drawImage(img, 0, 0, w, h);
+
+  return c.toDataURL("image/jpeg", quality);
+}
+
+function getSizeKB(dataUrl) {
+  const base64 = dataUrl.split(",")[1] || "";
+  return (base64.length * 0.75) / 1024;
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return "0 KB";
+
+  const kb = bytes / 1024;
+
+  if (kb < 1024) return kb.toFixed(2) + " KB";
+
+  return (kb / 1024).toFixed(2) + " MB";
+}
+
+function forceDownload(dataUrl, fileName) {
+  const a = document.createElement("a");
+
+  a.href = dataUrl;
+  a.download = fileName || "download";
+  a.target = "_blank";
+
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+/* ================= SAFE FALLBACK ================= */
+
+window.onerror = function(message, source, lineno, colno, error) {
+  console.error("SPT Error:", message, source, lineno, colno, error);
+
+  if (typeof toast === "function") {
+    toast("Error: " + message);
   }
+};
 
-  return doc.output("blob");
-}
-
-function showPdfResult(blob, originalBytes, filename, note, targetKB){
-  const out=$("#pdfResizeOutput");
-  const url=URL.createObjectURL(blob);
-  const outKB=(blob.size/1024).toFixed(2);
-  const origKB=(originalBytes/1024).toFixed(2);
-  const cls=targetKB && blob.size/1024>targetKB ? "warning-box" : "success-box";
-
-  out.innerHTML=`<div class="result-card">
-    <h3>✅ PDF Complete</h3>
-    <p><b>Original:</b> ${origKB} KB</p>
-    <p><b>Output:</b> ${outKB} KB</p>
-    ${targetKB?`<p><b>Target:</b> ${targetKB} KB</p>`:""}
-    <div class="${cls}">${note}</div>
-    <div class="action-row">
-      <button class="open-btn" onclick="window.open('${url}','_blank')">📂 Open PDF</button>
-      <a class="pdf-btn" href="${url}" download="${filename}">📄 Download PDF</a>
-    </div>
-  </div>`;
-}
+/* End of PART 4 */
 
 
-/* Helpers */
-function readFile(file){return new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsDataURL(file)})}
-function loadImage(src){return new Promise(r=>{const img=new Image();img.onload=()=>r(img);img.src=src})}
-function drawImage(img,w,h,q){const c=document.createElement("canvas"),ctx=c.getContext("2d");c.width=w;c.height=h;ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);return c.toDataURL("image/jpeg",q)}
-function getSizeKB(dataUrl){return ((dataUrl.split(",")[1].length*3/4)/1024)}
-function formatBytes(bytes){return bytes<1024?bytes+" Bytes":bytes<1048576?(bytes/1024).toFixed(2)+" KB":(bytes/1048576).toFixed(2)+" MB"}
-function forceDownload(dataUrl, filename){try{const a=document.createElement("a");a.href=dataUrl;a.download=filename;document.body.appendChild(a);a.click();a.remove();}catch(e){alert("Download issue: image ko long press karke save karo.");}}
