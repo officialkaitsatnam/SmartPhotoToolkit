@@ -2,7 +2,7 @@ window.addEventListener("load",()=>{setTimeout(()=>{const l=document.getElementB
 if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";}
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s); const workspace=$("#workspace");
 let passState={img:null,cropped:""}; let aadPdfCanvas=null; let aadDrag={x:20,y:300,w:560,h:150,drag:false,resize:false,startX:0,startY:0,start:{}};
-let lastPassportPDF=null, lastAadhaarPDF=null; let sptLastPdfToolBlob=null; let lastPassportUrl='', lastAadhaarUrl='';
+let lastPassportPDF=null, lastAadhaarPDF=null; let sptLastPdfToolBlob=null; let sptLastPdfToolName="processed-pdf.pdf"; let lastPassportUrl='', lastAadhaarUrl='';
 
 function initApp(){ $("#menuBtn").onclick=toggleMenu; $("#overlay").onclick=toggleMenu; $$(".nav-item,.card").forEach(el=>el.onclick=()=>openTool(el.dataset.tool));}
 function toggleMenu(){ $("#sidebar").classList.toggle("open"); $("#overlay").classList.toggle("show");}
@@ -140,7 +140,7 @@ function loginTool(){
       <h3>Login</h3>
       <input id="liEmail" type="email" placeholder="Email">
       <input id="liPass" type="password" placeholder="Password">
-      <button onclick="doLiveLogin()">Login</button>
+      <button onclick="doLiveLogin()">Login</button><button class="link-btn" onclick="forgotPasswordTool()">Forgot Password?</button>
     </div>
     <div class="auth-card">
       <h3>Signup</h3>
@@ -247,6 +247,41 @@ async function logLiveTool(tool, extra={}){
   });
 }
 
+
+
+/* v27 Forgot Password */
+function forgotPasswordTool(){
+  workspace.innerHTML=`<h2>🔑 Forgot Password</h2>
+  <p class="tool-subtitle">Email par OTP bhejkar password reset karo.</p>
+  <div class="auth-card">
+    <h3>Step 1: Request OTP</h3>
+    <input id="fpEmail" type="email" placeholder="Registered Email">
+    <button onclick="requestPasswordOTP()">Send OTP</button>
+  </div>
+  <div class="auth-card">
+    <h3>Step 2: Reset Password</h3>
+    <input id="rpEmail" type="email" placeholder="Registered Email">
+    <input id="rpOtp" placeholder="OTP">
+    <input id="rpPass" type="password" placeholder="New Password">
+    <button onclick="resetPasswordWithOTP()">Reset Password</button>
+  </div>`;
+}
+async function requestPasswordOTP(){
+  const email=$("#fpEmail").value.trim();
+  if(!email) return alert("Email enter karo.");
+  const r=await apiPostLive("requestPasswordReset",{email});
+  alert(r.message || (r.success?"OTP sent":"Failed"));
+}
+async function resetPasswordWithOTP(){
+  const email=$("#rpEmail").value.trim();
+  const otp=$("#rpOtp").value.trim();
+  const pass=$("#rpPass").value;
+  if(!email||!otp||!pass) return alert("Email, OTP aur new password fill karo.");
+  const r=await apiPostLive("resetPassword",{email,otp,pass});
+  if(!r.success) return alert(r.message||"Reset failed");
+  alert("Password reset successful. Ab login karo.");
+  loginTool();
+}
 
 /* Compressor */
 function imageCompressor(){logLiveTool("Image Compressor");workspace.innerHTML=`<h2>🖼️ Image Compressor</h2><p class="tool-subtitle">Photo upload karo aur target KB select karo.</p><div class="tool-box"><label class="upload-box"><input type="file" id="imageInput" accept="image/*"><span>📤 Tap to Upload Image</span></label><label>Target Size</label><select id="targetSize"><option value="20">20 KB</option><option value="50">50 KB</option><option value="100" selected>100 KB</option><option value="200">200 KB</option><option value="custom">Custom KB</option></select><input type="number" id="customSize" placeholder="Enter custom KB" style="display:none"><button onclick="compressToTarget()">Compress Image</button></div><div id="compressOutput"></div>`; $("#targetSize").onchange=e=>$("#customSize").style.display=e.target.value==="custom"?"block":"none";}
@@ -475,23 +510,48 @@ function downloadAadhaarPDF(){
 function printAadhaarPDF(){if(!lastAadhaarPDF)return alert("Pehle layout generate karo."); sptPrintPdfDoc(lastAadhaarPDF);}
 
 
-/* PDF Tools: Safe Resize + Real Scanned PDF Compressor */
+
+/* PDF Tools v27: Target KB + Resize + Download/Open Fixed */
 function pdfResizerTool(){
   logLiveTool("PDF Tools");
-  workspace.innerHTML=`<h2>📄 PDF Tools</h2>
-  <p class="tool-subtitle">PDF resize aur real scanned PDF compressor. Target KB mode iLovePDF jaisa size reduce karne ki कोशिश karega.</p>
+  workspace.innerHTML=`<h2>📄 PDF Tools v27</h2>
+  <p class="tool-subtitle">PDF resize aur target KB compressor. Output ke baad Open / Download / Print buttons properly work karenge.</p>
 
-  <div class="tool-box">
+  <div class="tool-box pdf-v27-box">
     <label>Upload PDF</label>
-    <input id="resizePdfInput" type="file" accept="application/pdf">
+    <input id="resizePdfInput" type="file" accept="application/pdf" onchange="showPdfSelectedInfo()">
+    <div id="pdfFileInfo" class="small-note">PDF select karo.</div>
 
     <label>PDF Mode</label>
     <select id="pdfCompressMode" onchange="togglePdfToolMode()">
-      <option value="safe" selected>Safe Resize / Optimize - quality preserve</option>
-      <option value="target">Target KB Compress - scanned PDF compressor</option>
+      <option value="target" selected>Target KB Compress</option>
+      <option value="safe">Safe Resize / Optimize</option>
     </select>
 
-    <div id="resizeSettingsBox">
+    <div id="targetKbPanel">
+      <label>Target PDF Size</label>
+      <div class="preset-row pdf-target-grid">
+        <button type="button" class="preset-btn" onclick="setPdfTargetKB(10,this)">10 KB</button>
+        <button type="button" class="preset-btn" onclick="setPdfTargetKB(20,this)">20 KB</button>
+        <button type="button" class="preset-btn" onclick="setPdfTargetKB(50,this)">50 KB</button>
+        <button type="button" class="preset-btn active" onclick="setPdfTargetKB(100,this)">100 KB</button>
+        <button type="button" class="preset-btn" onclick="setPdfTargetKB(200,this)">200 KB</button>
+        <button type="button" class="preset-btn" onclick="setPdfTargetKB(500,this)">500 KB</button>
+        <button type="button" class="preset-btn" onclick="setPdfTargetKB(1024,this)">1 MB</button>
+      </div>
+      <div class="row">
+        <input id="targetPdfKb" type="number" value="100" placeholder="Custom size">
+        <select id="targetPdfUnit"><option value="KB" selected>KB</option><option value="MB">MB</option></select>
+      </div>
+      <label>Compression Level</label>
+      <select id="pdfCompressionLevel">
+        <option value="standard" selected>Standard - readable quality</option>
+        <option value="extreme">Extreme - maximum compression</option>
+      </select>
+      <div class="warning-box">Target KB mode scanned/image PDF ke liye best hai. Text selectable nahi rahega. 10KB/20KB jaise very low target me quality bahut kam ho sakti hai.</div>
+    </div>
+
+    <div id="resizeSettingsBox" style="display:none">
       <label>Output Page Size</label>
       <select id="pdfPageSize" onchange="toggleCustomPdfSize()">
         <option value="KEEP" selected>Keep Original Page Size</option>
@@ -501,12 +561,10 @@ function pdfResizerTool(){
         <option value="LEGAL">Legal - 216 × 356 mm</option>
         <option value="CUSTOM">Custom Size</option>
       </select>
-
       <div class="row" id="customPdfSizeBox" style="display:none">
         <input id="customPdfW" type="number" placeholder="Width mm">
         <input id="customPdfH" type="number" placeholder="Height mm">
       </div>
-
       <label>Fit Mode</label>
       <select id="pdfFitMode">
         <option value="contain" selected>Fit inside page - no crop</option>
@@ -514,50 +572,46 @@ function pdfResizerTool(){
       </select>
     </div>
 
-    <div id="targetKbPanel" style="display:none">
-      <label>Target PDF Size</label>
-      <div class="preset-row">
-        <button type="button" class="preset-btn" onclick="setPdfTargetKB(50,this)">50 KB</button>
-        <button type="button" class="preset-btn active" onclick="setPdfTargetKB(100,this)">100 KB</button>
-        <button type="button" class="preset-btn" onclick="setPdfTargetKB(200,this)">200 KB</button>
-        <button type="button" class="preset-btn" onclick="setPdfTargetKB(300,this)">300 KB</button>
-        <button type="button" class="preset-btn" onclick="setPdfTargetKB(500,this)">500 KB</button>
-      </div>
-      <input id="targetPdfKb" type="number" value="100" placeholder="Custom KB">
-      <div class="warning-box">
-        Target KB mode scanned/image PDF ke liye hai. Ye pages ko image me convert karke compress karta hai.
-        Size kam hoga, lekin text selectable nahi rahega aur quality target ke hisab se reduce ho sakti hai.
-      </div>
-    </div>
-
-    <button onclick="processPdfTool()">Process PDF</button>
-
-    <div class="warning-box">
-      Safe mode quality preserve karta hai, lekin size zyada kam nahi hota.
-      Target KB mode size kam karta hai, lekin quality aur text-selectable property par effect aa sakta hai.
-    </div>
+    <button onclick="processPdfTool()">🚀 Process PDF</button>
+    <div id="pdfProgress" class="pdf-progress" style="display:none"><div id="pdfProgressBar"></div><span id="pdfProgressText">0%</span></div>
   </div>
 
   <div id="pdfResizeOutput"></div>`;
 }
 
+function showPdfSelectedInfo(){
+  const f=$("#resizePdfInput")?.files?.[0];
+  const box=$("#pdfFileInfo");
+  if(box) box.innerHTML=f?`Selected: <b>${f.name}</b> (${formatBytes(f.size)})`:"PDF select karo.";
+}
 function togglePdfToolMode(){
   const mode=$("#pdfCompressMode").value;
   $("#targetKbPanel").style.display=mode==="target"?"block":"none";
   $("#resizeSettingsBox").style.display=mode==="safe"?"block":"none";
 }
-
 function toggleCustomPdfSize(){
   const box=$("#customPdfSizeBox");
   if(box) box.style.display=$("#pdfPageSize").value==="CUSTOM"?"grid":"none";
 }
-
 function setPdfTargetKB(kb,btn){
-  $("#targetPdfKb").value=kb;
+  $("#targetPdfKb").value=kb>=1024?1:kb;
+  $("#targetPdfUnit").value=kb>=1024?"MB":"KB";
   $$(".preset-btn").forEach(b=>b.classList.remove("active"));
   if(btn) btn.classList.add("active");
 }
-
+function getSelectedTargetKB(){
+  const val=Number($("#targetPdfKb").value);
+  const unit=$("#targetPdfUnit").value;
+  if(!val || val<=0) throw new Error("Valid target size enter karo.");
+  return unit==="MB" ? val*1024 : val;
+}
+function updatePdfProgress(pct,text){
+  const box=$("#pdfProgress"), bar=$("#pdfProgressBar"), t=$("#pdfProgressText");
+  if(box) box.style.display="block";
+  if(bar) bar.style.width=Math.max(0,Math.min(100,pct))+"%";
+  if(t) t.textContent=text || Math.round(pct)+"%";
+}
+function mmToPt(mm){ return mm*72/25.4; }
 function getPdfSizeMMForPage(originalPage){
   const v=$("#pdfPageSize").value;
   if(v==="KEEP") return [originalPage.getWidth()*25.4/72, originalPage.getHeight()*25.4/72];
@@ -569,33 +623,26 @@ function getPdfSizeMMForPage(originalPage){
   if(!w||!h||w<20||h<20) throw new Error("Valid custom width/height mm enter karo.");
   return [w,h];
 }
-
-function mmToPt(mm){ return mm*72/25.4; }
-
 async function processPdfTool(){
   const mode=$("#pdfCompressMode").value;
-  if(mode==="target") return compressPdfToTarget();
-  return safeResizePdf();
+  if(mode==="target") return compressPdfToTargetV27();
+  return safeResizePdfV27();
 }
-
-async function safeResizePdf(){
-  const input=$("#resizePdfInput");
-  const out=$("#pdfResizeOutput");
+async function safeResizePdfV27(){
+  const input=$("#resizePdfInput"), out=$("#pdfResizeOutput");
   if(!input.files[0]) return alert("PDF upload karo.");
   if(!window.PDFLib) return alert("PDF library load nahi hui. Internet on karke refresh karo.");
-
   try{
-    out.innerHTML="<p>⏳ PDF safe processing...</p>";
+    out.innerHTML=""; updatePdfProgress(10,"Reading PDF...");
     const file=input.files[0];
     const bytes=await file.arrayBuffer();
     const srcDoc=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});
     const newDoc=await PDFLib.PDFDocument.create();
     const srcPages=srcDoc.getPages();
     const embeddedPages=await newDoc.embedPages(srcPages);
-
     for(let i=0;i<embeddedPages.length;i++){
-      const embedded=embeddedPages[i];
-      const originalPage=srcPages[i];
+      updatePdfProgress(20+(i/srcPages.length)*60,`Resizing page ${i+1}/${srcPages.length}`);
+      const embedded=embeddedPages[i], originalPage=srcPages[i];
       const [wmm,hmm]=getPdfSizeMMForPage(originalPage);
       const targetW=mmToPt(wmm), targetH=mmToPt(hmm);
       const page=newDoc.addPage([targetW,targetH]);
@@ -605,101 +652,72 @@ async function safeResizePdf(){
       const drawW=sw*scale, drawH=sh*scale;
       page.drawPage(embedded,{x:(targetW-drawW)/2,y:(targetH-drawH)/2,width:drawW,height:drawH});
     }
-
+    updatePdfProgress(90,"Saving PDF...");
     const outBytes=await newDoc.save({useObjectStreams:true, addDefaultPage:false});
+    updatePdfProgress(100,"Complete");
     showPdfResult(new Blob([outBytes],{type:"application/pdf"}), file.size, "processed-pdf.pdf", "Safe Resize / Optimize complete.");
-  }catch(err){
-    out.innerHTML=`<div class="result-card"><h3>❌ Error</h3><p>${err.message}</p></div>`;
-  }
+  }catch(err){ out.innerHTML=`<div class="result-card"><h3>❌ Error</h3><p>${err.message}</p></div>`; }
 }
-
-async function compressPdfToTarget(){
-  const input=$("#resizePdfInput");
-  const out=$("#pdfResizeOutput");
+async function compressPdfToTargetV27(){
+  const input=$("#resizePdfInput"), out=$("#pdfResizeOutput");
   if(!input.files[0]) return alert("PDF upload karo.");
   if(!window.pdfjsLib || !window.jspdf) return alert("PDF libraries load nahi hui. Internet on karke refresh karo.");
-
   const file=input.files[0];
-  const targetKB=Number($("#targetPdfKb").value);
-  if(!targetKB || targetKB<10) return alert("Valid target KB enter karo.");
-
+  let targetKB;
+  try{targetKB=getSelectedTargetKB();}catch(e){return alert(e.message);}
+  if(targetKB<5) return alert("Target minimum 5 KB rakho.");
   try{
-    out.innerHTML=`<div class="progress-box">⏳ PDF compressing... Large PDF me time lag sakta hai.</div>`;
-
+    out.innerHTML=""; updatePdfProgress(5,"Reading PDF...");
     const bytes=await file.arrayBuffer();
     const pdf=await pdfjsLib.getDocument({data:bytes}).promise;
-    let bestBlob=null, bestSize=Infinity, bestInfo="";
-
-    const attempts=[
-      {scale:1.8, quality:0.82},
-      {scale:1.5, quality:0.72},
-      {scale:1.25, quality:0.62},
-      {scale:1.0, quality:0.52},
-      {scale:0.85, quality:0.45},
-      {scale:0.7, quality:0.38},
-      {scale:0.58, quality:0.32}
-    ];
-
+    const level=$("#pdfCompressionLevel").value;
+    const attempts=level==="extreme"?
+      [{scale:1.05,quality:.45},{scale:.85,quality:.36},{scale:.68,quality:.28},{scale:.52,quality:.22},{scale:.40,quality:.16},{scale:.30,quality:.11}]:
+      [{scale:1.7,quality:.80},{scale:1.45,quality:.70},{scale:1.2,quality:.60},{scale:1.0,quality:.50},{scale:.82,quality:.42},{scale:.65,quality:.34},{scale:.50,quality:.25}];
+    let bestBlob=null,bestSize=Infinity,bestInfo="";
     for(let a=0;a<attempts.length;a++){
       const opt=attempts[a];
-      out.innerHTML=`<div class="progress-box">⏳ Compressing attempt ${a+1}/${attempts.length}... Scale ${opt.scale}, Quality ${Math.round(opt.quality*100)}%</div>`;
-      const blob=await renderPdfAsCompressedPdf(pdf,opt.scale,opt.quality);
+      updatePdfProgress(10+(a/attempts.length)*80,`Compress ${a+1}/${attempts.length}: ${Math.round(opt.quality*100)}%`);
+      const blob=await renderPdfAsCompressedPdfV27(pdf,opt.scale,opt.quality,(page,total)=>{
+        updatePdfProgress(10+(a/attempts.length)*80 + (page/total)*(70/attempts.length),`Attempt ${a+1}: page ${page}/${total}`);
+      });
       const sizeKB=blob.size/1024;
-
-      if(sizeKB<bestSize){
-        bestSize=sizeKB;
-        bestBlob=blob;
-        bestInfo=`Scale ${opt.scale}, Quality ${Math.round(opt.quality*100)}%`;
-      }
-
+      if(sizeKB<bestSize){ bestBlob=blob; bestSize=sizeKB; bestInfo=`Scale ${opt.scale}, Quality ${Math.round(opt.quality*100)}%`; }
       if(sizeKB<=targetKB) break;
     }
-
-    let msg=bestSize<=targetKB
-      ? `Target achieved. ${bestInfo}`
-      : `Best result ${bestSize.toFixed(2)} KB mila. Target ${targetKB} KB se kam karne ke liye aur quality reduce karni padegi.`;
-
-    showPdfResult(bestBlob, file.size, "compressed-pdf.pdf", msg, targetKB);
-  }catch(err){
-    out.innerHTML=`<div class="result-card"><h3>❌ Error</h3><p>${err.message}</p></div>`;
-  }
+    updatePdfProgress(100,"Complete");
+    const msg=bestSize<=targetKB ? `Target achieved. ${bestInfo}` : `Best result ${bestSize.toFixed(2)} KB mila. Target ${targetKB} KB se upar hai. Very small target ke liye quality aur kam karni padti hai.`;
+    showPdfResult(bestBlob,file.size,"compressed-pdf.pdf",msg,targetKB);
+  }catch(err){ out.innerHTML=`<div class="result-card"><h3>❌ Error</h3><p>${err.message}</p></div>`; }
 }
-
-async function renderPdfAsCompressedPdf(pdf, scale, quality){
+async function renderPdfAsCompressedPdfV27(pdf, scale, quality, onPage){
   const {jsPDF}=window.jspdf;
   let doc=null;
-
   for(let p=1;p<=pdf.numPages;p++){
+    if(onPage) onPage(p,pdf.numPages);
     const page=await pdf.getPage(p);
     const viewport=page.getViewport({scale});
     const canvas=document.createElement("canvas");
     const ctx=canvas.getContext("2d",{alpha:false});
-    canvas.width=Math.max(200,Math.floor(viewport.width));
-    canvas.height=Math.max(200,Math.floor(viewport.height));
-    ctx.fillStyle="#fff";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+    canvas.width=Math.max(160,Math.floor(viewport.width));
+    canvas.height=Math.max(160,Math.floor(viewport.height));
+    ctx.fillStyle="#fff"; ctx.fillRect(0,0,canvas.width,canvas.height);
     await page.render({canvasContext:ctx,viewport}).promise;
-
     const imgData=canvas.toDataURL("image/jpeg",quality);
-    const wmm=canvas.width*25.4/96;
-    const hmm=canvas.height*25.4/96;
-
-    if(!doc) doc=new jsPDF({orientation:wmm>hmm?"landscape":"portrait",unit:"mm",format:[wmm,hmm]});
+    const wmm=canvas.width*25.4/96, hmm=canvas.height*25.4/96;
+    if(!doc) doc=new jsPDF({orientation:wmm>hmm?"landscape":"portrait",unit:"mm",format:[wmm,hmm],compress:true});
     else doc.addPage([wmm,hmm], wmm>hmm?"landscape":"portrait");
-
-    doc.addImage(imgData,"JPEG",0,0,wmm,hmm);
+    doc.addImage(imgData,"JPEG",0,0,wmm,hmm,undefined,"FAST");
   }
-
   return doc.output("blob");
 }
-
 function showPdfResult(blob, originalBytes, filename, note, targetKB){
-  sptLastPdfToolBlob = blob;
+  sptLastPdfToolBlob=blob;
+  sptLastPdfToolName=filename||"processed-pdf.pdf";
   const out=$("#pdfResizeOutput");
   const outKB=(blob.size/1024).toFixed(2);
   const origKB=(originalBytes/1024).toFixed(2);
   const cls=targetKB && blob.size/1024>targetKB ? "warning-box" : "success-box";
-
   out.innerHTML=`<div class="result-card">
     <h3>✅ PDF Complete</h3>
     <p><b>Original:</b> ${origKB} KB</p>
@@ -709,13 +727,23 @@ function showPdfResult(blob, originalBytes, filename, note, targetKB){
     <div class="fix-btn-row">
       <button class="fix-btn fix-open" onclick="openLastPdfTool()">📂 Open PDF</button>
       <button class="fix-btn fix-download" onclick="downloadLastPdfTool()">📄 Download PDF</button>
+      <button class="fix-btn fix-print" onclick="printLastPdfTool()">🖨️ Print PDF</button>
     </div>
     <div class="download-help">Mobile me direct download na ho to Open PDF dabao, phir browser ke 3-dot/share se Save/Print karo.</div>
   </div>`;
 }
-
-
-
+function openLastPdfTool(){
+  if(!sptLastPdfToolBlob) return alert("Pehle PDF process karo.");
+  sptOpenBlob(sptLastPdfToolBlob);
+}
+function downloadLastPdfTool(){
+  if(!sptLastPdfToolBlob) return alert("Pehle PDF process karo.");
+  sptDownloadBlob(sptLastPdfToolBlob,sptLastPdfToolName||"processed-pdf.pdf");
+}
+function printLastPdfTool(){
+  if(!sptLastPdfToolBlob) return alert("Pehle PDF process karo.");
+  sptOpenBlob(sptLastPdfToolBlob);
+}
 
 /* v24 Payment QR Page */
 const SPT_UPI_ID = "kait.satnam@sbi";

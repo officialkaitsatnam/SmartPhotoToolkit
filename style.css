@@ -269,3 +269,7 @@ body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--tex
 .admin-mini-btn{border:0;border-radius:9px;padding:8px 10px;font-weight:900;color:#fff;cursor:pointer;margin:2px}
 .admin-approve{background:#16a34a}.admin-reject{background:#ef4444}.admin-refresh{background:#2563eb}
 .admin-lock{background:#fff7ed;border:1px solid #fdba74;color:#7c2d12;padding:14px;border-radius:14px;margin-top:12px}
+
+
+/* v27 PDF Pro + Forgot Password */
+.pdf-target-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:8px;margin:8px 0 12px}.pdf-progress{position:relative;background:#e5e7eb;border-radius:999px;height:24px;margin:12px 0;overflow:hidden}.pdf-progress #pdfProgressBar{height:100%;width:0;background:#2563eb;transition:.25s}.pdf-progress #pdfProgressText{position:absolute;inset:0;text-align:center;line-height:24px;font-weight:900;color:#111}.link-btn{background:transparent!important;color:#2563eb!important;border:0!important;text-decoration:underline;padding:8px!important;margin-left:8px}.fix-print{background:#16a34a}.pdf-v27-box .row{display:grid;grid-template-columns:1fr 110px;gap:10px}.preset-btn.active{background:#2563eb;color:#fff;border-color:#2563eb}
