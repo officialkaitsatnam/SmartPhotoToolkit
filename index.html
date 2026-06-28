@@ -3,18 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Photo Toolkit Pro v27</title>
-  <link rel="stylesheet" href="style.css" />
 
-  <!-- PDF Libraries -->
+  <title>Smart Photo Toolkit Pro v27</title>
+  <meta name="description" content="Passport Photo, Aadhaar Print, Image Compressor, PDF Resizer aur document tools." />
+
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="css/main.css" />
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 </head>
+
 <body>
   <div id="loader">
     <div class="spinner"></div>
     <h2>Smart Photo Toolkit Pro</h2>
+    <p>v27 loading...</p>
   </div>
 
   <button class="menu-btn" id="menuBtn">☰</button>
@@ -25,7 +30,7 @@
       <div class="brand-icon">📸</div>
       <div>
         <h2>SPT Pro</h2>
-        <p>v27 PDF Pro</p>
+        <p>v27 Production</p>
       </div>
     </div>
 
@@ -49,7 +54,11 @@
         <h1>Smart Photo Toolkit Pro</h1>
         <p>Passport Photo, Aadhaar Print, PDF Resize aur Document Tools.</p>
       </div>
-      <span class="version">v27.0</span>
+
+      <div class="header-actions">
+        <span class="version">v27.0</span>
+        <button id="themeToggle" class="small-btn">🌙</button>
+      </div>
     </header>
 
     <section class="cards">
@@ -58,21 +67,25 @@
         <h3>Image Compressor</h3>
         <p>20KB, 50KB, 100KB ya custom size.</p>
       </div>
+
       <div class="card" data-tool="namedate">
         <b>🏷️</b>
         <h3>Name / Date</h3>
-        <p>Photo ke niche text add karo.</p>
+        <p>Photo ke niche name/date text add karo.</p>
       </div>
+
       <div class="card" data-tool="passport">
         <b>👤</b>
         <h3>Passport Photo</h3>
         <p>A4 top row 5 photos, 35×45mm.</p>
       </div>
+
       <div class="card" data-tool="aadhaar">
         <b>🪪</b>
         <h3>Aadhaar Print</h3>
         <p>Drag crop + PDF download.</p>
       </div>
+
       <div class="card" data-tool="pdfresizer">
         <b>📄</b>
         <h3>PDF Resizer</h3>
@@ -85,13 +98,38 @@
       <p>Tool select karo aur kaam start karo.</p>
 
       <div class="stats">
-        <div><strong>📄 PDF Output</strong><span>Passport/Aadhaar PDF download.</span></div>
-        <div><strong>🖨️ Print Ready</strong><span>A4 layout professional.</span></div>
-        <div><strong>📱 Mobile</strong><span>Phone friendly tools.</span></div>
+        <div>
+          <strong>📄 PDF Output</strong>
+          <span>Passport/Aadhaar PDF download.</span>
+        </div>
+
+        <div>
+          <strong>🖨️ Print Ready</strong>
+          <span>A4 layout professional.</span>
+        </div>
+
+        <div>
+          <strong>📱 Mobile Friendly</strong>
+          <span>Phone par smooth work.</span>
+        </div>
       </div>
     </section>
   </main>
 
-<script src="script.js"></script>
+  <script>
+    window.SPT_CONFIG = {
+      version: "v27.0",
+      appName: "Smart Photo Toolkit Pro",
+
+      /*
+       * Kal laptop se Apps Script deploy karne ke baad
+       * yahan apna latest Web App URL paste karna.
+       */
+      apiUrl: "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE"
+    };
+  </script>
+
+  <script src="js/main.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
