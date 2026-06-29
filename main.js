@@ -1,5 +1,5 @@
 /* =====================================================
-   Smart Photo Toolkit Pro v28.4
+   Smart Photo Toolkit Pro v29
    js/main.js — PART 1
    App Init + Navigation + Auth + Compressor + Name Date
 ===================================================== */
@@ -294,26 +294,29 @@ function feedbackTool() {
 
 function paymentTool() {
   if (typeof requireLogin === "function" && !requireLogin()) return;
+
   workspace.innerHTML = `
     <h2>💳 Premium Payment</h2>
-    <p class="tool-subtitle">Scan the QR code, complete the payment, and submit your UTR/Transaction ID for admin verification.</p>
+    <p class="tool-subtitle">Select a premium plan, generate a UPI QR code for the selected amount, complete the payment, and submit your UTR/Transaction ID for admin verification.</p>
 
-    <div class="payment-wrap-v28 payment-pro-v283">
-      <div class="payment-card payment-qr-card-v283 center">
+    <div class="payment-wrap-v28 payment-pro-v29">
+      <div class="payment-card payment-qr-card-v29 center">
         <div class="payment-badge-v282">Secure UPI Payment</div>
-        <h3>Direct QR Code</h3>
-        <img src="payment_qr.jpg" class="qr-img-v28" alt="Payment QR">
-        <div class="upi-box-v28" id="upiText">kait.satnam@sbi</div>
-        <button class="secondary-btn copy-upi-btn-v282" onclick="copyUPI()">📋 Copy UPI ID</button>
-        <a class="primary-btn upi-pay-link" id="upiPayLink" href="upi://pay?pa=kait.satnam@sbi&pn=SATNAM%20SO%20SATBIR%20SINGH&cu=INR&am=49" target="_blank">Open UPI App</a>
-        <p class="small-note">Receiving Account: <b>State Bank of India 6831</b></p>
+        <h3>Generate Payment QR</h3>
+        <p class="tool-subtitle">The QR code is generated only after you select a plan and click the button below.</p>
 
-        <details class="generate-qr-box">
-          <summary>Generate plan-specific UPI QR code</summary>
-          <p class="tool-subtitle">Select a plan and click Generate QR. This creates a QR code with the selected amount.</p>
-          <button class="secondary-btn" onclick="generatePlanQR()">Generate QR Code</button>
-          <img id="generatedQR" class="generated-qr-img hidden" alt="Generated UPI QR">
-        </details>
+        <div class="qr-placeholder-v29" id="qrPlaceholder">
+          <div class="qr-placeholder-icon-v29">🔒</div>
+          <strong>No QR generated yet</strong>
+          <span>Select a plan and click “Generate Payment QR”.</span>
+        </div>
+
+        <img id="generatedQR" class="generated-qr-img hidden" alt="Generated UPI QR Code">
+
+        <div class="upi-box-v28" id="upiText">UPI ID: kait.satnam@sbi</div>
+        <button class="secondary-btn copy-upi-btn-v282" onclick="copyUPI()">📋 Copy UPI ID</button>
+        <a class="primary-btn upi-pay-link hidden" id="upiPayLink" href="#" target="_blank">Open UPI App</a>
+        <p class="small-note">Receiving Account: <b>State Bank of India 6831</b></p>
       </div>
 
       <div class="payment-card payment-form-card-v282">
@@ -326,11 +329,15 @@ function paymentTool() {
 
         <div class="selected-plan-v282" id="selectedPlanBox"><strong>Selected:</strong> Monthly Premium — ₹49 / 30 days</div>
 
+        <div class="action-row">
+          <button class="primary-btn generate-payment-btn-v29" onclick="generatePlanQR()">Generate Payment QR</button>
+        </div>
+
         <div class="tool-box mt-15 payment-form-v281">
           <label>Selected Plan</label><input id="paymentPlan" value="Monthly Premium" readonly>
           <label>Amount</label><input id="paymentAmount" type="number" value="49" readonly>
           <label>Payment Method</label><input id="paymentMethod" value="UPI / QR" readonly>
-          <label>Transaction ID / UTR Number</label><input id="paymentTxn" placeholder="Enter UTR / Transaction ID">
+          <label>Transaction ID / UTR Number</label><input id="paymentTxn" placeholder="Enter UTR / Transaction ID after payment">
           <label>Screenshot URL (optional)</label><input id="paymentScreenshot" placeholder="Paste Google Drive / image link if available">
           <button class="payment-submit-btn-v282" onclick="submitPayment()">Submit Payment Request</button>
           <div class="payment-info-v282">After submission, the admin receives an email alert and can approve or reject the request from the admin panel.</div>
@@ -343,18 +350,26 @@ function paymentTool() {
 function selectPaymentPlan(btn) {
   document.querySelectorAll(".plan-card-v28").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
+
   const plan = btn.dataset.plan;
   const amount = btn.dataset.amount;
   const days = btn.dataset.days;
+
   const p = document.getElementById("paymentPlan");
   const a = document.getElementById("paymentAmount");
   const box = document.getElementById("selectedPlanBox");
+
   if (p) p.value = plan;
   if (a) a.value = amount;
   if (box) box.innerHTML = `<strong>Selected:</strong> ${plan} — ₹${amount} / ${days} days`;
-  updateUPIPaymentLink();
+
   const qr = document.getElementById("generatedQR");
+  const placeholder = document.getElementById("qrPlaceholder");
+  const link = document.getElementById("upiPayLink");
+
   if (qr) qr.classList.add("hidden");
+  if (placeholder) placeholder.classList.remove("hidden");
+  if (link) link.classList.add("hidden");
 }
 
 function copyUPI() {
@@ -370,18 +385,23 @@ function buildUPIUrl() {
   return `upi://pay?pa=kait.satnam@sbi&pn=SATNAM%20SO%20SATBIR%20SINGH&am=${amount}&cu=INR&tn=${note}`;
 }
 
-function updateUPIPaymentLink() {
-  const link = document.getElementById("upiPayLink");
-  if (link) link.href = buildUPIUrl();
-}
-
 function generatePlanQR() {
   const qr = document.getElementById("generatedQR");
+  const placeholder = document.getElementById("qrPlaceholder");
+  const link = document.getElementById("upiPayLink");
   if (!qr) return;
+
   const url = buildUPIUrl();
-  qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=" + encodeURIComponent(url);
+  qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=" + encodeURIComponent(url);
   qr.classList.remove("hidden");
-  if (typeof toast === "function") toast("Plan-specific QR code generated");
+
+  if (placeholder) placeholder.classList.add("hidden");
+  if (link) {
+    link.href = url;
+    link.classList.remove("hidden");
+  }
+
+  if (typeof toast === "function") toast("Payment QR generated for the selected plan");
 }
 
 function premiumTool() {
@@ -576,7 +596,7 @@ async function makeNameDate() {
 
 /* End of PART 1 */
 /* =====================================================
-   Smart Photo Toolkit Pro v28.4
+   Smart Photo Toolkit Pro v29
    js/main.js — PART 2
    Passport Photo Maker
 ===================================================== */
@@ -849,7 +869,7 @@ function printPassportPDF() {
 
 /* End of PART 2 */
 /* =====================================================
-   Smart Photo Toolkit Pro v28.4
+   Smart Photo Toolkit Pro v29
    js/main.js — PART 3
    Aadhaar Print Tool
 ===================================================== */
@@ -1269,7 +1289,7 @@ async function makeAadhaarFrontBack() {
 
 /* End of PART 3 */
 /* =====================================================
-   Smart Photo Toolkit Pro v28.4
+   Smart Photo Toolkit Pro v29
    js/main.js — PART 4
    Aadhaar PDF Output + PDF Resizer + Helper Functions
 ===================================================== */
