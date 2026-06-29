@@ -705,14 +705,23 @@ async function makeNameDate() {
 
 /* ================= PASSPORT ================= */
 
+
 function passportTool() {
-  passState = { img: null, cropped: "" };
+  passState = {
+    img: null,
+    cropped: "",
+    display: { w: 0, h: 0, scale: 1, offsetX: 0, offsetY: 0 },
+    crop: null,
+    mode: "idle",
+    start: null,
+    handleSize: 18
+  };
 
   workspace.innerHTML = `
-    <h2>👤 Passport Photo Maker</h2>
-    <p class="tool-subtitle">Create a professional A4 PDF with five 35×45 mm photos in one row.</p>
+    <h2>👤 Passport Studio</h2>
+    <p class="tool-subtitle">Upload a photo, then draw or adjust the fixed 35×45 mm crop area directly on the image. No sliders required.</p>
 
-    <div class="tool-box">
+    <div class="tool-box passport-studio-tools">
       <label class="upload-box">
         <input id="passImage" type="file" accept="image/*">
         <span>📤 Upload Full Photo</span>
@@ -723,28 +732,23 @@ function passportTool() {
         <input id="passDate" type="date">
       </div>
 
-      <button onclick="generatePassportSheet()">Generate Passport PDF Layout</button>
+      <div class="passport-studio-actions">
+        <button class="secondary-btn" onclick="resetPassportCrop()">Reset Crop</button>
+        <button class="primary-btn" onclick="generatePassportSheet()">Generate Passport PDF Layout</button>
+      </div>
     </div>
 
-    <div class="crop-panel">
-      <div class="canvas-box">
-        <canvas id="passCanvas" class="crop-canvas" width="350" height="450"></canvas>
+    <div class="crop-panel passport-studio-panel">
+      <div class="passport-guide">
+        Draw a box around the printable area. The crop keeps a passport ratio automatically. You can move the box or resize it from the corner handle.
       </div>
 
-      <div class="controls">
-        <label>Zoom
-          <input id="passZoom" type="range" min="0.5" max="4" step="0.01" value="1.4">
-        </label>
-        <label>Left / Right
-          <input id="passX" type="range" min="-400" max="400" value="0">
-        </label>
-        <label>Up / Down
-          <input id="passY" type="range" min="-400" max="400" value="0">
-        </label>
+      <div class="canvas-box passport-studio-canvasbox">
+        <canvas id="passCanvas" class="crop-canvas passport-studio-canvas" width="720" height="520"></canvas>
       </div>
 
       <div class="small-note">
-        Tip: Keep the face centered. The PDF will place five 35×45 mm photos at the top of an A4 page.
+        Desktop: drag to draw, drag inside to move, drag the corner dot to resize. Mobile: use finger drag. Final print size stays 35×45 mm.
       </div>
     </div>
 
@@ -752,11 +756,6 @@ function passportTool() {
   `;
 
   $("#passImage").onchange = loadPassportImage;
-
-  ["passZoom", "passX", "passY"].forEach(id => {
-    $("#" + id).oninput = updatePassportPreview;
-  });
-
   drawEmptyPassport();
 }
 
@@ -765,14 +764,20 @@ function drawEmptyPassport() {
   if (!c) return;
 
   const ctx = c.getContext("2d");
-
-  ctx.fillStyle = "#fff";
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.fillStyle = "#f8fafc";
   ctx.fillRect(0, 0, c.width, c.height);
-
-  ctx.fillStyle = "#777";
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.setLineDash([8, 8]);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(30, 30, c.width - 60, c.height - 60);
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#64748b";
   ctx.textAlign = "center";
-  ctx.font = "18px Arial";
-  ctx.fillText("Upload photo", c.width / 2, c.height / 2);
+  ctx.font = "bold 20px Arial";
+  ctx.fillText("Upload a photo to start passport crop", c.width / 2, c.height / 2 - 8);
+  ctx.font = "14px Arial";
+  ctx.fillText("Draw the printable 35×45 mm area directly on the image", c.width / 2, c.height / 2 + 22);
 }
 
 async function loadPassportImage() {
@@ -780,83 +785,315 @@ async function loadPassportImage() {
   if (!f) return;
 
   passState.img = await loadImage(await readFile(f));
+  passState.cropped = "";
 
-  $("#passZoom").value = 1.4;
-  $("#passX").value = 0;
-  $("#passY").value = 0;
+  const c = $("#passCanvas");
+  const maxW = Math.min(820, Math.max(360, Math.round((workspace?.clientWidth || 820) - 70)));
+  c.width = maxW;
+  c.height = Math.round(maxW * 0.72);
 
-  updatePassportPreview();
+  preparePassportDisplay();
+  const d = passState.display;
+
+  // Default crop is centered with fixed 35:45 ratio.
+  const ratio = 35 / 45;
+  let cropH = Math.min(d.h * 0.72, d.w / ratio * 0.72);
+  let cropW = cropH * ratio;
+  if (cropW > d.w * 0.72) {
+    cropW = d.w * 0.72;
+    cropH = cropW / ratio;
+  }
+
+  passState.crop = {
+    x: d.offsetX + (d.w - cropW) / 2,
+    y: d.offsetY + (d.h - cropH) / 2,
+    w: cropW,
+    h: cropH
+  };
+
+  drawPassportStudio();
+  initPassportCropEvents();
 }
 
-function updatePassportPreview() {
+function preparePassportDisplay() {
+  const c = $("#passCanvas");
+  if (!c || !passState.img) return;
+
+  const pad = 24;
+  const img = passState.img;
+  const scale = Math.min((c.width - pad * 2) / img.width, (c.height - pad * 2) / img.height);
+  const w = img.width * scale;
+  const h = img.height * scale;
+
+  passState.display = {
+    w,
+    h,
+    scale,
+    offsetX: (c.width - w) / 2,
+    offsetY: (c.height - h) / 2
+  };
+}
+
+function drawPassportStudio() {
   const c = $("#passCanvas");
   if (!c) return;
 
   const ctx = c.getContext("2d");
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.fillStyle = "#111827";
+  ctx.fillRect(0, 0, c.width, c.height);
 
   if (!passState.img) {
     drawEmptyPassport();
     return;
   }
 
-  const zoom = Number($("#passZoom").value);
-  const x = Number($("#passX").value);
-  const y = Number($("#passY").value);
+  const d = passState.display;
+  ctx.drawImage(passState.img, d.offsetX, d.offsetY, d.w, d.h);
 
-  ctx.fillStyle = "#fff";
+  const crop = passState.crop;
+  if (!crop) return;
+
+  // Shade outside selection.
+  ctx.save();
+  ctx.fillStyle = "rgba(15, 23, 42, 0.58)";
   ctx.fillRect(0, 0, c.width, c.height);
+  ctx.clearRect(crop.x, crop.y, crop.w, crop.h);
+  ctx.drawImage(passState.img, d.offsetX, d.offsetY, d.w, d.h);
+  ctx.restore();
 
-  const img = passState.img;
-  const frameRatio = c.width / c.height;
-  const imgRatio = img.width / img.height;
+  // Re-shade outside without covering selected region.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, c.width, c.height);
+  ctx.rect(crop.x, crop.y, crop.w, crop.h);
+  ctx.fillStyle = "rgba(15, 23, 42, 0.58)";
+  ctx.fill("evenodd");
+  ctx.restore();
 
-  let dw, dh;
+  // Passport frame.
+  ctx.strokeStyle = "#f97316";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(crop.x, crop.y, crop.w, crop.h);
 
-  if (imgRatio > frameRatio) {
-    dh = c.height * zoom;
-    dw = dh * imgRatio;
-  } else {
-    dw = c.width * zoom;
-    dh = dw / imgRatio;
+  // Rule-of-thirds grid.
+  ctx.strokeStyle = "rgba(255,255,255,.65)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(crop.x + crop.w / 3, crop.y);
+  ctx.lineTo(crop.x + crop.w / 3, crop.y + crop.h);
+  ctx.moveTo(crop.x + crop.w * 2 / 3, crop.y);
+  ctx.lineTo(crop.x + crop.w * 2 / 3, crop.y + crop.h);
+  ctx.moveTo(crop.x, crop.y + crop.h / 3);
+  ctx.lineTo(crop.x + crop.w, crop.y + crop.h / 3);
+  ctx.moveTo(crop.x, crop.y + crop.h * 2 / 3);
+  ctx.lineTo(crop.x + crop.w, crop.y + crop.h * 2 / 3);
+  ctx.stroke();
+
+  // Resize handle.
+  const hs = passState.handleSize;
+  ctx.fillStyle = "#f97316";
+  ctx.beginPath();
+  ctx.arc(crop.x + crop.w, crop.y + crop.h, hs / 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(0,0,0,.65)";
+  ctx.fillRect(crop.x + 8, crop.y + 8, 168, 28);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 13px Arial";
+  ctx.textAlign = "left";
+  ctx.fillText("35×45 mm print area", crop.x + 16, crop.y + 27);
+}
+
+function initPassportCropEvents() {
+  const c = $("#passCanvas");
+  if (!c) return;
+
+  const down = e => {
+    e.preventDefault();
+    if (!passState.img) return;
+
+    const p = getPassportPoint(e);
+    const crop = passState.crop;
+    const hs = passState.handleSize + 10;
+
+    if (crop && Math.abs(p.x - (crop.x + crop.w)) <= hs && Math.abs(p.y - (crop.y + crop.h)) <= hs) {
+      passState.mode = "resize";
+    } else if (crop && p.x >= crop.x && p.x <= crop.x + crop.w && p.y >= crop.y && p.y <= crop.y + crop.h) {
+      passState.mode = "move";
+    } else {
+      passState.mode = "draw";
+      passState.crop = { x: p.x, y: p.y, w: 1, h: 1 };
+    }
+
+    passState.start = { p, crop: { ...(passState.crop || {}) } };
+    drawPassportStudio();
+  };
+
+  const move = e => {
+    if (!passState.mode || passState.mode === "idle" || !passState.start) return;
+    e.preventDefault();
+
+    const p = getPassportPoint(e);
+    const start = passState.start;
+    const ratio = 35 / 45;
+    const d = passState.display;
+
+    if (passState.mode === "move") {
+      const dx = p.x - start.p.x;
+      const dy = p.y - start.p.y;
+      passState.crop.x = start.crop.x + dx;
+      passState.crop.y = start.crop.y + dy;
+      clampPassportCrop();
+    }
+
+    if (passState.mode === "resize") {
+      let w = Math.max(50, p.x - start.crop.x);
+      let h = w / ratio;
+      if (start.crop.y + h > d.offsetY + d.h) {
+        h = d.offsetY + d.h - start.crop.y;
+        w = h * ratio;
+      }
+      passState.crop = { x: start.crop.x, y: start.crop.y, w, h };
+      clampPassportCrop();
+    }
+
+    if (passState.mode === "draw") {
+      let x1 = start.p.x;
+      let y1 = start.p.y;
+      let x2 = p.x;
+      let y2 = p.y;
+      let w = Math.abs(x2 - x1);
+      let h = w / ratio;
+      if (p.y < start.p.y) h = -h;
+      passState.crop = {
+        x: p.x < start.p.x ? start.p.x - w : start.p.x,
+        y: h < 0 ? start.p.y + h : start.p.y,
+        w,
+        h: Math.abs(h)
+      };
+      if (passState.crop.w < 50) {
+        passState.crop.w = 50;
+        passState.crop.h = 50 / ratio;
+      }
+      clampPassportCrop();
+    }
+
+    drawPassportStudio();
+  };
+
+  const up = () => {
+    if (!passState.img) return;
+    passState.mode = "idle";
+    passState.start = null;
+    cropPassportSelection();
+  };
+
+  c.onmousedown = down;
+  c.ontouchstart = down;
+  window.onmousemove = move;
+  window.ontouchmove = move;
+  window.onmouseup = up;
+  window.ontouchend = up;
+}
+
+function getPassportPoint(e) {
+  const c = $("#passCanvas");
+  const r = c.getBoundingClientRect();
+  const t = e.touches && e.touches[0] ? e.touches[0] : e;
+  return {
+    x: (t.clientX - r.left) * (c.width / r.width),
+    y: (t.clientY - r.top) * (c.height / r.height)
+  };
+}
+
+function clampPassportCrop() {
+  const d = passState.display;
+  const crop = passState.crop;
+  if (!crop) return;
+
+  crop.w = Math.max(50, Math.min(crop.w, d.w));
+  crop.h = crop.w / (35 / 45);
+  if (crop.h > d.h) {
+    crop.h = d.h;
+    crop.w = crop.h * (35 / 45);
   }
 
-  const dx = (c.width - dw) / 2 + x;
-  const dy = (c.height - dh) / 2 + y;
+  crop.x = Math.max(d.offsetX, Math.min(crop.x, d.offsetX + d.w - crop.w));
+  crop.y = Math.max(d.offsetY, Math.min(crop.y, d.offsetY + d.h - crop.h));
+}
 
-  ctx.drawImage(img, dx, dy, dw, dh);
+function cropPassportSelection() {
+  if (!passState.img || !passState.crop) return "";
 
-  ctx.strokeStyle = "#f97316";
-  ctx.lineWidth = 5;
-  ctx.strokeRect(3, 3, c.width - 6, c.height - 6);
+  clampPassportCrop();
+  const d = passState.display;
+  const crop = passState.crop;
 
-  passState.cropped = c.toDataURL("image/jpeg", .95);
+  const sx = (crop.x - d.offsetX) / d.scale;
+  const sy = (crop.y - d.offsetY) / d.scale;
+  const sw = crop.w / d.scale;
+  const sh = crop.h / d.scale;
+
+  const out = document.createElement("canvas");
+  const ctx = out.getContext("2d");
+  out.width = 350;
+  out.height = 450;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(passState.img, sx, sy, sw, sh, 0, 0, out.width, out.height);
+  passState.cropped = out.toDataURL("image/jpeg", .95);
+  return passState.cropped;
+}
+
+function resetPassportCrop() {
+  if (!passState.img) {
+    drawEmptyPassport();
+    return;
+  }
+  preparePassportDisplay();
+  const d = passState.display;
+  const ratio = 35 / 45;
+  let cropH = Math.min(d.h * 0.72, d.w / ratio * 0.72);
+  let cropW = cropH * ratio;
+  if (cropW > d.w * 0.72) {
+    cropW = d.w * 0.72;
+    cropH = cropW / ratio;
+  }
+  passState.crop = {
+    x: d.offsetX + (d.w - cropW) / 2,
+    y: d.offsetY + (d.h - cropH) / 2,
+    w: cropW,
+    h: cropH
+  };
+  cropPassportSelection();
+  drawPassportStudio();
 }
 
 function generatePassportSheet() {
-  if (!passState.cropped) return alert("Please upload a photo and adjust the preview first.");
+  const cropped = cropPassportSelection();
+  if (!cropped) return alert("Please upload a photo and select the printable passport area first.");
 
   const name = $("#passName").value || "";
   const date = $("#passDate").value || "";
 
   let items = "";
-
   for (let i = 0; i < 5; i++) {
     items += `
       <div class="photo-item">
-        <img class="pass-photo" src="${passState.cropped}">
-        ${
-          name || date
-            ? `<div class="caption">${name}<br>${date}</div>`
-            : ""
-        }
+        <img class="pass-photo" src="${cropped}">
+        ${name || date ? `<div class="caption">${name}<br>${date}</div>` : ""}
       </div>
     `;
   }
 
-  lastPassportPDF = createPassportPDF(passState.cropped, name, date);
+  lastPassportPDF = createPassportPDF(cropped, name, date);
 
   if (typeof logToolUsage === "function") {
-    logToolUsage("Passport Photo Maker", {
+    logToolUsage("Passport Studio Crop", {
       toolType: "PDF",
       outputSizeKB: "A4 PDF"
     });
@@ -871,7 +1108,7 @@ function generatePassportSheet() {
       </div>
 
       <div class="passport-final-note">
-        ✅ Passport output: 35×45mm, 5 photos, white background, black border, A4 top aligned.
+        ✅ Passport output created from your selected area: 35×45 mm, 5 photos, white background, black border, A4 top aligned.
       </div>
 
       <div class="print-area">
