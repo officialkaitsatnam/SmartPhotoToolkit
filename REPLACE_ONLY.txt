@@ -1,5 +1,3 @@
-GitHub: Upload/replace all files in this ZIP at repo root.
-Apps Script: No update required.
+GitHub: Replace all root files from this ZIP.
+Apps Script: No update required for v37.4.
 Google Sheet: No update required.
-Open URL: https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=37.3-hard-fix
-Important: If old UI still appears, clear site data or open in incognito once.

@@ -1,8 +1,8 @@
 {
-  "name": "Smart Photo Toolkit Pro v37.2",
+  "name": "Smart Photo Toolkit Pro",
   "short_name": "SPT Pro",
   "description": "Professional passport photo, Aadhaar print, image compression, PDF resizing and premium account tools.",
-  "start_url": "./?v=37.2-alpha",
+  "start_url": "./?v=36",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f7fb",

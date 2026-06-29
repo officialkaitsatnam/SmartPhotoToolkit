@@ -1,13 +1,16 @@
-# Smart Photo Toolkit v37.3 Alpha – Document Studio Hard Fix
+# Smart Photo Toolkit Pro v37.4 — Document Studio Real Fix
 
-## Fixed
-- Document Studio now uses a new forced v37.3 engine.
-- Supports full PDF upload and image upload for all document types.
-- PDF page selector added for multi-page PDFs.
-- Drag-select printable area with orange crop box.
-- Resize printable area using bottom-right handle.
-- A4 print-ready PDF generation for Aadhaar, Voter ID, PAN, Ayushman, Driving Licence, and ABHA.
-- Unique file names added to bypass old browser/service-worker cache.
+## Added
+- Universal Document Studio for Aadhaar, Voter ID, PAN, Ayushman Card, Driving Licence and ABHA Card.
+- Two upload modes for every document:
+  1. Front / Back image upload.
+  2. Full Page PDF Crop upload for documents downloaded from official websites.
+- Drag-select printable area from full-page PDF.
+- Corner resize handles with card-ratio lock.
+- Page selector for multi-page PDFs.
+- A4 top-center print layout.
+- Open PDF, Download PDF and Print PDF actions.
 
-## Apps Script
-- Not required for this version.
+## Notes
+- Apps Script update is not required for this version.
+- This version focuses on frontend Document Studio printing workflow only.

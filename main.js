@@ -2301,360 +2301,271 @@ dashboardTool = function(){
 setTimeout(()=>{try{if(typeof updateAuthUI==='function') updateAuthUI();}catch(e){}},600);
 
 /* =====================================================
-   v37.0 Alpha – Image Studio + Document Studio
-   Built on V36 master package
+   Smart Photo Toolkit Pro v37.4
+   Document Studio Real Fix
+   Front/Back Image Upload + Full Page PDF Drag Crop
 ===================================================== */
-const V37_CARD_TYPES = {
-  aadhaar: { label: 'Aadhaar Card', icon: '🪪', w: 85.6, h: 54, note: 'Standard ID card layout for Aadhaar front/back printing.' },
-  voter: { label: 'Voter ID Card', icon: '🗳️', w: 85.6, h: 54, note: 'Print voter ID front/back on A4 with clean borders.' },
-  pan: { label: 'PAN Card', icon: '💳', w: 85.6, h: 54, note: 'PAN card print layout with single or multiple copies.' },
-  ayushman: { label: 'Ayushman Card', icon: '❤️', w: 85.6, h: 54, note: 'Ayushman card front/back print-ready PDF.' },
-  dl: { label: 'Driving Licence', icon: '🚘', w: 85.6, h: 54, note: 'Driving licence card layout for image/PDF prints.' },
-  abha: { label: 'ABHA Card', icon: '🩺', w: 85.6, h: 54, note: 'ABHA health card print-ready layout.' }
+
+const DS_V374 = {
+  selectedType: 'aadhaar',
+  mode: 'images',
+  frontSrc: '',
+  backSrc: '',
+  croppedSrc: '',
+  pdfCanvas: null,
+  pdfDoc: null,
+  pageNum: 1,
+  lastPdf: null,
+  crop: {x:40,y:40,w:300,h:190,active:false,mode:'move',sx:0,sy:0,start:null},
+  types: {
+    aadhaar: {icon:'🪪', name:'Aadhaar Card', size:[85.6,54], note:'Use front/back images or full-page downloaded Aadhaar PDF.'},
+    voter: {icon:'🗳️', name:'Voter ID Card', size:[85.6,54], note:'Upload Voter card front/back image or a full-page PDF and crop the printable area.'},
+    pan: {icon:'💳', name:'PAN Card', size:[85.6,54], note:'Upload PAN card image or full-page PDF and select the card area.'},
+    ayushman: {icon:'❤️', name:'Ayushman Card', size:[85.6,54], note:'Upload Ayushman card front/back or downloaded PDF and crop the printable card area.'},
+    dl: {icon:'🚘', name:'Driving Licence', size:[85.6,54], note:'Upload DL front/back image or PDF and create A4 print-ready output.'},
+    abha: {icon:'🩺', name:'ABHA Card', size:[85.6,54], note:'Upload ABHA card image or full-page PDF and crop for print.'}
+  }
 };
-let v37SelectedCardType = 'aadhaar';
-
-function studioHeroV37(title, subtitle){
-  return `<div class="studio-hero-v37 fade-in"><div><span class="enterprise-chip">v37.0 Alpha</span><h2>${title}</h2><p>${subtitle}</p></div><div class="studio-hero-badge-v37">Enterprise Studio</div></div>`;
-}
-
-function imageStudioTool(){
-  workspace.innerHTML = `
-    ${studioHeroV37('Image Studio', 'Passport photos and every image-processing tool are now grouped in one professional workspace.')}
-    <div class="studio-grid-v37">
-      <button class="studio-card-v37 primary-studio" onclick="passportTool()"><b>👤</b><h3>Passport Photo Studio</h3><p>Draw/select printable 35×45 mm crop area. No sliders. A4 PDF output.</p><span>Open Studio →</span></button>
-      <button class="studio-card-v37" onclick="imageCompressor()"><b>🗜️</b><h3>Image Compressor</h3><p>Compress photos to 20 KB, 50 KB, 100 KB or custom size.</p><span>Compress →</span></button>
-      <button class="studio-card-v37" onclick="nameDateTool()"><b>🏷️</b><h3>Name & Date Photo</h3><p>Add name, date, or custom text below a photo.</p><span>Create →</span></button>
-      <button class="studio-card-v37" onclick="imageResizeToolV37()"><b>📏</b><h3>Resize Image</h3><p>Resize photo by width and height while keeping quality.</p><span>Resize →</span></button>
-      <button class="studio-card-v37" onclick="imageConvertToolV37()"><b>🔄</b><h3>Image Converter</h3><p>Convert image output to JPG, PNG, or WEBP.</p><span>Convert →</span></button>
-      <button class="studio-card-v37" onclick="photoSizeLibraryV37()"><b>📚</b><h3>Photo Size Library</h3><p>Passport, 2×2 inch, visa sizes, ID photo sizes, and custom dimensions.</p><span>View Sizes →</span></button>
-    </div>`;
-}
-
-function photoSizeLibraryV37(){
-  workspace.innerHTML = `
-    ${studioHeroV37('Photo Size Library', 'Choose a standard photo size and then open Passport Studio to crop and print.')}
-    <div class="size-library-v37">
-      ${[
-        ['Passport India','35 × 45 mm','Best for Indian passport style prints'],
-        ['2 × 2 Inch','51 × 51 mm','Common visa and ID photo format'],
-        ['1 × 1 Inch','25 × 25 mm','Small ID photo format'],
-        ['US Visa','2 × 2 inch','US visa-ready size'],
-        ['Canada Visa','35 × 45 mm','Canada visa/passport style'],
-        ['UK Passport','35 × 45 mm','UK passport style photo'],
-        ['Schengen Visa','35 × 45 mm','Schengen visa photo'],
-        ['OCI Photo','51 × 51 mm','OCI application style size'],
-        ['Custom Size','User-defined','Custom size foundation for future release']
-      ].map(x=>`<div class="size-card-v37"><h3>${x[0]}</h3><strong>${x[1]}</strong><p>${x[2]}</p><button class="secondary-btn" onclick="passportTool()">Use in Studio</button></div>`).join('')}
-    </div>`;
-}
-
-function imageResizeToolV37(){
-  workspace.innerHTML = `
-    ${studioHeroV37('Resize Image', 'Resize an image to a custom width and height. This is a v37 alpha image utility.')}
-    <div class="tool-box">
-      <label class="upload-box"><input id="resizeImageV37" type="file" accept="image/*"><span>📤 Upload Image</span></label>
-      <div class="row"><input id="resizeWv37" type="number" placeholder="Width px"><input id="resizeHv37" type="number" placeholder="Height px"></div>
-      <button onclick="makeResizeV37()">Resize Image</button>
-    </div><div id="resizeOutputV37"></div>`;
-}
-async function makeResizeV37(){
-  const f=document.getElementById('resizeImageV37')?.files?.[0]; if(!f) return alert('Please upload an image.');
-  const w=Number(document.getElementById('resizeWv37').value), h=Number(document.getElementById('resizeHv37').value); if(!w||!h) return alert('Enter width and height.');
-  const img=await loadImage(await readFile(f)); const c=document.createElement('canvas'),ctx=c.getContext('2d'); c.width=w;c.height=h;ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h); const data=c.toDataURL('image/jpeg',.92);
-  document.getElementById('resizeOutputV37').innerHTML=`<div class="result-card"><h3>✅ Image Resized</h3><img class="preview-img" src="${data}"><button class="download-btn" onclick="forceDownload('${data}','resized-image.jpg')">Download Image</button></div>`;
-  if(typeof logToolUsage==='function') logToolUsage('Image Resize v37',{fileName:f.name,toolType:'Image'});
-}
-
-function imageConvertToolV37(){
-  workspace.innerHTML = `
-    ${studioHeroV37('Image Converter', 'Convert an image into JPG, PNG, or WEBP format directly in the browser.')}
-    <div class="tool-box">
-      <label class="upload-box"><input id="convertImageV37" type="file" accept="image/*"><span>📤 Upload Image</span></label>
-      <select id="convertFormatV37"><option value="image/jpeg">JPG</option><option value="image/png">PNG</option><option value="image/webp">WEBP</option></select>
-      <button onclick="makeConvertV37()">Convert Image</button>
-    </div><div id="convertOutputV37"></div>`;
-}
-async function makeConvertV37(){
-  const f=document.getElementById('convertImageV37')?.files?.[0]; if(!f) return alert('Please upload an image.');
-  const fmt=document.getElementById('convertFormatV37').value; const img=await loadImage(await readFile(f)); const c=document.createElement('canvas'),ctx=c.getContext('2d'); c.width=img.width;c.height=img.height;ctx.drawImage(img,0,0); const data=c.toDataURL(fmt,.92); const ext=fmt.includes('png')?'png':fmt.includes('webp')?'webp':'jpg';
-  document.getElementById('convertOutputV37').innerHTML=`<div class="result-card"><h3>✅ Image Converted</h3><p>Format: ${ext.toUpperCase()}</p><img class="preview-img" src="${data}"><button class="download-btn" onclick="forceDownload('${data}','converted-image.${ext}')">Download ${ext.toUpperCase()}</button></div>`;
-  if(typeof logToolUsage==='function') logToolUsage('Image Converter v37',{fileName:f.name,toolType:'Image'});
-}
 
 function documentStudioTool(){
+  if(!workspace) return;
   workspace.innerHTML = `
-    ${studioHeroV37('Document Studio', 'Print Aadhaar, Voter ID, PAN, Ayushman, Driving Licence, and ABHA cards from images in one universal card engine.')}
-    <div class="doc-type-grid-v37">
-      ${Object.entries(V37_CARD_TYPES).map(([key,c])=>`<button class="doc-type-card-v37 ${key===v37SelectedCardType?'active':''}" onclick="selectDocTypeV37('${key}')"><b>${c.icon}</b><span>${c.label}</span></button>`).join('')}
+    <h2>🪪 Document Studio</h2>
+    <p class="tool-subtitle">Print Aadhaar, Voter ID, PAN, Ayushman, Driving Licence and ABHA cards from front/back images or a full-page downloaded PDF.</p>
+    <div class="ds-hero">
+      <strong>v37.4 Document Studio</strong>
+      <span>Choose a document, upload front/back images or upload a full-page PDF, drag-select the printable card area, then generate a top-centered A4 PDF.</span>
     </div>
-    <div id="docStudioBoxV37"></div>`;
-  renderDocStudioBoxV37();
+    <div class="ds-card-types" id="dsTypeWrap"></div>
+    <div class="ds-tabs">
+      <button class="ds-tab active" id="dsImagesTab" onclick="dsSwitchModeV374('images')">Front / Back Images</button>
+      <button class="ds-tab" id="dsPdfTab" onclick="dsSwitchModeV374('pdf')">Full Page PDF Crop</button>
+    </div>
+    <div id="dsPanel"></div>
+    <div id="dsOutput"></div>
+  `;
+  dsRenderTypesV374();
+  dsSwitchModeV374('images');
 }
-function selectDocTypeV37(type){v37SelectedCardType=type;documentStudioTool();}
-function renderDocStudioBoxV37(){
-  const c=V37_CARD_TYPES[v37SelectedCardType];
-  const box=document.getElementById('docStudioBoxV37'); if(!box) return;
-  box.innerHTML = `
-    <div class="doc-workbench-v37">
-      <div class="tool-box">
-        <h3>${c.icon} ${c.label} Print</h3>
-        <p class="tool-subtitle">${c.note}</p>
-        <label>Front Image</label><input id="docFrontV37" type="file" accept="image/*">
-        <label>Back Image optional</label><input id="docBackV37" type="file" accept="image/*">
-        <div class="row"><select id="docCopiesV37"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option><option value="8">8 Copies</option></select><select id="docPositionV37"><option value="top-center">Top Center</option><option value="top-left">Top Left</option></select></div>
-        <button onclick="makeDocumentCardPDFV37()">Create Print PDF</button>
-      </div>
-      <div id="docOutputV37"></div>
+
+function dsRenderTypesV374(){
+  const wrap = document.getElementById('dsTypeWrap');
+  if(!wrap) return;
+  wrap.innerHTML = Object.entries(DS_V374.types).map(([key,t])=>`
+    <button class="ds-type ${DS_V374.selectedType===key?'active':''}" onclick="dsSelectTypeV374('${key}')">
+      ${t.icon} ${t.name}<span>${t.size[0]} × ${t.size[1]} mm print card</span>
+    </button>
+  `).join('');
+}
+function dsSelectTypeV374(type){
+  DS_V374.selectedType = type;
+  dsRenderTypesV374();
+  dsSwitchModeV374(DS_V374.mode || 'images');
+}
+function dsSwitchModeV374(mode){
+  DS_V374.mode = mode;
+  document.getElementById('dsImagesTab')?.classList.toggle('active', mode==='images');
+  document.getElementById('dsPdfTab')?.classList.toggle('active', mode==='pdf');
+  const panel = document.getElementById('dsPanel');
+  const out = document.getElementById('dsOutput');
+  if(out) out.innerHTML='';
+  if(!panel) return;
+  if(mode==='images') panel.innerHTML = dsImagesPanelV374();
+  else panel.innerHTML = dsPdfPanelV374();
+}
+function dsCurrentV374(){return DS_V374.types[DS_V374.selectedType] || DS_V374.types.aadhaar;}
+function dsOptionsV374(){
+  return `<div class="ds-control-grid">
+    <label>Copies<select id="dsCopies"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option></select></label>
+    <label>Output Layout<select id="dsLayout"><option value="single">Single card top center</option><option value="frontback">Front + Back top center</option></select></label>
+    <label>Border<select id="dsBorder"><option value="yes">Black border</option><option value="no">No border</option></select></label>
+  </div>`;
+}
+function dsImagesPanelV374(){
+  const t=dsCurrentV374();
+  return `<div class="ds-panel fade-in">
+    <h3>${t.icon} ${t.name} — Front / Back Image Upload</h3>
+    <p class="tool-subtitle">Upload front and back images, then generate an A4 PDF with cards aligned at the top center.</p>
+    ${dsOptionsV374()}
+    <div class="ds-grid mt-15">
+      <label class="ds-upload">Upload Front Image<input id="dsFrontImg" type="file" accept="image/*" onchange="dsLoadImgV374('front',this)"></label>
+      <label class="ds-upload">Upload Back Image<input id="dsBackImg" type="file" accept="image/*" onchange="dsLoadImgV374('back',this)"></label>
+    </div>
+    <div class="ds-preview-row" id="dsImgPreview"></div>
+    <div class="ds-note">Tip: Use this mode when you already have separate front and back card images. For full-page documents downloaded from a website, use the Full Page PDF Crop tab.</div>
+    <div class="action-row"><button class="primary-btn" onclick="dsGenerateFromImagesV374()">Generate A4 Print PDF</button></div>
+  </div>`;
+}
+async function dsLoadImgV374(side,input){
+  const f=input.files && input.files[0]; if(!f) return;
+  const data=await readFile(f);
+  if(side==='front') DS_V374.frontSrc=data; else DS_V374.backSrc=data;
+  const p=document.getElementById('dsImgPreview');
+  if(p){
+    p.innerHTML = `${DS_V374.frontSrc?`<div class="ds-preview-card"><b>Front</b><br><img src="${DS_V374.frontSrc}"></div>`:''}${DS_V374.backSrc?`<div class="ds-preview-card"><b>Back</b><br><img src="${DS_V374.backSrc}"></div>`:''}`;
+  }
+}
+async function dsGenerateFromImagesV374(){
+  if(!DS_V374.frontSrc && !DS_V374.backSrc) return alert('Please upload front or back image first.');
+  const imgs=[]; if(DS_V374.frontSrc) imgs.push(DS_V374.frontSrc); if(DS_V374.backSrc) imgs.push(DS_V374.backSrc);
+  const copies=Number(document.getElementById('dsCopies')?.value||1);
+  const border=(document.getElementById('dsBorder')?.value||'yes')==='yes';
+  DS_V374.lastPdf = await dsCreateA4PdfV374(imgs,copies,border,true);
+  dsShowOutputV374(imgs,copies,true);
+}
+function dsPdfPanelV374(){
+  const t=dsCurrentV374();
+  return `<div class="ds-panel fade-in">
+    <h3>${t.icon} ${t.name} — Full Page PDF Crop</h3>
+    <p class="tool-subtitle">Upload the full-page PDF downloaded from a website. Drag and resize the orange printable area, then generate A4 print output.</p>
+    ${dsOptionsV374()}
+    <div class="ds-control-grid mt-15">
+      <label class="ds-upload">Upload Full Page PDF<input id="dsFullPdf" type="file" accept="application/pdf" onchange="dsLoadPdfV374(this)"></label>
+      <label>PDF Page<select id="dsPageSelect" onchange="dsRenderPdfPageV374(Number(this.value))"><option value="1">Page 1</option></select></label>
+      <label>Crop Ratio<select id="dsRatioLock"><option value="card">Lock card ratio</option><option value="free">Free selection</option></select></label>
+    </div>
+    <div id="dsPdfWork"></div>
+  </div>`;
+}
+async function dsLoadPdfV374(input){
+  const f=input.files && input.files[0]; if(!f) return;
+  if(!window.pdfjsLib) return alert('PDF library not loaded. Please refresh with internet enabled.');
+  const work=document.getElementById('dsPdfWork');
+  if(work) work.innerHTML='<div class="progress-box">Loading PDF...</div>';
+  const buf=await f.arrayBuffer();
+  DS_V374.pdfDoc = await pdfjsLib.getDocument({data:buf}).promise;
+  const sel=document.getElementById('dsPageSelect');
+  if(sel){
+    sel.innerHTML='';
+    for(let i=1;i<=DS_V374.pdfDoc.numPages;i++){sel.innerHTML += `<option value="${i}">Page ${i}</option>`;}
+  }
+  await dsRenderPdfPageV374(1);
+}
+async function dsRenderPdfPageV374(pageNum){
+  if(!DS_V374.pdfDoc) return;
+  DS_V374.pageNum=pageNum||1;
+  const work=document.getElementById('dsPdfWork');
+  if(work) work.innerHTML='<div class="progress-box">Rendering page...</div>';
+  const page=await DS_V374.pdfDoc.getPage(DS_V374.pageNum);
+  const viewport=page.getViewport({scale:2.5});
+  const source=document.createElement('canvas');
+  const sctx=source.getContext('2d');
+  source.width=viewport.width; source.height=viewport.height;
+  await page.render({canvasContext:sctx, viewport}).promise;
+  DS_V374.pdfCanvas=source;
+  if(work){
+    work.innerHTML=`<div class="ds-pdf-workspace">
+      <div class="ds-canvas-shell"><div class="ds-canvas-wrap" id="dsCanvasWrap"><canvas id="dsPdfCanvas"></canvas><div class="ds-cropbox" id="dsCropBox"><span class="ds-handle nw" data-h="nw"></span><span class="ds-handle ne" data-h="ne"></span><span class="ds-handle sw" data-h="sw"></span><span class="ds-handle se" data-h="se"></span></div></div></div>
+      <div class="ds-sidebox"><h3>Printable Area</h3><p>Move the orange box on the card area. Resize it from corners. The selected area will be printed at the top center of an A4 page.</p><label>Copies<select id="dsCopiesSide"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option></select></label><label>Border<select id="dsBorderSide"><option value="yes">Black border</option><option value="no">No border</option></select></label><div class="ds-actions"><button class="secondary-btn" onclick="dsResetCropV374()">Reset Selection</button><button class="primary-btn" onclick="dsGenerateFromPdfCropV374()">Crop & Generate A4 PDF</button></div><div class="ds-note">Works for Aadhaar, Voter ID, PAN, Ayushman, Driving Licence and ABHA full-page PDFs.</div></div>
     </div>`;
+  }
+  const c=document.getElementById('dsPdfCanvas');
+  const ctx=c.getContext('2d');
+  const maxW=Math.min(900, Math.max(320, (workspace?.clientWidth||900)-360));
+  const ratio=source.width/source.height;
+  c.width=maxW; c.height=Math.round(maxW/ratio);
+  ctx.drawImage(source,0,0,c.width,c.height);
+  dsResetCropV374();
+  dsInitCropEventsV374();
 }
-async function makeDocumentCardPDFV37(){
-  const front=document.getElementById('docFrontV37')?.files?.[0]; const back=document.getElementById('docBackV37')?.files?.[0]; if(!front && !back) return alert('Please upload front or back image.');
-  const srcs=[]; if(front) srcs.push(await readFile(front)); if(back) srcs.push(await readFile(back));
-  const copies=Number(document.getElementById('docCopiesV37').value||1); const pos=document.getElementById('docPositionV37').value||'top-center'; const card=V37_CARD_TYPES[v37SelectedCardType];
-  const pdf=await createV37CardPDF(srcs,copies,pos,card); const url=URL.createObjectURL(pdf.output('blob'));
-  let preview=''; for(let i=0;i<copies;i++){srcs.forEach(s=>preview+=`<img class="aadhaar-card" src="${s}">`)}
-  document.getElementById('docOutputV37').innerHTML=`<div class="result-card"><div class="action-row"><a class="open-btn" href="${url}" target="_blank">📂 Open PDF</a><a class="pdf-btn" href="${url}" download="${card.label.replace(/\s+/g,'-').toLowerCase()}-print.pdf">📄 Download PDF</a></div><div class="passport-final-note">✅ ${card.label} print-ready A4 PDF created.</div><div class="print-area ${pos}"><div class="aadhaar-wrap">${preview}</div></div></div>`;
-  if(typeof logToolUsage==='function') logToolUsage(card.label+' Print v37',{toolType:'PDF'});
+function dsResetCropV374(){
+  const c=document.getElementById('dsPdfCanvas'); if(!c) return;
+  const cardRatio = dsCurrentV374().size[0]/dsCurrentV374().size[1];
+  let w=Math.round(c.width*0.70), h=Math.round(w/cardRatio);
+  if(h>c.height*0.45){h=Math.round(c.height*0.30);w=Math.round(h*cardRatio);}
+  DS_V374.crop.x=Math.round((c.width-w)/2); DS_V374.crop.y=Math.round(c.height*0.65); DS_V374.crop.w=w; DS_V374.crop.h=h;
+  dsApplyCropV374();
 }
-async function createV37CardPDF(srcs,copies,pos,card){
-  const { jsPDF } = window.jspdf; const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}); let y=10; const gap=8;
-  for(let copy=0; copy<copies; copy++){
-    const dims=srcs.map(s=>({src:s,w:card.w,h:card.h})); const totalW=dims.reduce((a,d)=>a+d.w,0)+(dims.length-1)*gap; let x=pos==='top-left'?10:(210-totalW)/2;
-    for(const d of dims){pdf.addImage(d.src,'JPEG',x,y,d.w,d.h);pdf.setDrawColor(50);pdf.setLineWidth(.25);pdf.rect(x,y,d.w,d.h);x+=d.w+gap;}
-    y += card.h + 8; if(y>250 && copy<copies-1){pdf.addPage();y=10;}
+function dsApplyCropV374(){
+  const box=document.getElementById('dsCropBox'); if(!box) return;
+  const cr=DS_V374.crop; box.style.left=cr.x+'px'; box.style.top=cr.y+'px'; box.style.width=cr.w+'px'; box.style.height=cr.h+'px';
+}
+function dsPointV374(e){const t=e.touches&&e.touches[0]; return {x:(t||e).clientX,y:(t||e).clientY};}
+function dsInitCropEventsV374(){
+  const box=document.getElementById('dsCropBox'); const canvas=document.getElementById('dsPdfCanvas'); if(!box||!canvas) return;
+  const start=(e,mode)=>{e.preventDefault(); e.stopPropagation(); const p=dsPointV374(e); DS_V374.crop.active=true; DS_V374.crop.mode=mode; DS_V374.crop.sx=p.x; DS_V374.crop.sy=p.y; DS_V374.crop.start={x:DS_V374.crop.x,y:DS_V374.crop.y,w:DS_V374.crop.w,h:DS_V374.crop.h};};
+  box.onmousedown=e=>start(e,'move'); box.ontouchstart=e=>start(e,'move');
+  box.querySelectorAll('.ds-handle').forEach(h=>{h.onmousedown=e=>start(e,h.dataset.h); h.ontouchstart=e=>start(e,h.dataset.h);});
+  const move=e=>{
+    if(!DS_V374.crop.active) return; e.preventDefault();
+    const p=dsPointV374(e), dx=p.x-DS_V374.crop.sx, dy=p.y-DS_V374.crop.sy;
+    const st=DS_V374.crop.start; let {x,y,w,h}=st;
+    const lock=(document.getElementById('dsRatioLock')?.value||'card')==='card'; const ratio=dsCurrentV374().size[0]/dsCurrentV374().size[1];
+    if(DS_V374.crop.mode==='move'){x=st.x+dx; y=st.y+dy;}
+    else{
+      if(DS_V374.crop.mode.includes('e')) w=st.w+dx;
+      if(DS_V374.crop.mode.includes('s')) h=st.h+dy;
+      if(DS_V374.crop.mode.includes('w')){w=st.w-dx; x=st.x+dx;}
+      if(DS_V374.crop.mode.includes('n')){h=st.h-dy; y=st.y+dy;}
+      if(lock){
+        if(Math.abs(dx)>Math.abs(dy)) h=w/ratio; else w=h*ratio;
+        if(DS_V374.crop.mode.includes('w')) x=st.x+st.w-w;
+        if(DS_V374.crop.mode.includes('n')) y=st.y+st.h-h;
+      }
+    }
+    w=Math.max(60,Math.min(w,canvas.width)); h=Math.max(38,Math.min(h,canvas.height));
+    x=Math.max(0,Math.min(x,canvas.width-w)); y=Math.max(0,Math.min(y,canvas.height-h));
+    Object.assign(DS_V374.crop,{x,y,w,h}); dsApplyCropV374();
+  };
+  const stop=()=>{DS_V374.crop.active=false;};
+  document.addEventListener('mousemove',move,{passive:false}); document.addEventListener('mouseup',stop);
+  document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('touchend',stop);
+}
+function dsCropPdfAreaV374(){
+  const preview=document.getElementById('dsPdfCanvas'), box=document.getElementById('dsCropBox'); if(!preview||!box||!DS_V374.pdfCanvas) return '';
+  const canvasRect=preview.getBoundingClientRect(); const boxRect=box.getBoundingClientRect();
+  let relX=(boxRect.left-canvasRect.left)/canvasRect.width, relY=(boxRect.top-canvasRect.top)/canvasRect.height, relW=boxRect.width/canvasRect.width, relH=boxRect.height/canvasRect.height;
+  relX=Math.max(0,Math.min(relX,1)); relY=Math.max(0,Math.min(relY,1)); relW=Math.max(.01,Math.min(relW,1-relX)); relH=Math.max(.01,Math.min(relH,1-relY));
+  const src=DS_V374.pdfCanvas; const sx=src.width*relX, sy=src.height*relY, sw=src.width*relW, sh=src.height*relH;
+  const out=document.createElement('canvas'); const ctx=out.getContext('2d'); out.width=1200; out.height=Math.round(1200*sh/sw); ctx.fillStyle='#fff'; ctx.fillRect(0,0,out.width,out.height); ctx.drawImage(src,sx,sy,sw,sh,0,0,out.width,out.height);
+  return out.toDataURL('image/jpeg',.96);
+}
+async function dsGenerateFromPdfCropV374(){
+  const cropped=dsCropPdfAreaV374(); if(!cropped) return alert('Please upload a full-page PDF and select the printable area.');
+  DS_V374.croppedSrc=cropped;
+  const copies=Number(document.getElementById('dsCopiesSide')?.value || document.getElementById('dsCopies')?.value || 1);
+  const border=((document.getElementById('dsBorderSide')?.value || document.getElementById('dsBorder')?.value || 'yes')==='yes');
+  DS_V374.lastPdf=await dsCreateA4PdfV374([cropped],copies,border,false);
+  dsShowOutputV374([cropped],copies,false);
+}
+async function dsCreateA4PdfV374(srcs,copies,border,isCards){
+  const {jsPDF}=window.jspdf; const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const size=dsCurrentV374().size; const cardW=size[0], cardH=size[1], gap=8; let y=10;
+  for(let copy=0;copy<copies;copy++){
+    const dims=[];
+    for(const src of srcs){
+      if(isCards) dims.push({src,w:cardW,h:cardH});
+      else { const img=await loadImage(src); const h=cardH, w=Math.min(180,h*img.width/img.height); dims.push({src,w,h}); }
+    }
+    const totalW=dims.reduce((a,d)=>a+d.w,0)+(dims.length-1)*gap; let x=(210-totalW)/2;
+    for(const d of dims){ pdf.addImage(d.src,'JPEG',x,y,d.w,d.h); if(border){pdf.setDrawColor(0);pdf.setLineWidth(.25);pdf.rect(x,y,d.w,d.h);} x+=d.w+gap; }
+    y += cardH + 8; if(y>250 && copy<copies-1){pdf.addPage(); y=10;}
   }
   return pdf;
 }
-
-function pdfStudioTool(){
-  workspace.innerHTML = `
-    ${studioHeroV37('PDF Studio', 'PDF tools grouped into one workspace. Resize is active; merge/split/rotate are planned for the next v37 beta sprint.')}
-    <div class="studio-grid-v37"><button class="studio-card-v37 primary-studio" onclick="pdfResizerTool()"><b>📄</b><h3>PDF Resize / Compress</h3><p>Use the current browser-based PDF resizing tool.</p><span>Open Tool →</span></button><button class="studio-card-v37 locked-v37"><b>🔗</b><h3>Merge PDF</h3><p>Coming in v37.2 beta.</p><span>Planned</span></button><button class="studio-card-v37 locked-v37"><b>✂️</b><h3>Split PDF</h3><p>Coming in v37.2 beta.</p><span>Planned</span></button><button class="studio-card-v37 locked-v37"><b>🔄</b><h3>Rotate PDF</h3><p>Coming in v37.2 beta.</p><span>Planned</span></button></div>`;
+function dsShowOutputV374(srcs,copies,isCards){
+  const out=document.getElementById('dsOutput'); if(!out) return;
+  const imgs=[]; for(let i=0;i<copies;i++){ for(const src of srcs){ imgs.push(`<img class="${isCards?'ds-output-card':'ds-output-single'}" src="${src}">`);} }
+  out.innerHTML=`<div class="result-card fade-in"><h3>✅ A4 Print PDF Ready</h3><div class="ds-success">Your selected printable area has been converted into a top-centered A4 print-ready PDF.</div><div class="action-row"><button class="open-btn" onclick="dsOpenPdfV374()">📂 Open PDF</button><button class="pdf-btn" onclick="dsDownloadPdfV374()">📄 Download PDF</button><button class="print-btn" onclick="dsPrintPdfV374()">🖨️ Print PDF</button></div><div class="ds-a4-preview"><div class="ds-a4-top">${imgs.join('')}</div></div></div>`;
 }
+function dsPdfUrlV374(){ if(!DS_V374.lastPdf) return ''; return URL.createObjectURL(DS_V374.lastPdf.output('blob')); }
+function dsOpenPdfV374(){ if(!DS_V374.lastPdf) return alert('Generate PDF first.'); window.open(dsPdfUrlV374(),'_blank'); }
+function dsDownloadPdfV374(){ if(!DS_V374.lastPdf) return alert('Generate PDF first.'); const a=document.createElement('a'); a.href=dsPdfUrlV374(); a.download=(DS_V374.selectedType||'document')+'-a4-print.pdf'; document.body.appendChild(a); a.click(); a.remove(); }
+function dsPrintPdfV374(){ if(!DS_V374.lastPdf) return alert('Generate PDF first.'); DS_V374.lastPdf.autoPrint(); window.open(dsPdfUrlV374(),'_blank'); }
 
-const _v37PrevOpenTool = openTool;
+/* Override routing and sidebar for v37.4 */
+const _openToolV374 = typeof openTool === 'function' ? openTool : null;
 openTool = function(tool){
-  setActive(tool);
-  if(tool==='imageStudio') return imageStudioTool();
-  if(tool==='documentStudio') return documentStudioTool();
-  if(tool==='pdfStudio') return pdfStudioTool();
-  return _v37PrevOpenTool(tool);
+  if(tool==='documentstudio' || tool==='aadhaar' || tool==='voter' || tool==='pan' || tool==='ayushman' || tool==='dl' || tool==='abha') return documentStudioTool();
+  if(_openToolV374) return _openToolV374(tool);
 };
-
-// v37 final sidebar repair for older cached DOM.
-setTimeout(()=>{try{
-  const sidebar=document.getElementById('sidebar'); if(!sidebar) return;
-  const oldTools=['compressor','namedate','passport','aadhaar','pdfresizer'];
-  oldTools.forEach(t=>{const el=sidebar.querySelector(`[data-tool="${t}"]`); if(el) el.remove();});
-  const homeBtn=sidebar.querySelector('[data-tool="home"]');
-  const add=(tool,text)=>{if(sidebar.querySelector(`[data-tool="${tool}"]`))return; const b=document.createElement('button'); b.className='nav-item'; b.dataset.tool=tool; b.textContent=text; b.onclick=()=>openTool(tool); homeBtn?.after(b);};
-  add('pdfStudio','📄 PDF Studio'); add('documentStudio','🪪 Document Studio'); add('imageStudio','🖼️ Image Studio');
-  if(typeof updateAuthUI==='function') updateAuthUI();
-}catch(e){console.warn('v37 sidebar repair skipped',e)}},500);
-
-const _v37Home = home;
-home = function(){
-  workspace.innerHTML = `
-    ${studioHeroV37('Smart Photo Toolkit Enterprise v37', 'Final architecture alpha: Image Studio, Document Studio, PDF Studio, Account, Premium, and Admin are now organized for long-term expansion.')}
-    <div class="studio-grid-v37">
-      <button class="studio-card-v37 primary-studio" onclick="openTool('imageStudio')"><b>🖼️</b><h3>Image Studio</h3><p>Passport Photo Studio, compressor, resize, converter, and name/date tools.</p><span>Open Image Studio →</span></button>
-      <button class="studio-card-v37" onclick="openTool('documentStudio')"><b>🪪</b><h3>Document Studio</h3><p>Aadhaar, Voter ID, PAN, Ayushman, Driving Licence, and ABHA print layouts.</p><span>Open Document Studio →</span></button>
-      <button class="studio-card-v37" onclick="openTool('pdfStudio')"><b>📄</b><h3>PDF Studio</h3><p>PDF resize is active. Merge, split, and rotate are planned next.</p><span>Open PDF Studio →</span></button>
-      <button class="studio-card-v37" onclick="openTool('dashboard')"><b>👤</b><h3>Account Workspace</h3><p>Profile, membership, payments, activity, and future download history.</p><span>Open Account →</span></button>
-    </div>
-    <div class="v37-status"><h3>v37.0 Alpha Changelog</h3><p>Image Studio architecture added, Passport Studio grouped under Image Studio, Document Studio added with Aadhaar/Voter/PAN/Ayushman/DL/ABHA print support, and PDF tools grouped under PDF Studio.</p></div>`;
-};
-
-
-/* =====================================================
-   v37.1 ALPHA FIX – Final Architecture Hard Override
-   This block forces Image Studio / Document Studio / PDF Studio
-   to appear even if older v35/v36 cached overrides were loaded.
-===================================================== */
-(function(){
-  function ensureV37NavFinal(){
-    const sidebar=document.getElementById('sidebar');
-    if(!sidebar) return;
-    const oldTools=['compressor','namedate','passport','aadhaar','pdfresizer'];
-    oldTools.forEach(t=>{ const el=sidebar.querySelector(`[data-tool="${t}"]`); if(el) el.remove(); });
-    const homeBtn=sidebar.querySelector('[data-tool="home"]');
-    const desired=[
-      ['imageStudio','🖼️ Image Studio'],
-      ['documentStudio','🪪 Document Studio'],
-      ['pdfStudio','📄 PDF Studio']
-    ];
-    // Insert in correct order after Home
-    let anchor=homeBtn;
-    desired.forEach(([tool,text])=>{
-      let btn=sidebar.querySelector(`[data-tool="${tool}"]`);
-      if(!btn){
-        btn=document.createElement('button');
-        btn.className='nav-item';
-        btn.dataset.tool=tool;
-      }
-      btn.textContent=text;
-      btn.onclick=()=>openTool(tool);
-      if(anchor && anchor.nextSibling!==btn) sidebar.insertBefore(btn, anchor.nextSibling);
-      anchor=btn;
-    });
-    if(typeof updateAuthUI==='function') updateAuthUI();
-  }
-
-  const previousOpenTool = window.openTool || openTool;
-  window.openTool = openTool = function(tool){
-    const user = typeof getCurrentUser==='function' ? getCurrentUser() : (window.SPT && SPT.user);
-    if(['dashboard','payment','premium'].includes(tool) && !user){ setActive('login'); return loginTool(); }
-    if(tool==='admin' && typeof userIsAdminAccount==='function' && !userIsAdminAccount(user)){
-      setActive(user ? 'dashboard' : 'login');
-      workspace.innerHTML = `<h2>Admin Panel</h2><div class="warning-box">Admin access is available only after signing in with the authorized administrator account.</div><button class="primary-btn" onclick="showTool('login')">Login</button>`;
-      return;
-    }
-    setActive(tool);
-    if(tool==='imageStudio') return imageStudioTool();
-    if(tool==='documentStudio') return documentStudioTool();
-    if(tool==='pdfStudio') return pdfStudioTool();
-    if(tool==='compressor') return imageStudioTool();
-    if(tool==='namedate') return imageStudioTool();
-    if(tool==='passport') return passportTool();
-    if(tool==='aadhaar') return documentStudioTool();
-    return previousOpenTool(tool);
-  };
-
-  window.home = home = function(){
-    workspace.innerHTML = `
-      ${typeof studioHeroV37==='function' ? studioHeroV37('Smart Photo Toolkit Enterprise v37.1', 'Final architecture alpha is active: Image Studio, Document Studio, PDF Studio, Account, Premium and Admin are now grouped for long-term expansion.') : '<h2>Smart Photo Toolkit Enterprise v37.1</h2>'}
-      <div class="studio-grid-v37">
-        <button class="studio-card-v37 primary-studio" onclick="openTool('imageStudio')"><b>🖼️</b><h3>Image Studio</h3><p>Passport Photo Studio, compressor, resize, converter, and name/date tools.</p><span>Open Image Studio →</span></button>
-        <button class="studio-card-v37" onclick="openTool('documentStudio')"><b>🪪</b><h3>Document Studio</h3><p>Aadhaar, Voter ID, PAN, Ayushman, Driving Licence, and ABHA print layouts.</p><span>Open Document Studio →</span></button>
-        <button class="studio-card-v37" onclick="openTool('pdfStudio')"><b>📄</b><h3>PDF Studio</h3><p>PDF resize is active. Merge, split, and rotate will be added in the next beta sprint.</p><span>Open PDF Studio →</span></button>
-        <button class="studio-card-v37" onclick="openTool('dashboard')"><b>👤</b><h3>Account Workspace</h3><p>Profile, membership, payments, activity, and future download history.</p><span>Open Account →</span></button>
-      </div>
-      <div class="v37-status"><h3>v37.1 Alpha Fix</h3><p>Home and sidebar now force the new architecture. Passport is inside Image Studio, and Document Studio includes Aadhaar, Voter ID, PAN, Ayushman, Driving Licence, and ABHA print support.</p></div>`;
-  };
-
-  window.addEventListener('load',()=>{
-    setTimeout(()=>{ ensureV37NavFinal(); home(); },700);
-  });
-})();
-
-
-/* =====================================================
-   v37.2 Alpha – Universal Document Crop Studio
-   Supports PDF/image uploads for Aadhaar, Voter ID, PAN,
-   Ayushman, Driving Licence, and ABHA print layouts.
-===================================================== */
-const V372_DOC_TYPES = {
-  aadhaar:{label:'Aadhaar Card', icon:'🪪', w:85.6, h:54, ratio:85.6/54, hint:'Use for Aadhaar front/back from downloaded PDF or image.'},
-  voter:{label:'Voter ID Card', icon:'🗳️', w:85.6, h:54, ratio:85.6/54, hint:'Use for voter card PDF/image print layout.'},
-  pan:{label:'PAN Card', icon:'💳', w:85.6, h:54, ratio:85.6/54, hint:'Use for PAN front card print layout.'},
-  ayushman:{label:'Ayushman Card', icon:'❤️', w:85.6, h:54, ratio:85.6/54, hint:'Use for Ayushman card PDF/image print layout.'},
-  dl:{label:'Driving Licence', icon:'🚘', w:85.6, h:54, ratio:85.6/54, hint:'Use for driving licence front/back print layout.'},
-  abha:{label:'ABHA Card', icon:'🩺', w:85.6, h:54, ratio:85.6/54, hint:'Use for ABHA health card PDF/image print layout.'}
-};
-let v372DocType='aadhaar';
-let v372DocSlots={front:null,back:null};
-function v372StudioHero(title,sub){return `<div class="studio-hero-v37"><div><span class="doc-badge-v372">v37.2 Alpha</span><h2>${title}</h2><p>${sub}</p></div></div>`}
-function documentStudioTool(){
-  const type=V372_DOC_TYPES[v372DocType]||V372_DOC_TYPES.aadhaar;
-  workspace.innerHTML=`
-    ${v372StudioHero('Document Studio', 'Upload downloaded document PDFs or images, drag-select the printable card area, and create an A4 print-ready PDF.')}
-    <div class="doc-studio-v372">
-      <div class="doc-toolbar-v372">
-        <div><label>Document Type</label><select id="docTypeV372" onchange="v372ChangeDocType(this.value)">${Object.entries(V372_DOC_TYPES).map(([k,v])=>`<option value="${k}" ${k===v372DocType?'selected':''}>${v.icon} ${v.label}</option>`).join('')}</select></div>
-        <div><label>Copies</label><select id="docCopiesV372"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option></select></div>
-        <div><label>Position on A4</label><select id="docPosV372"><option value="top-center">Top Center</option><option value="top-left">Top Left</option></select></div>
-        <div><label>Output</label><button class="primary-btn" onclick="v372CreateDocumentPDF()">Create A4 PDF</button></div>
-      </div>
-      <div class="doc-help-v372"><b>${type.icon} ${type.label}</b> — ${type.hint}<br>Upload front/back PDF or image. Move the orange area over the card and resize from the bottom-right handle. The final PDF card size remains standard ${type.w}×${type.h} mm.</div>
-      <div class="doc-crop-grid-v372">
-        ${v372CropPanelHTML('front','Front Side')}
-        ${v372CropPanelHTML('back','Back Side / Optional')}
-      </div>
-      <div id="docOutputV372"></div>
-    </div>`;
-  setTimeout(()=>{v372AttachFileHandlers();},50);
-}
-function v372CropPanelHTML(slot,title){return `<div class="doc-crop-panel-v372"><h3>${title}</h3><label class="upload-box"><input id="docFile_${slot}_v372" type="file" accept="image/*,application/pdf"><span>📤 Upload PDF or Image</span></label><div id="docCropArea_${slot}_v372" class="doc-empty-v372">Upload a document file to start crop selection.</div></div>`}
-function v372ChangeDocType(type){v372DocType=type;v372DocSlots={front:null,back:null};documentStudioTool();}
-function v372AttachFileHandlers(){['front','back'].forEach(slot=>{const input=document.getElementById(`docFile_${slot}_v372`);if(input)input.onchange=e=>v372LoadDocFile(slot,e.target.files[0]);});}
-async function v372LoadDocFile(slot,file){
-  if(!file) return;
-  const area=document.getElementById(`docCropArea_${slot}_v372`);
-  area.innerHTML='<div class="progress-box">Loading document preview...</div>';
-  let sourceCanvas=document.createElement('canvas');
-  const ctx=sourceCanvas.getContext('2d');
+setTimeout(()=>{
   try{
-    if(file.type==='application/pdf' || file.name.toLowerCase().endsWith('.pdf')){
-      if(!window.pdfjsLib) throw new Error('PDF library is not loaded. Please refresh with internet enabled.');
-      const buf=await file.arrayBuffer();
-      const pdf=await pdfjsLib.getDocument({data:buf}).promise;
-      const page=await pdf.getPage(1);
-      const viewport=page.getViewport({scale:3});
-      sourceCanvas.width=viewport.width;sourceCanvas.height=viewport.height;
-      await page.render({canvasContext:ctx,viewport}).promise;
-    }else{
-      const img=await loadImage(await readFile(file));
-      sourceCanvas.width=img.width;sourceCanvas.height=img.height;
-      ctx.fillStyle='#fff';ctx.fillRect(0,0,sourceCanvas.width,sourceCanvas.height);ctx.drawImage(img,0,0);
+    document.querySelectorAll('[data-tool="aadhaar"]').forEach(b=>{b.dataset.tool='documentstudio'; b.textContent='🪪 Document Studio'; b.onclick=()=>openTool('documentstudio');});
+    if(!document.querySelector('[data-tool="documentstudio"]')){
+      const side=document.getElementById('sidebar'); const pdf=document.querySelector('[data-tool="pdfresizer"]');
+      const btn=document.createElement('button'); btn.className='nav-item'; btn.dataset.tool='documentstudio'; btn.textContent='🪪 Document Studio'; btn.onclick=()=>openTool('documentstudio');
+      side.insertBefore(btn,pdf||null);
     }
-  }catch(err){area.innerHTML=`<div class="warning-box">${err.message||err}</div>`;return;}
-  const maxW=650; const ratio=sourceCanvas.width/sourceCanvas.height;
-  const w=Math.min(maxW,sourceCanvas.width); const h=Math.round(w/ratio);
-  area.innerHTML=`<div class="canvas-box"><div class="doc-canvas-wrap-v372" id="docWrap_${slot}_v372"><canvas id="docCanvas_${slot}_v372" class="doc-preview-v372"></canvas><div id="docBox_${slot}_v372" class="doc-crop-box-v372"><div id="docHandle_${slot}_v372" class="doc-crop-handle-v372"></div></div></div></div><div class="small-note">Drag the orange box to the printable card area. Resize from the corner. Works with PDF downloaded from official sites and card images.</div>`;
-  const canvas=document.getElementById(`docCanvas_${slot}_v372`); const cctx=canvas.getContext('2d');
-  canvas.width=w; canvas.height=h; canvas.style.width=w+'px'; canvas.style.height=h+'px';
-  cctx.drawImage(sourceCanvas,0,0,w,h);
-  const card=V372_DOC_TYPES[v372DocType]||V372_DOC_TYPES.aadhaar;
-  let boxW=Math.round(w*0.82); let boxH=Math.round(boxW/card.ratio);
-  if(boxH>h*0.75){boxH=Math.round(h*0.55);boxW=Math.round(boxH*card.ratio)}
-  const state={sourceCanvas,previewCanvas:canvas,box:{x:Math.round((w-boxW)/2),y:Math.round((h-boxH)/2),w:boxW,h:boxH},drag:false,resize:false,startX:0,startY:0,start:{}};
-  v372DocSlots[slot]=state; v372ApplyBox(slot); v372InitCropEvents(slot);
-}
-function v372ApplyBox(slot){const st=v372DocSlots[slot];const box=document.getElementById(`docBox_${slot}_v372`);if(!st||!box)return;box.style.left=st.box.x+'px';box.style.top=st.box.y+'px';box.style.width=st.box.w+'px';box.style.height=st.box.h+'px';}
-function v372Point(e){if(e.touches&&e.touches[0])return{x:e.touches[0].clientX,y:e.touches[0].clientY};return{x:e.clientX,y:e.clientY};}
-function v372InitCropEvents(slot){
-  const st=v372DocSlots[slot], box=document.getElementById(`docBox_${slot}_v372`), handle=document.getElementById(`docHandle_${slot}_v372`), canvas=document.getElementById(`docCanvas_${slot}_v372`); if(!st||!box||!handle||!canvas)return;
-  const start=(e,type)=>{e.preventDefault();e.stopPropagation();const p=v372Point(e);st.drag=type==='move';st.resize=type==='resize';st.startX=p.x;st.startY=p.y;st.start={...st.box};};
-  box.onmousedown=e=>start(e,'move'); box.ontouchstart=e=>start(e,'move'); handle.onmousedown=e=>start(e,'resize'); handle.ontouchstart=e=>start(e,'resize');
-  const move=e=>{if(!st.drag&&!st.resize)return;e.preventDefault();const p=v372Point(e);const dx=p.x-st.startX,dy=p.y-st.startY;const ratio=(V372_DOC_TYPES[v372DocType]||V372_DOC_TYPES.aadhaar).ratio;
-    if(st.drag){st.box.x=st.start.x+dx;st.box.y=st.start.y+dy;}
-    if(st.resize){let nw=Math.max(90,st.start.w+dx);let nh=Math.round(nw/ratio); if(nh<55){nh=55;nw=Math.round(nh*ratio)} st.box.w=nw;st.box.h=nh;}
-    st.box.w=Math.min(st.box.w,canvas.width-st.box.x);st.box.h=Math.min(st.box.h,canvas.height-st.box.y);
-    st.box.x=Math.max(0,Math.min(st.box.x,canvas.width-st.box.w)); st.box.y=Math.max(0,Math.min(st.box.y,canvas.height-st.box.h)); v372ApplyBox(slot);
-  };
-  const stop=()=>{st.drag=false;st.resize=false;};
-  document.addEventListener('mousemove',move);document.addEventListener('mouseup',stop);document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',stop);
-}
-function v372CropSlot(slot){
-  const st=v372DocSlots[slot]; if(!st)return null;
-  const canvas=st.previewCanvas; const rect=canvas.getBoundingClientRect(); const box=document.getElementById(`docBox_${slot}_v372`).getBoundingClientRect();
-  const relX=(box.left-rect.left)/rect.width, relY=(box.top-rect.top)/rect.height, relW=box.width/rect.width, relH=box.height/rect.height;
-  const sx=st.sourceCanvas.width*relX, sy=st.sourceCanvas.height*relY, sw=st.sourceCanvas.width*relW, sh=st.sourceCanvas.height*relH;
-  const out=document.createElement('canvas'); const ctx=out.getContext('2d'); out.width=1200; out.height=Math.round(1200*sh/sw); ctx.fillStyle='#fff';ctx.fillRect(0,0,out.width,out.height); ctx.drawImage(st.sourceCanvas,sx,sy,sw,sh,0,0,out.width,out.height); return out.toDataURL('image/jpeg',.95);
-}
-async function v372CreateDocumentPDF(){
-  const card=V372_DOC_TYPES[v372DocType]||V372_DOC_TYPES.aadhaar; const copies=Number(document.getElementById('docCopiesV372').value||1); const pos=document.getElementById('docPosV372').value||'top-center';
-  const srcs=[]; const front=v372CropSlot('front'); const back=v372CropSlot('back'); if(front)srcs.push(front); if(back)srcs.push(back); if(!srcs.length){alert('Please upload and select at least one document side.');return;}
-  const {jsPDF}=window.jspdf; const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}); let y=10; const gap=8;
-  for(let c=0;c<copies;c++){const totalW=srcs.length*card.w+(srcs.length-1)*gap; let x=pos==='top-left'?10:(210-totalW)/2; for(const s of srcs){pdf.addImage(s,'JPEG',x,y,card.w,card.h);pdf.setDrawColor(50);pdf.setLineWidth(.25);pdf.rect(x,y,card.w,card.h);x+=card.w+gap;} y+=card.h+8; if(y>250&&c<copies-1){pdf.addPage();y=10;}}
-  const url=URL.createObjectURL(pdf.output('blob')); let preview=''; for(let i=0;i<copies;i++){srcs.forEach(s=>preview+=`<img src="${s}">`)}
-  document.getElementById('docOutputV372').innerHTML=`<div class="result-card fade-in"><h3>✅ ${card.label} A4 Print Ready</h3><p>Created from uploaded PDF/image using drag-selected printable area.</p><div class="action-row"><a class="open-btn" href="${url}" target="_blank">📂 Open PDF</a><a class="pdf-btn" href="${url}" download="${card.label.replace(/\s+/g,'-').toLowerCase()}-a4-print.pdf">📄 Download PDF</a><button class="print-btn" onclick="window.open('${url}','_blank')">🖨️ Print</button></div><div class="print-area ${pos}"><div class="doc-output-preview-v372">${preview}</div></div></div>`;
-  if(typeof logToolUsage==='function') logToolUsage(card.label+' Document Studio v37.2',{toolType:'PDF'});
-}
-
-(function(){
-  const oldHome = window.home || home;
-  window.home = home = function(){
-    workspace.innerHTML = `
-      ${typeof studioHeroV37==='function' ? studioHeroV37('Smart Photo Toolkit Enterprise v37.2', 'Document Studio now supports PDF/image uploads for Aadhaar, Voter ID, PAN, Ayushman, Driving Licence, and ABHA with drag-select A4 printing.') : '<h2>Smart Photo Toolkit Enterprise v37.2</h2>'}
-      <div class="studio-grid-v37">
-        <button class="studio-card-v37 primary-studio" onclick="openTool('imageStudio')"><b>🖼️</b><h3>Image Studio</h3><p>Passport Photo Studio, compressor, resize, converter, and name/date tools.</p><span>Open Image Studio →</span></button>
-        <button class="studio-card-v37" onclick="openTool('documentStudio')"><b>🪪</b><h3>Document Studio</h3><p>Upload PDF/image, drag-select card area, and print Aadhaar, Voter ID, PAN, Ayushman, DL, or ABHA on A4.</p><span>Open Document Studio →</span></button>
-        <button class="studio-card-v37" onclick="openTool('pdfStudio')"><b>📄</b><h3>PDF Studio</h3><p>PDF resize is active. Merge, split, and rotate are planned next.</p><span>Open PDF Studio →</span></button>
-        <button class="studio-card-v37" onclick="openTool('dashboard')"><b>👤</b><h3>Account Workspace</h3><p>Profile, membership, payments, activity, and future download history.</p><span>Open Account →</span></button>
-      </div>
-      <div class="v37-status"><h3>v37.2 Alpha</h3><p>Document Studio upgraded with universal PDF/image crop printing for all major card documents. Apps Script update is not required.</p></div>`;
-  };
-  window.addEventListener('load',()=>setTimeout(()=>{try{home();}catch(e){}},800));
-})();
+  }catch(e){}
+},500);
