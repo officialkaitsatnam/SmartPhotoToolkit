@@ -1,5 +1,5 @@
 /* =====================================================
-   Smart Photo Toolkit Pro v27
+   Smart Photo Toolkit Pro v28.3
    js/main.js — PART 1
    App Init + Navigation + Auth + Compressor + Name Date
 ===================================================== */
@@ -65,6 +65,7 @@ function initApp() {
     document.body.classList.add("dark");
   }
 
+  updateAuthUI();
   home();
 }
 
@@ -114,20 +115,20 @@ function showTool(tool) {
 function home() {
   workspace.innerHTML = `
     <h2>Welcome 👋</h2>
-    <p>Tool select karo aur kaam start karo.</p>
+    <p>Select a tool to get started.</p>
 
     <div class="stats">
       <div>
         <strong>📄 PDF Output</strong>
-        <span>Passport/Aadhaar PDF download.</span>
+        <span>Passport and Aadhaar PDF downloads.</span>
       </div>
       <div>
         <strong>🖨️ Print Ready</strong>
-        <span>A4 layout professional.</span>
+        <span>Professional A4 print-ready layouts.</span>
       </div>
       <div>
         <strong>📱 Mobile Friendly</strong>
-        <span>Phone par smooth work.</span>
+        <span>Optimized for mobile and desktop.</span>
       </div>
     </div>
   `;
@@ -137,69 +138,34 @@ function home() {
 
 function loginTool() {
   workspace.innerHTML = `
-    <h2>🔐 Login / Signup</h2>
-    <p class="tool-subtitle">Login karo, naya account banao, ya forgot password se reset karo.</p>
+    <h2>🔐 Login / Create Account</h2>
+    <p class="tool-subtitle">Access your dashboard, premium tools, payment status, and account history.</p>
 
     <div class="auth-grid">
       <div class="auth-card">
         <h3>Login</h3>
-
-        <div class="form-group">
-          <label>Email</label>
-          <input id="loginEmail" type="email" placeholder="Email">
-        </div>
-
-        <div class="form-group">
-          <label>Password</label>
-          <input id="loginPassword" type="password" placeholder="Password">
-        </div>
-
+        <div class="form-group"><label>Email Address</label><input id="loginEmail" type="email" placeholder="Enter your email address"></div>
+        <div class="form-group"><label>Password</label><input id="loginPassword" type="password" placeholder="Enter your password"></div>
         <button class="primary-btn" onclick="loginSubmit()">Login</button>
         <button class="link-btn" onclick="toggleForgotBox()">Forgot Password?</button>
       </div>
 
       <div class="auth-card">
-        <h3>Signup</h3>
-
-        <div class="form-group">
-          <label>Name</label>
-          <input id="signupName" placeholder="Name">
-        </div>
-
-        <div class="form-group">
-          <label>Email</label>
-          <input id="signupEmail" type="email" placeholder="Email">
-        </div>
-
-        <div class="form-group">
-          <label>Mobile</label>
-          <input id="signupMobile" placeholder="Mobile optional">
-        </div>
-
-        <div class="form-group">
-          <label>Password</label>
-          <input id="signupPassword" type="password" placeholder="Password">
-        </div>
-
+        <h3>Create New Account</h3>
+        <div class="form-group"><label>Full Name</label><input id="signupName" placeholder="Enter full name"></div>
+        <div class="form-group"><label>Email Address</label><input id="signupEmail" type="email" placeholder="Enter email address"></div>
+        <div class="form-group"><label>Mobile Number</label><input id="signupMobile" placeholder="Enter mobile number"></div>
+        <div class="form-group"><label>Address</label><textarea id="signupAddress" rows="3" placeholder="Enter full address"></textarea></div>
+        <div class="form-group"><label>Password</label><input id="signupPassword" type="password" placeholder="Create a password"></div>
         <button class="primary-btn" onclick="signupSubmit()">Create Account</button>
       </div>
     </div>
 
     <div id="forgotBox" class="auth-card hidden">
-      <h3>Forgot Password</h3>
-      <p class="tool-subtitle">Email dal kar OTP bhejo. OTP aane ke baad email, OTP aur naya password fill karo.</p>
-
-      <div class="forgot-grid">
-        <input id="forgotEmail" type="email" placeholder="Registered Email">
-        <button class="secondary-btn" onclick="forgotSubmit()">Send OTP</button>
-      </div>
-
-      <div class="forgot-grid forgot-grid-3">
-        <input id="resetEmail" type="email" placeholder="Email">
-        <input id="resetOtp" placeholder="OTP">
-        <input id="resetPassword" type="password" placeholder="New Password">
-      </div>
-
+      <h3>Password Recovery</h3>
+      <p class="tool-subtitle">Enter your registered email to receive a one-time password. Then use the OTP to set a new password.</p>
+      <div class="forgot-grid"><input id="forgotEmail" type="email" placeholder="Registered email address"><button class="secondary-btn" onclick="forgotSubmit()">Send OTP</button></div>
+      <div class="forgot-grid forgot-grid-3"><input id="resetEmail" type="email" placeholder="Email address"><input id="resetOtp" placeholder="OTP"><input id="resetPassword" type="password" placeholder="New password"></div>
       <button class="primary-btn full-btn" onclick="resetSubmit()">Reset Password</button>
     </div>
   `;
@@ -216,23 +182,26 @@ function dashboardTool() {
   if (!u) {
     workspace.innerHTML = `
       <h2>👤 Dashboard</h2>
-      <div class="warning-box">Dashboard details dekhne ke liye pehle login karo.</div>
+      <div class="warning-box">Please login to view your account dashboard.</div>
       <button class="primary-btn" onclick="showTool('login')">Login Now</button>
     `;
     return;
   }
 
   workspace.innerHTML = `
-    <h2>👤 Dashboard</h2>
-    <p class="tool-subtitle">Welcome, ${u.name || "User"}.</p>
+    <h2>👤 My Dashboard</h2>
+    <p class="tool-subtitle">Welcome, ${u.name || "User"}. Manage your account and premium access here.</p>
 
     <div class="stats">
       <div><strong>Name</strong><span>${u.name || "-"}</span></div>
       <div><strong>Email</strong><span>${u.email || "-"}</span></div>
-      <div><strong>Plan</strong><span>${u.premium ? (u.premiumPlan || "Premium 👑") : "Free"}</span></div>
+      <div><strong>Mobile</strong><span>${u.mobile || "-"}</span></div>
+      <div><strong>Address</strong><span>${u.address || "-"}</span></div>
+      <div><strong>Plan</strong><span>${u.premium ? (u.premiumPlan || "Premium") : "Free"}</span></div>
       <div><strong>Uses Left</strong><span>${u.usesLeft || "-"}</span></div>
       <div><strong>Role</strong><span>${u.role || "User"}</span></div>
       <div><strong>Status</strong><span>${u.status || "Active"}</span></div>
+      <div><strong>Premium Ends</strong><span>${u.premiumEnd || "-"}</span></div>
     </div>
 
     <div class="action-row">
@@ -245,13 +214,13 @@ function dashboardTool() {
 function adminTool() {
   if (typeof requireLogin === "function" && !requireLogin()) return;
   if (typeof isAdmin === "function" && !isAdmin()) {
-    workspace.innerHTML = `<div class="warning-box">Admin access only. कृपया admin email से login करें.</div>`;
+    workspace.innerHTML = `<div class="warning-box">Admin access only. Please login using the authorized admin email address.</div>`;
     return;
   }
 
   workspace.innerHTML = `
     <h2>📊 Admin Panel</h2>
-    <p class="tool-subtitle">Payment verification, users, feedback aur stats yahin show honge.</p>
+    <p class="tool-subtitle">Review payment requests, approve premium access, manage users, and read feedback.</p>
 
     <div class="action-row admin-top-actions">
       <button class="primary-btn" onclick="loadAdminStats()">📈 Stats</button>
@@ -261,7 +230,7 @@ function adminTool() {
     </div>
 
     <div id="adminContent" class="admin-card">
-      <div class="progress-box">Admin option select karo. Payment aate hi यहाँ pending requests दिखेंगी.</div>
+      <div class="progress-box">Select an admin option. New payment requests will appear under Payments.</div>
     </div>
   `;
 }
@@ -269,73 +238,60 @@ function adminTool() {
 function feedbackTool() {
   workspace.innerHTML = `
     <h2>💬 Feedback</h2>
-    <p class="tool-subtitle">Problem ya suggestion bhejo. Admin ko dashboard me bhi show hoga.</p>
+    <p class="tool-subtitle">Share a suggestion, bug report, or feature request. Your message will be visible to the admin.</p>
 
-    <div class="tool-box feedback-box-v28.11">
-      <input id="feedbackName" placeholder="Name">
-      <input id="feedbackEmail" type="email" placeholder="Email">
-      <select id="feedbackType">
-        <option>Feedback</option>
-        <option>Bug Report</option>
-        <option>Feature Request</option>
-      </select>
-      <textarea id="feedbackMessage" rows="5" placeholder="Message"></textarea>
+    <div class="tool-box feedback-box-v283">
+      <input id="feedbackName" placeholder="Full name">
+      <input id="feedbackEmail" type="email" placeholder="Email address">
+      <select id="feedbackType"><option>Feedback</option><option>Bug Report</option><option>Feature Request</option><option>Payment Support</option></select>
+      <textarea id="feedbackMessage" rows="5" placeholder="Write your message here"></textarea>
       <button class="feedback-submit-btn" onclick="submitFeedback()">Submit Feedback</button>
     </div>
   `;
 }
 
 function paymentTool() {
+  if (typeof requireLogin === "function" && !requireLogin()) return;
   workspace.innerHTML = `
-    <h2>💳 Payment Collection</h2>
-    <p class="tool-subtitle">Plan select karo, QR scan karke payment karo, fir UTR/Transaction ID submit karo. Request admin panel me Pending dikhegi.</p>
+    <h2>💳 Premium Payment</h2>
+    <p class="tool-subtitle">Scan the QR code, complete the payment, and submit your UTR/Transaction ID for admin verification.</p>
 
-    <div class="payment-wrap-v28 payment-pro-v282">
-      <div class="payment-card payment-qr-card-v282 center">
+    <div class="payment-wrap-v28 payment-pro-v283">
+      <div class="payment-card payment-qr-card-v283 center">
         <div class="payment-badge-v282">Secure UPI Payment</div>
-        <h3>Scan & Pay</h3>
+        <h3>Direct QR Code</h3>
         <img src="payment_qr.jpg" class="qr-img-v28" alt="Payment QR">
         <div class="upi-box-v28" id="upiText">kait.satnam@sbi</div>
         <button class="secondary-btn copy-upi-btn-v282" onclick="copyUPI()">📋 Copy UPI ID</button>
-        <p class="small-note">Receiving: <b>State Bank of India 6831</b></p>
+        <a class="primary-btn upi-pay-link" id="upiPayLink" href="upi://pay?pa=kait.satnam@sbi&pn=SATNAM%20SO%20SATBIR%20SINGH&cu=INR&am=49" target="_blank">Open UPI App</a>
+        <p class="small-note">Receiving Account: <b>State Bank of India 6831</b></p>
+
+        <details class="generate-qr-box">
+          <summary>Generate plan-specific UPI QR code</summary>
+          <p class="tool-subtitle">Select a plan and click Generate QR. This creates a QR code with the selected amount.</p>
+          <button class="secondary-btn" onclick="generatePlanQR()">Generate QR Code</button>
+          <img id="generatedQR" class="generated-qr-img hidden" alt="Generated UPI QR">
+        </details>
       </div>
 
       <div class="payment-card payment-form-card-v282">
-        <h3>Select Plan</h3>
+        <h3>Select Premium Plan</h3>
         <div class="plan-grid-v28">
-          <button class="plan-card-v28 active" data-plan="Monthly Premium" data-amount="49" data-days="30" onclick="selectPaymentPlan(this)">
-            <b>Monthly</b><span>₹49 / 30 days</span>
-          </button>
-          <button class="plan-card-v28" data-plan="Half Year Premium" data-amount="149" data-days="180" onclick="selectPaymentPlan(this)">
-            <b>Half Year</b><span>₹149 / 180 days</span>
-          </button>
-          <button class="plan-card-v28" data-plan="Yearly Premium" data-amount="499" data-days="365" onclick="selectPaymentPlan(this)">
-            <b>Yearly</b><span>₹499 / 365 days</span>
-          </button>
+          <button class="plan-card-v28 active" data-plan="Monthly Premium" data-amount="49" data-days="30" onclick="selectPaymentPlan(this)"><b>Monthly</b><span>₹49 / 30 days</span></button>
+          <button class="plan-card-v28" data-plan="Half Year Premium" data-amount="149" data-days="180" onclick="selectPaymentPlan(this)"><b>Half Year</b><span>₹149 / 180 days</span></button>
+          <button class="plan-card-v28" data-plan="Yearly Premium" data-amount="499" data-days="365" onclick="selectPaymentPlan(this)"><b>Yearly</b><span>₹499 / 365 days</span></button>
         </div>
 
-        <div class="selected-plan-v282" id="selectedPlanBox">
-          <strong>Selected:</strong> Monthly Premium — ₹49 / 30 days
-        </div>
+        <div class="selected-plan-v282" id="selectedPlanBox"><strong>Selected:</strong> Monthly Premium — ₹49 / 30 days</div>
 
         <div class="tool-box mt-15 payment-form-v281">
-          <label>Plan</label>
-          <input id="paymentPlan" value="Monthly Premium" readonly>
-
-          <label>Amount</label>
-          <input id="paymentAmount" type="number" value="49" readonly>
-
-          <label>Payment Method</label>
-          <input id="paymentMethod" value="UPI / QR" readonly>
-
-          <label>Transaction ID / UTR Number</label>
-          <input id="paymentTxn" placeholder="Example: 4321XXXXXXXX">
-
-          <label>Screenshot URL (optional)</label>
-          <input id="paymentScreenshot" placeholder="Google Drive / image link optional">
-
+          <label>Selected Plan</label><input id="paymentPlan" value="Monthly Premium" readonly>
+          <label>Amount</label><input id="paymentAmount" type="number" value="49" readonly>
+          <label>Payment Method</label><input id="paymentMethod" value="UPI / QR" readonly>
+          <label>Transaction ID / UTR Number</label><input id="paymentTxn" placeholder="Enter UTR / Transaction ID">
+          <label>Screenshot URL (optional)</label><input id="paymentScreenshot" placeholder="Paste Google Drive / image link if available">
           <button class="payment-submit-btn-v282" onclick="submitPayment()">Submit Payment Request</button>
-          <div class="payment-info-v282">✅ Submit ke baad admin ko email alert milega. Admin approve karega to premium activate hoga.</div>
+          <div class="payment-info-v282">After submission, the admin receives an email alert and can approve or reject the request from the admin panel.</div>
         </div>
       </div>
     </div>
@@ -354,15 +310,36 @@ function selectPaymentPlan(btn) {
   if (p) p.value = plan;
   if (a) a.value = amount;
   if (box) box.innerHTML = `<strong>Selected:</strong> ${plan} — ₹${amount} / ${days} days`;
+  updateUPIPaymentLink();
+  const qr = document.getElementById("generatedQR");
+  if (qr) qr.classList.add("hidden");
 }
 
 function copyUPI() {
   const upi = "kait.satnam@sbi";
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(upi).then(() => toast("UPI ID copied"));
-  } else {
-    toast("UPI ID: " + upi);
-  }
+  navigator.clipboard?.writeText(upi);
+  if (typeof toast === "function") toast("UPI ID copied successfully");
+}
+
+function buildUPIUrl() {
+  const amount = document.getElementById("paymentAmount")?.value || "49";
+  const plan = document.getElementById("paymentPlan")?.value || "Monthly Premium";
+  const note = encodeURIComponent("Smart Photo Toolkit - " + plan);
+  return `upi://pay?pa=kait.satnam@sbi&pn=SATNAM%20SO%20SATBIR%20SINGH&am=${amount}&cu=INR&tn=${note}`;
+}
+
+function updateUPIPaymentLink() {
+  const link = document.getElementById("upiPayLink");
+  if (link) link.href = buildUPIUrl();
+}
+
+function generatePlanQR() {
+  const qr = document.getElementById("generatedQR");
+  if (!qr) return;
+  const url = buildUPIUrl();
+  qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=" + encodeURIComponent(url);
+  qr.classList.remove("hidden");
+  if (typeof toast === "function") toast("Plan-specific QR code generated");
 }
 
 function premiumTool() {
@@ -387,7 +364,7 @@ function premiumTool() {
 function imageCompressor() {
   workspace.innerHTML = `
     <h2>🖼️ Image Compressor</h2>
-    <p class="tool-subtitle">Photo upload karo aur target KB select karo.</p>
+    <p class="tool-subtitle">Upload an image and select the target size.</p>
 
     <div class="tool-box">
       <label class="upload-box">
@@ -420,13 +397,13 @@ async function compressToTarget() {
   const input = $("#imageInput");
   const output = $("#compressOutput");
 
-  if (!input.files[0]) return alert("Pehle image upload karo.");
+  if (!input.files[0]) return alert("Please upload an image first.");
 
   let target = $("#targetSize").value === "custom"
     ? Number($("#customSize").value)
     : Number($("#targetSize").value);
 
-  if (!target || target < 5) return alert("Valid target KB enter karo.");
+  if (!target || target < 5) return alert("Please enter a valid target size in KB.");
 
   output.innerHTML = `<div class="progress-box">⏳ Compressing...</div>`;
 
@@ -491,7 +468,7 @@ async function compressToTarget() {
 function nameDateTool() {
   workspace.innerHTML = `
     <h2>🏷️ Name / Date Photo</h2>
-    <p class="tool-subtitle">Photo ke niche name/date/custom text add karo.</p>
+    <p class="tool-subtitle">Add name, date, or custom text below the photo.</p>
 
     <div class="tool-box">
       <label class="upload-box">
@@ -514,7 +491,7 @@ function nameDateTool() {
 
 async function makeNameDate() {
   const f = $("#ndImage").files[0];
-  if (!f) return alert("Photo upload karo.");
+  if (!f) return alert("Please upload a photo.");
 
   const img = await loadImage(await readFile(f));
 
@@ -556,7 +533,7 @@ async function makeNameDate() {
 
 /* End of PART 1 */
 /* =====================================================
-   Smart Photo Toolkit Pro v27
+   Smart Photo Toolkit Pro v28.3
    js/main.js — PART 2
    Passport Photo Maker
 ===================================================== */
@@ -568,7 +545,7 @@ function passportTool() {
 
   workspace.innerHTML = `
     <h2>👤 Passport Photo Maker</h2>
-    <p class="tool-subtitle">A4 PDF ke upar ek line me 5 photos. Border black rahega.</p>
+    <p class="tool-subtitle">Create a professional A4 PDF with five 35×45 mm photos in one row.</p>
 
     <div class="tool-box">
       <label class="upload-box">
@@ -581,7 +558,7 @@ function passportTool() {
         <input id="passDate" type="date">
       </div>
 
-      <button onclick="generatePassportSheet()">✅ Generate Passport PDF Layout</button>
+      <button onclick="generatePassportSheet()">Generate Passport PDF Layout</button>
     </div>
 
     <div class="crop-panel">
@@ -602,7 +579,7 @@ function passportTool() {
       </div>
 
       <div class="small-note">
-        Tip: Face ko center me rakho. PDF me 5 photos 35×45mm ek hi line me A4 ke top par aayengi.
+        Tip: Keep the face centered. The PDF will place five 35×45 mm photos at the top of an A4 page.
       </div>
     </div>
 
@@ -691,7 +668,7 @@ function updatePassportPreview() {
 }
 
 function generatePassportSheet() {
-  if (!passState.cropped) return alert("Photo upload karo aur preview set karo.");
+  if (!passState.cropped) return alert("Please upload a photo and adjust the preview first.");
 
   const name = $("#passName").value || "";
   const date = $("#passDate").value || "";
@@ -789,18 +766,18 @@ function refreshPassportUrl() {
 }
 
 function openPassportPDF() {
-  if (!lastPassportPDF) return alert("Pehle layout generate karo.");
+  if (!lastPassportPDF) return alert("Please generate the layout first.");
 
   const url = refreshPassportUrl();
   const win = window.open(url, "_blank");
 
   if (!win) {
-    alert("Popup blocked hai. Browser settings me popup allow karo, ya Download PDF try karo.");
+    alert("Popup was blocked. Please allow popups or use Download PDF.");
   }
 }
 
 function downloadPassportPDF() {
-  if (!lastPassportPDF) return alert("Pehle layout generate karo.");
+  if (!lastPassportPDF) return alert("Please generate the layout first.");
 
   try {
     const url = refreshPassportUrl();
@@ -819,7 +796,7 @@ function downloadPassportPDF() {
 }
 
 function printPassportPDF() {
-  if (!lastPassportPDF) return alert("Pehle layout generate karo.");
+  if (!lastPassportPDF) return alert("Please generate the layout first.");
 
   lastPassportPDF.autoPrint();
 
@@ -829,7 +806,7 @@ function printPassportPDF() {
 
 /* End of PART 2 */
 /* =====================================================
-   Smart Photo Toolkit Pro v27
+   Smart Photo Toolkit Pro v28.3
    js/main.js — PART 3
    Aadhaar Print Tool
 ===================================================== */
@@ -839,7 +816,7 @@ function printPassportPDF() {
 function aadhaarTool() {
   workspace.innerHTML = `
     <h2>🪪 Aadhaar Print Tool</h2>
-    <p class="tool-subtitle">PDF me drag crop karo. Output PDF me download/print hoga.</p>
+    <p class="tool-subtitle">Upload a PDF, drag the crop area, and create a print-ready PDF.</p>
 
     <div class="tab-row">
       <button class="tab-btn active" onclick="aadhaarMode('pdf',this)">UIDAI PDF Drag Crop</button>
@@ -895,7 +872,7 @@ function aadhaarMode(mode, btn) {
         <button onclick="makeAadhaarManualCrop()">Crop & Create PDF Layout</button>
 
         <div class="small-note">
-          PDF load hone ke baad orange box ko finger se move karo. Corner dot se resize karo.
+          After the PDF loads, move the orange box and resize it from the corner handle.
         </div>
       </div>
 
@@ -1114,12 +1091,12 @@ function initDragCrop() {
 }
 
 async function makeAadhaarManualCrop() {
-  if (!aadPdfCanvas) return alert("Pehle PDF upload karo.");
+  if (!aadPdfCanvas) return alert("Please upload a PDF first.");
 
   const preview = $("#aadPreview");
   const box = $("#cropBox");
 
-  if (!preview || !box) return alert("Preview load nahi hua.");
+  if (!preview || !box) return alert("Preview was not loaded.");
 
   const canvasRect = preview.getBoundingClientRect();
   const boxRect = box.getBoundingClientRect();
@@ -1198,7 +1175,7 @@ function aadhaarPreviewHTML(content, copies, pos) {
 async function makeAadhaarFull() {
   const f = $("#aadFull").files[0];
 
-  if (!f) return alert("Full Aadhaar image upload karo.");
+  if (!f) return alert("Please upload the full Aadhaar image.");
 
   const src = await readFile(f);
   const copies = Number($("#aadCopies").value);
@@ -1221,7 +1198,7 @@ async function makeAadhaarFrontBack() {
   const f = $("#aadFront").files[0];
   const b = $("#aadBack").files[0];
 
-  if (!f && !b) return alert("Front ya back image upload karo.");
+  if (!f && !b) return alert("Please upload the front or back image.");
 
   const front = f ? await readFile(f) : "";
   const back = b ? await readFile(b) : "";
@@ -1249,7 +1226,7 @@ async function makeAadhaarFrontBack() {
 
 /* End of PART 3 */
 /* =====================================================
-   Smart Photo Toolkit Pro v27
+   Smart Photo Toolkit Pro v28.3
    js/main.js — PART 4
    Aadhaar PDF Output + PDF Resizer + Helper Functions
 ===================================================== */
@@ -1313,18 +1290,18 @@ function refreshAadhaarUrl() {
 }
 
 function openAadhaarPDF() {
-  if (!lastAadhaarPDF) return alert("Pehle Aadhaar layout generate karo.");
+  if (!lastAadhaarPDF) return alert("Please generate the Aadhaar layout first.");
 
   const url = refreshAadhaarUrl();
   const win = window.open(url, "_blank");
 
   if (!win) {
-    alert("Popup blocked hai. Browser settings me popup allow karo, ya Download PDF try karo.");
+    alert("Popup was blocked. Please allow popups or use Download PDF.");
   }
 }
 
 function downloadAadhaarPDF() {
-  if (!lastAadhaarPDF) return alert("Pehle Aadhaar layout generate karo.");
+  if (!lastAadhaarPDF) return alert("Please generate the Aadhaar layout first.");
 
   try {
     const url = refreshAadhaarUrl();
@@ -1343,7 +1320,7 @@ function downloadAadhaarPDF() {
 }
 
 function printAadhaarPDF() {
-  if (!lastAadhaarPDF) return alert("Pehle Aadhaar layout generate karo.");
+  if (!lastAadhaarPDF) return alert("Please generate the Aadhaar layout first.");
 
   lastAadhaarPDF.autoPrint();
 
@@ -1356,7 +1333,7 @@ function printAadhaarPDF() {
 function pdfResizerTool() {
   workspace.innerHTML = `
     <h2>📄 PDF Resizer</h2>
-    <p class="tool-subtitle">PDF upload karo aur target size ke according compress karo.</p>
+    <p class="tool-subtitle">Upload a PDF and compress it according to the target size.</p>
 
     <div class="tool-box">
       <label class="upload-box">
@@ -1395,7 +1372,7 @@ async function compressPdfBasic() {
   const input = $("#pdfInput");
   const output = $("#pdfOutput");
 
-  if (!input.files[0]) return alert("PDF upload karo.");
+  if (!input.files[0]) return alert("Please upload a PDF.");
 
   const file = input.files[0];
 
@@ -1403,10 +1380,10 @@ async function compressPdfBasic() {
     ? Number($("#pdfCustomSize").value)
     : Number($("#pdfTargetSize").value);
 
-  if (!target || target < 50) return alert("Valid target KB enter karo.");
+  if (!target || target < 50) return alert("Please enter a valid target size in KB.");
 
   if (!window.pdfjsLib || !window.jspdf) {
-    return alert("PDF library load nahi hui. Internet on karke refresh karo.");
+    return alert("PDF library was not loaded. Please check your internet connection and refresh.");
   }
 
   output.innerHTML = `<div class="progress-box">⏳ PDF processing...</div>`;

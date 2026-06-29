@@ -1,4 +1,4 @@
-/* Smart Photo Toolkit Pro v28.1 - script.js */
+/* Smart Photo Toolkit Pro v28.3 - script.js */
 const SPT_API_URL = window.SPT_CONFIG?.apiUrl || "https://script.google.com/macros/s/AKfycbzNel2GhBCLmvCt6kH75uODdsYhLnwhFlYb-3tBi3ubLtbvdi9HdGpDLt6SEXaaIJJC3A/exec";
 
 const SPT = {
@@ -22,6 +22,7 @@ const SPT = {
     this.token = token;
     localStorage.setItem("spt_user", JSON.stringify(user));
     localStorage.setItem("spt_token", token);
+    if (typeof updateAuthUI === "function") updateAuthUI();
   },
 
   logout() {
@@ -30,6 +31,7 @@ const SPT = {
     this.user = null;
     this.token = "";
     toast("Logout successful");
+    if (typeof updateAuthUI === "function") updateAuthUI();
     showTool("login");
   }
 };
@@ -64,7 +66,7 @@ function clearBusy(btn) {
 
 function requireLogin() {
   if (!SPT.token) {
-    toast("Please login first");
+    toast("Please login to continue");
     showTool("login");
     return false;
   }
@@ -81,14 +83,14 @@ function appUserName() {
 
 async function signupSubmit() {
   const btn = event?.target;
-  const name = val("signupName"), email = val("signupEmail"), password = val("signupPassword"), mobile = val("signupMobile");
-  if (!name || !email || !password) return toast("Name, email, password required");
+  const name = val("signupName"), email = val("signupEmail"), password = val("signupPassword"), mobile = val("signupMobile"), address = val("signupAddress");
+  if (!name || !email || !mobile || !address || !password) return toast("Please complete all required fields: name, email, mobile, address, and password.");
   setBusy(btn, "Creating account...");
-  const r = await SPT.api("signup", { name, email, password, mobile });
+  const r = await SPT.api("signup", { name, email, password, mobile, address });
   clearBusy(btn);
   if (!r.success) return toast(r.message);
   SPT.saveLogin(r.user, r.token);
-  toast("Signup successful");
+  toast("Account created successfully");
   showTool("dashboard");
 }
 
@@ -147,7 +149,7 @@ async function submitPayment() {
   if (!requireLogin()) return;
   const btn = event?.target;
   const txn = val("paymentTxn");
-  if (!txn) return toast("Transaction ID / UTR required");
+  if (!txn) return toast("Please enter the Transaction ID / UTR number");
   setBusy(btn, "Submitting payment...");
   const r = await SPT.api("submitPayment", {
     token: SPT.token,
