@@ -1,4 +1,4 @@
-/* Smart Photo Toolkit Pro v29 - script.js */
+/* Smart Photo Toolkit Pro v30 - script.js */
 const SPT_API_URL = window.SPT_CONFIG?.apiUrl || "https://script.google.com/macros/s/AKfycbzNel2GhBCLmvCt6kH75uODdsYhLnwhFlYb-3tBi3ubLtbvdi9HdGpDLt6SEXaaIJJC3A/exec";
 
 const SPT = {
@@ -212,6 +212,7 @@ async function verifyPaymentAdmin(paymentId, status) {
   clearBusy(btn);
   toast(r.message);
   loadPayments();
+  setTimeout(() => { if (typeof loadAdminStats === "function") loadAdminStats(); }, 300);
 }
 
 async function loadFeedbacks() {

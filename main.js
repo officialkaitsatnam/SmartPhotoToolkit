@@ -1,5 +1,5 @@
 /* =====================================================
-   Smart Photo Toolkit Pro v29
+   Smart Photo Toolkit Pro v30
    js/main.js — PART 1
    App Init + Navigation + Auth + Compressor + Name Date
 ===================================================== */
@@ -146,6 +146,7 @@ function openTool(tool) {
   if (tool === "feedback") return feedbackTool();
   if (tool === "payment") return paymentTool();
   if (tool === "premium") return premiumTool();
+  if (tool === "logout") return SPT.logout();
 
   return home();
 }
@@ -248,6 +249,7 @@ function dashboardTool() {
 
     <div class="action-row">
       <button class="secondary-btn" onclick="showTool('premium')">Upgrade Premium</button>
+      <button class="primary-btn" onclick="showTool('payment')">Make Payment</button>
       <button class="print-btn" onclick="SPT.logout()">Logout</button>
     </div>
   `;
@@ -272,9 +274,13 @@ function adminTool() {
     </div>
 
     <div id="adminContent" class="admin-card">
-      <div class="progress-box">Select an admin option. New payment requests will appear under Payments.</div>
+      <div class="progress-box">Loading admin overview...</div>
     </div>
   `;
+
+  setTimeout(() => {
+    if (typeof loadAdminStats === "function") loadAdminStats();
+  }, 100);
 }
 
 function feedbackTool() {
@@ -299,14 +305,14 @@ function paymentTool() {
     <h2>💳 Premium Payment</h2>
     <p class="tool-subtitle">Select a premium plan, generate a UPI QR code for the selected amount, complete the payment, and submit your UTR/Transaction ID for admin verification.</p>
 
-    <div class="payment-wrap-v28 payment-pro-v29">
-      <div class="payment-card payment-qr-card-v29 center">
+    <div class="payment-wrap-v28 payment-pro-v30">
+      <div class="payment-card payment-qr-card-v30 center">
         <div class="payment-badge-v282">Secure UPI Payment</div>
         <h3>Generate Payment QR</h3>
         <p class="tool-subtitle">The QR code is generated only after you select a plan and click the button below.</p>
 
-        <div class="qr-placeholder-v29" id="qrPlaceholder">
-          <div class="qr-placeholder-icon-v29">🔒</div>
+        <div class="qr-placeholder-v30" id="qrPlaceholder">
+          <div class="qr-placeholder-icon-v30">🔒</div>
           <strong>No QR generated yet</strong>
           <span>Select a plan and click “Generate Payment QR”.</span>
         </div>
@@ -330,7 +336,7 @@ function paymentTool() {
         <div class="selected-plan-v282" id="selectedPlanBox"><strong>Selected:</strong> Monthly Premium — ₹49 / 30 days</div>
 
         <div class="action-row">
-          <button class="primary-btn generate-payment-btn-v29" onclick="generatePlanQR()">Generate Payment QR</button>
+          <button class="primary-btn generate-payment-btn-v30" onclick="generatePlanQR()">Generate Payment QR</button>
         </div>
 
         <div class="tool-box mt-15 payment-form-v281">
@@ -596,7 +602,7 @@ async function makeNameDate() {
 
 /* End of PART 1 */
 /* =====================================================
-   Smart Photo Toolkit Pro v29
+   Smart Photo Toolkit Pro v30
    js/main.js — PART 2
    Passport Photo Maker
 ===================================================== */
@@ -869,7 +875,7 @@ function printPassportPDF() {
 
 /* End of PART 2 */
 /* =====================================================
-   Smart Photo Toolkit Pro v29
+   Smart Photo Toolkit Pro v30
    js/main.js — PART 3
    Aadhaar Print Tool
 ===================================================== */
@@ -1289,7 +1295,7 @@ async function makeAadhaarFrontBack() {
 
 /* End of PART 3 */
 /* =====================================================
-   Smart Photo Toolkit Pro v29
+   Smart Photo Toolkit Pro v30
    js/main.js — PART 4
    Aadhaar PDF Output + PDF Resizer + Helper Functions
 ===================================================== */
