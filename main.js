@@ -192,7 +192,7 @@ function loginTool() {
         </div>
 
         <div class="auth-hero-content">
-          <span class="auth-pill">v33 Auth Pro</span>
+          <span class="auth-pill">v33 Enterprise</span>
           <h1>Welcome back</h1>
           <p>Login to manage your dashboard, payment status, premium plan, and tool history.</p>
 
