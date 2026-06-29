@@ -1,0 +1,3 @@
+GitHub: Replace all files from this ZIP into the repository root.
+Apps Script: Not required for v37.2 Alpha.
+Google Sheet: Not required.
