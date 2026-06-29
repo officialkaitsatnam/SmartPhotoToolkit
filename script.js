@@ -1,4 +1,4 @@
-/* Smart Photo Toolkit Pro v31 - script.js */
+/* Smart Photo Toolkit Pro v32 - script.js */
 const SPT_API_URL = window.SPT_CONFIG?.apiUrl || "https://script.google.com/macros/s/AKfycbzNel2GhBCLmvCt6kH75uODdsYhLnwhFlYb-3tBi3ubLtbvdi9HdGpDLt6SEXaaIJJC3A/exec";
 
 const SPT = {
@@ -150,7 +150,7 @@ async function submitPayment() {
   const btn = event?.target;
   const txn = val("paymentTxn");
   if (!txn) return toast("Please enter the Transaction ID / UTR number");
-  setBusy(btn, "Submitting payment...");
+  setBusy(btn, "Activating premium...");
   const r = await SPT.api("submitPayment", {
     token: SPT.token,
     planName: val("paymentPlan"),
@@ -161,7 +161,12 @@ async function submitPayment() {
   });
   clearBusy(btn);
   toast(r.message);
-  if (r.success) showTool("dashboard");
+  if (r.success && r.user) {
+    SPT.saveLogin(r.user, SPT.token);
+    showTool("dashboard");
+  } else if (r.success) {
+    showTool("dashboard");
+  }
 }
 
 async function loadAdminStats() {
@@ -233,8 +238,8 @@ function val(id) { const el = document.getElementById(id); return el ? el.value.
 function html(id, content) { const el = document.getElementById(id); if (el) el.innerHTML = content; }
 
 
-/* v31 Enterprise helper functions */
-async function updateFeedbackReplyV31(feedbackId){
+/* v32 Enterprise helper functions */
+async function updateFeedbackReplyV32(feedbackId){
   if(!requireLogin()||!isAdmin()) return;
   const reply=prompt("Enter admin reply"); if(reply===null) return;
   const r=await SPT.api("adminReplyFeedback",{token:SPT.token,feedbackId,reply});
