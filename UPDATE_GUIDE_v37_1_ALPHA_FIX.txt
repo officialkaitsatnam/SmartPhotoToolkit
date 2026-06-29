@@ -1,0 +1,8 @@
+Smart Photo Toolkit v37.1 Alpha Fix Update Guide
+
+1. Extract ZIP.
+2. Upload/replace all files in GitHub root.
+3. Apps Script update is NOT required.
+4. Open: https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=37.1-alpha
+5. Press Ctrl + Shift + R.
+6. If still old UI appears, open browser site settings and clear cache for GitHub Pages.

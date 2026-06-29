@@ -2299,3 +2299,241 @@ dashboardTool = function(){
 };
 
 setTimeout(()=>{try{if(typeof updateAuthUI==='function') updateAuthUI();}catch(e){}},600);
+
+/* =====================================================
+   v37.0 Alpha – Image Studio + Document Studio
+   Built on V36 master package
+===================================================== */
+const V37_CARD_TYPES = {
+  aadhaar: { label: 'Aadhaar Card', icon: '🪪', w: 85.6, h: 54, note: 'Standard ID card layout for Aadhaar front/back printing.' },
+  voter: { label: 'Voter ID Card', icon: '🗳️', w: 85.6, h: 54, note: 'Print voter ID front/back on A4 with clean borders.' },
+  pan: { label: 'PAN Card', icon: '💳', w: 85.6, h: 54, note: 'PAN card print layout with single or multiple copies.' },
+  ayushman: { label: 'Ayushman Card', icon: '❤️', w: 85.6, h: 54, note: 'Ayushman card front/back print-ready PDF.' },
+  dl: { label: 'Driving Licence', icon: '🚘', w: 85.6, h: 54, note: 'Driving licence card layout for image/PDF prints.' },
+  abha: { label: 'ABHA Card', icon: '🩺', w: 85.6, h: 54, note: 'ABHA health card print-ready layout.' }
+};
+let v37SelectedCardType = 'aadhaar';
+
+function studioHeroV37(title, subtitle){
+  return `<div class="studio-hero-v37 fade-in"><div><span class="enterprise-chip">v37.0 Alpha</span><h2>${title}</h2><p>${subtitle}</p></div><div class="studio-hero-badge-v37">Enterprise Studio</div></div>`;
+}
+
+function imageStudioTool(){
+  workspace.innerHTML = `
+    ${studioHeroV37('Image Studio', 'Passport photos and every image-processing tool are now grouped in one professional workspace.')}
+    <div class="studio-grid-v37">
+      <button class="studio-card-v37 primary-studio" onclick="passportTool()"><b>👤</b><h3>Passport Photo Studio</h3><p>Draw/select printable 35×45 mm crop area. No sliders. A4 PDF output.</p><span>Open Studio →</span></button>
+      <button class="studio-card-v37" onclick="imageCompressor()"><b>🗜️</b><h3>Image Compressor</h3><p>Compress photos to 20 KB, 50 KB, 100 KB or custom size.</p><span>Compress →</span></button>
+      <button class="studio-card-v37" onclick="nameDateTool()"><b>🏷️</b><h3>Name & Date Photo</h3><p>Add name, date, or custom text below a photo.</p><span>Create →</span></button>
+      <button class="studio-card-v37" onclick="imageResizeToolV37()"><b>📏</b><h3>Resize Image</h3><p>Resize photo by width and height while keeping quality.</p><span>Resize →</span></button>
+      <button class="studio-card-v37" onclick="imageConvertToolV37()"><b>🔄</b><h3>Image Converter</h3><p>Convert image output to JPG, PNG, or WEBP.</p><span>Convert →</span></button>
+      <button class="studio-card-v37" onclick="photoSizeLibraryV37()"><b>📚</b><h3>Photo Size Library</h3><p>Passport, 2×2 inch, visa sizes, ID photo sizes, and custom dimensions.</p><span>View Sizes →</span></button>
+    </div>`;
+}
+
+function photoSizeLibraryV37(){
+  workspace.innerHTML = `
+    ${studioHeroV37('Photo Size Library', 'Choose a standard photo size and then open Passport Studio to crop and print.')}
+    <div class="size-library-v37">
+      ${[
+        ['Passport India','35 × 45 mm','Best for Indian passport style prints'],
+        ['2 × 2 Inch','51 × 51 mm','Common visa and ID photo format'],
+        ['1 × 1 Inch','25 × 25 mm','Small ID photo format'],
+        ['US Visa','2 × 2 inch','US visa-ready size'],
+        ['Canada Visa','35 × 45 mm','Canada visa/passport style'],
+        ['UK Passport','35 × 45 mm','UK passport style photo'],
+        ['Schengen Visa','35 × 45 mm','Schengen visa photo'],
+        ['OCI Photo','51 × 51 mm','OCI application style size'],
+        ['Custom Size','User-defined','Custom size foundation for future release']
+      ].map(x=>`<div class="size-card-v37"><h3>${x[0]}</h3><strong>${x[1]}</strong><p>${x[2]}</p><button class="secondary-btn" onclick="passportTool()">Use in Studio</button></div>`).join('')}
+    </div>`;
+}
+
+function imageResizeToolV37(){
+  workspace.innerHTML = `
+    ${studioHeroV37('Resize Image', 'Resize an image to a custom width and height. This is a v37 alpha image utility.')}
+    <div class="tool-box">
+      <label class="upload-box"><input id="resizeImageV37" type="file" accept="image/*"><span>📤 Upload Image</span></label>
+      <div class="row"><input id="resizeWv37" type="number" placeholder="Width px"><input id="resizeHv37" type="number" placeholder="Height px"></div>
+      <button onclick="makeResizeV37()">Resize Image</button>
+    </div><div id="resizeOutputV37"></div>`;
+}
+async function makeResizeV37(){
+  const f=document.getElementById('resizeImageV37')?.files?.[0]; if(!f) return alert('Please upload an image.');
+  const w=Number(document.getElementById('resizeWv37').value), h=Number(document.getElementById('resizeHv37').value); if(!w||!h) return alert('Enter width and height.');
+  const img=await loadImage(await readFile(f)); const c=document.createElement('canvas'),ctx=c.getContext('2d'); c.width=w;c.height=h;ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h); const data=c.toDataURL('image/jpeg',.92);
+  document.getElementById('resizeOutputV37').innerHTML=`<div class="result-card"><h3>✅ Image Resized</h3><img class="preview-img" src="${data}"><button class="download-btn" onclick="forceDownload('${data}','resized-image.jpg')">Download Image</button></div>`;
+  if(typeof logToolUsage==='function') logToolUsage('Image Resize v37',{fileName:f.name,toolType:'Image'});
+}
+
+function imageConvertToolV37(){
+  workspace.innerHTML = `
+    ${studioHeroV37('Image Converter', 'Convert an image into JPG, PNG, or WEBP format directly in the browser.')}
+    <div class="tool-box">
+      <label class="upload-box"><input id="convertImageV37" type="file" accept="image/*"><span>📤 Upload Image</span></label>
+      <select id="convertFormatV37"><option value="image/jpeg">JPG</option><option value="image/png">PNG</option><option value="image/webp">WEBP</option></select>
+      <button onclick="makeConvertV37()">Convert Image</button>
+    </div><div id="convertOutputV37"></div>`;
+}
+async function makeConvertV37(){
+  const f=document.getElementById('convertImageV37')?.files?.[0]; if(!f) return alert('Please upload an image.');
+  const fmt=document.getElementById('convertFormatV37').value; const img=await loadImage(await readFile(f)); const c=document.createElement('canvas'),ctx=c.getContext('2d'); c.width=img.width;c.height=img.height;ctx.drawImage(img,0,0); const data=c.toDataURL(fmt,.92); const ext=fmt.includes('png')?'png':fmt.includes('webp')?'webp':'jpg';
+  document.getElementById('convertOutputV37').innerHTML=`<div class="result-card"><h3>✅ Image Converted</h3><p>Format: ${ext.toUpperCase()}</p><img class="preview-img" src="${data}"><button class="download-btn" onclick="forceDownload('${data}','converted-image.${ext}')">Download ${ext.toUpperCase()}</button></div>`;
+  if(typeof logToolUsage==='function') logToolUsage('Image Converter v37',{fileName:f.name,toolType:'Image'});
+}
+
+function documentStudioTool(){
+  workspace.innerHTML = `
+    ${studioHeroV37('Document Studio', 'Print Aadhaar, Voter ID, PAN, Ayushman, Driving Licence, and ABHA cards from images in one universal card engine.')}
+    <div class="doc-type-grid-v37">
+      ${Object.entries(V37_CARD_TYPES).map(([key,c])=>`<button class="doc-type-card-v37 ${key===v37SelectedCardType?'active':''}" onclick="selectDocTypeV37('${key}')"><b>${c.icon}</b><span>${c.label}</span></button>`).join('')}
+    </div>
+    <div id="docStudioBoxV37"></div>`;
+  renderDocStudioBoxV37();
+}
+function selectDocTypeV37(type){v37SelectedCardType=type;documentStudioTool();}
+function renderDocStudioBoxV37(){
+  const c=V37_CARD_TYPES[v37SelectedCardType];
+  const box=document.getElementById('docStudioBoxV37'); if(!box) return;
+  box.innerHTML = `
+    <div class="doc-workbench-v37">
+      <div class="tool-box">
+        <h3>${c.icon} ${c.label} Print</h3>
+        <p class="tool-subtitle">${c.note}</p>
+        <label>Front Image</label><input id="docFrontV37" type="file" accept="image/*">
+        <label>Back Image optional</label><input id="docBackV37" type="file" accept="image/*">
+        <div class="row"><select id="docCopiesV37"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option><option value="8">8 Copies</option></select><select id="docPositionV37"><option value="top-center">Top Center</option><option value="top-left">Top Left</option></select></div>
+        <button onclick="makeDocumentCardPDFV37()">Create Print PDF</button>
+      </div>
+      <div id="docOutputV37"></div>
+    </div>`;
+}
+async function makeDocumentCardPDFV37(){
+  const front=document.getElementById('docFrontV37')?.files?.[0]; const back=document.getElementById('docBackV37')?.files?.[0]; if(!front && !back) return alert('Please upload front or back image.');
+  const srcs=[]; if(front) srcs.push(await readFile(front)); if(back) srcs.push(await readFile(back));
+  const copies=Number(document.getElementById('docCopiesV37').value||1); const pos=document.getElementById('docPositionV37').value||'top-center'; const card=V37_CARD_TYPES[v37SelectedCardType];
+  const pdf=await createV37CardPDF(srcs,copies,pos,card); const url=URL.createObjectURL(pdf.output('blob'));
+  let preview=''; for(let i=0;i<copies;i++){srcs.forEach(s=>preview+=`<img class="aadhaar-card" src="${s}">`)}
+  document.getElementById('docOutputV37').innerHTML=`<div class="result-card"><div class="action-row"><a class="open-btn" href="${url}" target="_blank">📂 Open PDF</a><a class="pdf-btn" href="${url}" download="${card.label.replace(/\s+/g,'-').toLowerCase()}-print.pdf">📄 Download PDF</a></div><div class="passport-final-note">✅ ${card.label} print-ready A4 PDF created.</div><div class="print-area ${pos}"><div class="aadhaar-wrap">${preview}</div></div></div>`;
+  if(typeof logToolUsage==='function') logToolUsage(card.label+' Print v37',{toolType:'PDF'});
+}
+async function createV37CardPDF(srcs,copies,pos,card){
+  const { jsPDF } = window.jspdf; const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}); let y=10; const gap=8;
+  for(let copy=0; copy<copies; copy++){
+    const dims=srcs.map(s=>({src:s,w:card.w,h:card.h})); const totalW=dims.reduce((a,d)=>a+d.w,0)+(dims.length-1)*gap; let x=pos==='top-left'?10:(210-totalW)/2;
+    for(const d of dims){pdf.addImage(d.src,'JPEG',x,y,d.w,d.h);pdf.setDrawColor(50);pdf.setLineWidth(.25);pdf.rect(x,y,d.w,d.h);x+=d.w+gap;}
+    y += card.h + 8; if(y>250 && copy<copies-1){pdf.addPage();y=10;}
+  }
+  return pdf;
+}
+
+function pdfStudioTool(){
+  workspace.innerHTML = `
+    ${studioHeroV37('PDF Studio', 'PDF tools grouped into one workspace. Resize is active; merge/split/rotate are planned for the next v37 beta sprint.')}
+    <div class="studio-grid-v37"><button class="studio-card-v37 primary-studio" onclick="pdfResizerTool()"><b>📄</b><h3>PDF Resize / Compress</h3><p>Use the current browser-based PDF resizing tool.</p><span>Open Tool →</span></button><button class="studio-card-v37 locked-v37"><b>🔗</b><h3>Merge PDF</h3><p>Coming in v37.2 beta.</p><span>Planned</span></button><button class="studio-card-v37 locked-v37"><b>✂️</b><h3>Split PDF</h3><p>Coming in v37.2 beta.</p><span>Planned</span></button><button class="studio-card-v37 locked-v37"><b>🔄</b><h3>Rotate PDF</h3><p>Coming in v37.2 beta.</p><span>Planned</span></button></div>`;
+}
+
+const _v37PrevOpenTool = openTool;
+openTool = function(tool){
+  setActive(tool);
+  if(tool==='imageStudio') return imageStudioTool();
+  if(tool==='documentStudio') return documentStudioTool();
+  if(tool==='pdfStudio') return pdfStudioTool();
+  return _v37PrevOpenTool(tool);
+};
+
+// v37 final sidebar repair for older cached DOM.
+setTimeout(()=>{try{
+  const sidebar=document.getElementById('sidebar'); if(!sidebar) return;
+  const oldTools=['compressor','namedate','passport','aadhaar','pdfresizer'];
+  oldTools.forEach(t=>{const el=sidebar.querySelector(`[data-tool="${t}"]`); if(el) el.remove();});
+  const homeBtn=sidebar.querySelector('[data-tool="home"]');
+  const add=(tool,text)=>{if(sidebar.querySelector(`[data-tool="${tool}"]`))return; const b=document.createElement('button'); b.className='nav-item'; b.dataset.tool=tool; b.textContent=text; b.onclick=()=>openTool(tool); homeBtn?.after(b);};
+  add('pdfStudio','📄 PDF Studio'); add('documentStudio','🪪 Document Studio'); add('imageStudio','🖼️ Image Studio');
+  if(typeof updateAuthUI==='function') updateAuthUI();
+}catch(e){console.warn('v37 sidebar repair skipped',e)}},500);
+
+const _v37Home = home;
+home = function(){
+  workspace.innerHTML = `
+    ${studioHeroV37('Smart Photo Toolkit Enterprise v37', 'Final architecture alpha: Image Studio, Document Studio, PDF Studio, Account, Premium, and Admin are now organized for long-term expansion.')}
+    <div class="studio-grid-v37">
+      <button class="studio-card-v37 primary-studio" onclick="openTool('imageStudio')"><b>🖼️</b><h3>Image Studio</h3><p>Passport Photo Studio, compressor, resize, converter, and name/date tools.</p><span>Open Image Studio →</span></button>
+      <button class="studio-card-v37" onclick="openTool('documentStudio')"><b>🪪</b><h3>Document Studio</h3><p>Aadhaar, Voter ID, PAN, Ayushman, Driving Licence, and ABHA print layouts.</p><span>Open Document Studio →</span></button>
+      <button class="studio-card-v37" onclick="openTool('pdfStudio')"><b>📄</b><h3>PDF Studio</h3><p>PDF resize is active. Merge, split, and rotate are planned next.</p><span>Open PDF Studio →</span></button>
+      <button class="studio-card-v37" onclick="openTool('dashboard')"><b>👤</b><h3>Account Workspace</h3><p>Profile, membership, payments, activity, and future download history.</p><span>Open Account →</span></button>
+    </div>
+    <div class="v37-status"><h3>v37.0 Alpha Changelog</h3><p>Image Studio architecture added, Passport Studio grouped under Image Studio, Document Studio added with Aadhaar/Voter/PAN/Ayushman/DL/ABHA print support, and PDF tools grouped under PDF Studio.</p></div>`;
+};
+
+
+/* =====================================================
+   v37.1 ALPHA FIX – Final Architecture Hard Override
+   This block forces Image Studio / Document Studio / PDF Studio
+   to appear even if older v35/v36 cached overrides were loaded.
+===================================================== */
+(function(){
+  function ensureV37NavFinal(){
+    const sidebar=document.getElementById('sidebar');
+    if(!sidebar) return;
+    const oldTools=['compressor','namedate','passport','aadhaar','pdfresizer'];
+    oldTools.forEach(t=>{ const el=sidebar.querySelector(`[data-tool="${t}"]`); if(el) el.remove(); });
+    const homeBtn=sidebar.querySelector('[data-tool="home"]');
+    const desired=[
+      ['imageStudio','🖼️ Image Studio'],
+      ['documentStudio','🪪 Document Studio'],
+      ['pdfStudio','📄 PDF Studio']
+    ];
+    // Insert in correct order after Home
+    let anchor=homeBtn;
+    desired.forEach(([tool,text])=>{
+      let btn=sidebar.querySelector(`[data-tool="${tool}"]`);
+      if(!btn){
+        btn=document.createElement('button');
+        btn.className='nav-item';
+        btn.dataset.tool=tool;
+      }
+      btn.textContent=text;
+      btn.onclick=()=>openTool(tool);
+      if(anchor && anchor.nextSibling!==btn) sidebar.insertBefore(btn, anchor.nextSibling);
+      anchor=btn;
+    });
+    if(typeof updateAuthUI==='function') updateAuthUI();
+  }
+
+  const previousOpenTool = window.openTool || openTool;
+  window.openTool = openTool = function(tool){
+    const user = typeof getCurrentUser==='function' ? getCurrentUser() : (window.SPT && SPT.user);
+    if(['dashboard','payment','premium'].includes(tool) && !user){ setActive('login'); return loginTool(); }
+    if(tool==='admin' && typeof userIsAdminAccount==='function' && !userIsAdminAccount(user)){
+      setActive(user ? 'dashboard' : 'login');
+      workspace.innerHTML = `<h2>Admin Panel</h2><div class="warning-box">Admin access is available only after signing in with the authorized administrator account.</div><button class="primary-btn" onclick="showTool('login')">Login</button>`;
+      return;
+    }
+    setActive(tool);
+    if(tool==='imageStudio') return imageStudioTool();
+    if(tool==='documentStudio') return documentStudioTool();
+    if(tool==='pdfStudio') return pdfStudioTool();
+    if(tool==='compressor') return imageStudioTool();
+    if(tool==='namedate') return imageStudioTool();
+    if(tool==='passport') return passportTool();
+    if(tool==='aadhaar') return documentStudioTool();
+    return previousOpenTool(tool);
+  };
+
+  window.home = home = function(){
+    workspace.innerHTML = `
+      ${typeof studioHeroV37==='function' ? studioHeroV37('Smart Photo Toolkit Enterprise v37.1', 'Final architecture alpha is active: Image Studio, Document Studio, PDF Studio, Account, Premium and Admin are now grouped for long-term expansion.') : '<h2>Smart Photo Toolkit Enterprise v37.1</h2>'}
+      <div class="studio-grid-v37">
+        <button class="studio-card-v37 primary-studio" onclick="openTool('imageStudio')"><b>🖼️</b><h3>Image Studio</h3><p>Passport Photo Studio, compressor, resize, converter, and name/date tools.</p><span>Open Image Studio →</span></button>
+        <button class="studio-card-v37" onclick="openTool('documentStudio')"><b>🪪</b><h3>Document Studio</h3><p>Aadhaar, Voter ID, PAN, Ayushman, Driving Licence, and ABHA print layouts.</p><span>Open Document Studio →</span></button>
+        <button class="studio-card-v37" onclick="openTool('pdfStudio')"><b>📄</b><h3>PDF Studio</h3><p>PDF resize is active. Merge, split, and rotate will be added in the next beta sprint.</p><span>Open PDF Studio →</span></button>
+        <button class="studio-card-v37" onclick="openTool('dashboard')"><b>👤</b><h3>Account Workspace</h3><p>Profile, membership, payments, activity, and future download history.</p><span>Open Account →</span></button>
+      </div>
+      <div class="v37-status"><h3>v37.1 Alpha Fix</h3><p>Home and sidebar now force the new architecture. Passport is inside Image Studio, and Document Studio includes Aadhaar, Voter ID, PAN, Ayushman, Driving Licence, and ABHA print support.</p></div>`;
+  };
+
+  window.addEventListener('load',()=>{
+    setTimeout(()=>{ ensureV37NavFinal(); home(); },700);
+  });
+})();
