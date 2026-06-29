@@ -1,0 +1,10 @@
+{
+  "name": "Smart Photo Toolkit Pro",
+  "short_name": "SPT Pro",
+  "start_url": "./?v=35",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#2563eb",
+  "description": "Passport photo, Aadhaar print, image compression and PDF tools.",
+  "icons": []
+}

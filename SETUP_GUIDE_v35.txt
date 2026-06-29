@@ -1,0 +1,10 @@
+Setup Guide v35
+
+1. Extract ZIP.
+2. Upload root files to GitHub repository root.
+3. Replace Apps Script code with ALL_IN_ONE_Code_v35.gs.
+4. Save and run initializeDatabase().
+5. Deploy > Manage deployments > Edit > New version > Deploy.
+6. Open site with ?v=35 and hard refresh.
+
+Important: Real UPI bank verification is not possible using only static UPI QR + Apps Script. Current payment auto premium mode is trust-based after UTR submission unless a payment gateway is integrated.

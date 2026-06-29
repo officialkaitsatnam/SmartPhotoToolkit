@@ -192,7 +192,7 @@ function loginTool() {
         </div>
 
         <div class="auth-hero-content">
-          <span class="auth-pill">v33 Enterprise</span>
+          <span class="auth-pill">v35 Enterprise</span>
           <h1>Welcome back</h1>
           <p>Login to manage your dashboard, payment status, premium plan, and tool history.</p>
 
@@ -1915,3 +1915,67 @@ function home(){
     </div>`;
   bindHomeToolCardsV321();
 }
+
+
+/* ================= v35 ENTERPRISE OVERRIDES ================= */
+function home(){
+  workspace.innerHTML = `
+    <h2>Welcome to Smart Photo Toolkit Pro 👋</h2>
+    <p class="tool-subtitle">A professional workspace for passport photos, Aadhaar print layouts, image compression, PDF resizing, payments, and premium membership.</p>
+    <span class="enterprise-chip">✨ v35 Enterprise Ready</span>
+    <div class="stats">
+      <div><strong>📸 Photo Tools</strong><span>Passport, name/date, compressor.</span></div>
+      <div><strong>📄 Document Tools</strong><span>Aadhaar print and PDF resize.</span></div>
+      <div><strong>👑 Membership</strong><span>Premium plans with dashboard tracking.</span></div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><span>Recommended Plan</span><strong>₹149</strong><span>Half-year premium value.</span></div>
+      <div class="kpi-card"><span>Payment Mode</span><strong>UPI QR</strong><span>Generate QR after plan selection.</span></div>
+      <div class="kpi-card"><span>Admin Workflow</span><strong>CRM</strong><span>Users, payments, feedback.</span></div>
+    </div>
+  `;
+}
+
+let deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;});
+function showInstallPrompt(){
+  if(!deferredInstallPrompt){ if(typeof toast==='function') toast('Install option will appear when supported by your browser.'); return; }
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt=null;
+}
+
+function workspaceTool(){
+  if (typeof requireLogin === 'function' && !requireLogin()) return;
+  workspace.innerHTML=`
+    <h2>🗂️ My Workspace</h2>
+    <p class="tool-subtitle">Your future workspace for generated photos, PDFs, payment history, activity logs, and account settings.</p>
+    <div class="kpi-grid">
+      <div class="kpi-card"><span>Photos Created</span><strong>0</strong><span>Coming with cloud history.</span></div>
+      <div class="kpi-card"><span>PDFs Created</span><strong>0</strong><span>Download history ready.</span></div>
+      <div class="kpi-card"><span>Payments</span><strong>Live</strong><span>Connected with Apps Script.</span></div>
+    </div>
+    <div class="timeline">
+      <div class="timeline-item"><b>v35 Workspace Foundation</b><span>Structure added for future file history and activity tracking.</span></div>
+      <div class="timeline-item"><b>Next</b><span>Cloud storage and receipt PDF can be added in v36.</span></div>
+    </div>
+  `;
+}
+
+const _v35OpenTool=openTool;
+openTool=function(tool){
+  if(tool==='workspace') return workspaceTool();
+  return _v35OpenTool(tool);
+};
+
+setTimeout(()=>{
+  try{
+    const sidebar=document.getElementById('sidebar');
+    if(sidebar && !document.querySelector('[data-tool="workspace"]')){
+      const btn=document.createElement('button');
+      btn.className='nav-item';btn.dataset.tool='workspace';btn.dataset.auth='user';btn.textContent='🗂️ My Workspace';btn.onclick=()=>openTool('workspace');
+      const logout=document.querySelector('[data-tool="logout"]');
+      sidebar.insertBefore(btn, logout || null);
+      if(typeof updateAuthUI==='function') updateAuthUI();
+    }
+  }catch(e){}
+},300);
