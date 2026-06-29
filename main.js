@@ -1,5 +1,5 @@
 /* =====================================================
-   Smart Photo Toolkit Pro v30
+   Smart Photo Toolkit Pro v31
    js/main.js — PART 1
    App Init + Navigation + Auth + Compressor + Name Date
 ===================================================== */
@@ -305,14 +305,14 @@ function paymentTool() {
     <h2>💳 Premium Payment</h2>
     <p class="tool-subtitle">Select a premium plan, generate a UPI QR code for the selected amount, complete the payment, and submit your UTR/Transaction ID for admin verification.</p>
 
-    <div class="payment-wrap-v28 payment-pro-v30">
-      <div class="payment-card payment-qr-card-v30 center">
+    <div class="payment-wrap-v28 payment-pro-v31">
+      <div class="payment-card payment-qr-card-v31 center">
         <div class="payment-badge-v282">Secure UPI Payment</div>
         <h3>Generate Payment QR</h3>
         <p class="tool-subtitle">The QR code is generated only after you select a plan and click the button below.</p>
 
-        <div class="qr-placeholder-v30" id="qrPlaceholder">
-          <div class="qr-placeholder-icon-v30">🔒</div>
+        <div class="qr-placeholder-v31" id="qrPlaceholder">
+          <div class="qr-placeholder-icon-v31">🔒</div>
           <strong>No QR generated yet</strong>
           <span>Select a plan and click “Generate Payment QR”.</span>
         </div>
@@ -336,7 +336,7 @@ function paymentTool() {
         <div class="selected-plan-v282" id="selectedPlanBox"><strong>Selected:</strong> Monthly Premium — ₹49 / 30 days</div>
 
         <div class="action-row">
-          <button class="primary-btn generate-payment-btn-v30" onclick="generatePlanQR()">Generate Payment QR</button>
+          <button class="primary-btn generate-payment-btn-v31" onclick="generatePlanQR()">Generate Payment QR</button>
         </div>
 
         <div class="tool-box mt-15 payment-form-v281">
@@ -602,7 +602,7 @@ async function makeNameDate() {
 
 /* End of PART 1 */
 /* =====================================================
-   Smart Photo Toolkit Pro v30
+   Smart Photo Toolkit Pro v31
    js/main.js — PART 2
    Passport Photo Maker
 ===================================================== */
@@ -875,7 +875,7 @@ function printPassportPDF() {
 
 /* End of PART 2 */
 /* =====================================================
-   Smart Photo Toolkit Pro v30
+   Smart Photo Toolkit Pro v31
    js/main.js — PART 3
    Aadhaar Print Tool
 ===================================================== */
@@ -1295,7 +1295,7 @@ async function makeAadhaarFrontBack() {
 
 /* End of PART 3 */
 /* =====================================================
-   Smart Photo Toolkit Pro v30
+   Smart Photo Toolkit Pro v31
    js/main.js — PART 4
    Aadhaar PDF Output + PDF Resizer + Helper Functions
 ===================================================== */
@@ -1617,3 +1617,163 @@ window.onerror = function(message, source, lineno, colno, error) {
 };
 
 /* End of PART 4 */
+
+
+/* =====================================================
+   Smart Photo Toolkit Pro v31 Enterprise Overrides
+   Profile, payment history, legal pages, better dashboard
+===================================================== */
+
+function escapeHTML(v){
+  return String(v ?? "").replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+}
+
+function openTool(tool) {
+  const user = getCurrentUser();
+  const protectedTools = ["dashboard", "payment", "premium"];
+  if (protectedTools.includes(tool) && !user) {
+    setActive("login");
+    return loginTool();
+  }
+  if (tool === "admin" && !userIsAdminAccount(user)) {
+    setActive(user ? "dashboard" : "login");
+    workspace.innerHTML = `<h2>Admin Panel</h2><div class="warning-box">Admin access is available only after signing in with the authorized administrator account.</div><button class="primary-btn" onclick="showTool('login')">Login</button>`;
+    return;
+  }
+  setActive(tool);
+  if (tool === "home") return home();
+  if (tool === "compressor") return imageCompressor();
+  if (tool === "namedate") return nameDateTool();
+  if (tool === "passport") return passportTool();
+  if (tool === "aadhaar") return aadhaarTool();
+  if (tool === "pdfresizer") return pdfResizerTool();
+  if (tool === "login") return loginTool();
+  if (tool === "dashboard") return dashboardTool();
+  if (tool === "admin") return adminTool();
+  if (tool === "feedback") return feedbackTool();
+  if (tool === "payment") return paymentTool();
+  if (tool === "premium") return premiumTool();
+  if (tool === "contact") return contactTool();
+  if (tool === "privacy") return privacyTool();
+  if (tool === "terms") return termsTool();
+  if (tool === "refund") return refundTool();
+  if (tool === "logout") return SPT.logout();
+  return home();
+}
+
+function home() {
+  workspace.innerHTML = `
+    <h2>Welcome to Smart Photo Toolkit Pro</h2>
+    <p>Professional image, passport photo, Aadhaar print, and PDF tools with secure account and premium workflow.</p>
+    <div class="stats">
+      <div><strong>📄 PDF Output</strong><span>Passport and Aadhaar PDF downloads.</span></div>
+      <div><strong>🖨️ Print Ready</strong><span>Professional A4 print-ready layouts.</span></div>
+      <div><strong>🔐 Account System</strong><span>Dashboard, payment history, and premium status.</span></div>
+    </div>
+    <div class="footer-links-v31">
+      <button class="secondary-btn" onclick="showTool('privacy')">Privacy Policy</button>
+      <button class="secondary-btn" onclick="showTool('terms')">Terms</button>
+      <button class="secondary-btn" onclick="showTool('refund')">Refund Policy</button>
+      <button class="secondary-btn" onclick="showTool('contact')">Contact</button>
+    </div>`;
+}
+
+async function dashboardTool() {
+  const u = getCurrentUser();
+  if (!u) {
+    workspace.innerHTML = `<h2>My Dashboard</h2><div class="warning-box">Please login to view your account dashboard.</div><button class="primary-btn" onclick="showTool('login')">Login Now</button>`;
+    return;
+  }
+  const initial = (u.name || u.email || "U").charAt(0).toUpperCase();
+  workspace.innerHTML = `
+    <div class="dashboard-head-v31">
+      <div class="profile-mini-v31"><div class="avatar-v31">${escapeHTML(initial)}</div><div><h2>My Dashboard</h2><p class="tool-subtitle">Welcome, ${escapeHTML(u.name || "User")}. Manage your profile, premium access, and payment history.</p></div></div>
+      <button class="print-btn" onclick="SPT.logout()">Logout</button>
+    </div>
+    <div class="stats">
+      <div><strong>Name</strong><span>${escapeHTML(u.name || "-")}</span></div>
+      <div><strong>Email</strong><span>${escapeHTML(u.email || "-")}</span></div>
+      <div><strong>Mobile</strong><span>${escapeHTML(u.mobile || "-")}</span></div>
+      <div><strong>Address</strong><span>${escapeHTML(u.address || "-")}</span></div>
+      <div><strong>Plan</strong><span>${u.premium ? escapeHTML(u.premiumPlan || "Premium") : "Free"}</span></div>
+      <div><strong>Premium Ends</strong><span>${escapeHTML(u.premiumEnd || "-")}</span></div>
+      <div><strong>Uses Left</strong><span>${escapeHTML(u.usesLeft || "-")}</span></div>
+      <div><strong>Role</strong><span>${escapeHTML(u.role || "User")}</span></div>
+      <div><strong>Status</strong><span><span class="status-dot-v31"></span>${escapeHTML(u.status || "Active")}</span></div>
+    </div>
+    <div class="mini-toolbar-v31">
+      <button class="primary-btn" onclick="showProfileEditor()">Edit Profile</button>
+      <button class="secondary-btn" onclick="loadMyPayments()">Payment History</button>
+      <button class="secondary-btn" onclick="loadMyUsage()">Usage History</button>
+      <button class="success-btn-v31" onclick="showTool('payment')">Upgrade / Renew</button>
+    </div>
+    <div id="dashboardPanel" class="history-card-v31">Select an option above to manage your account.</div>`;
+}
+
+function showProfileEditor(){
+  const u=getCurrentUser()||{};
+  html("dashboardPanel", `<h3>Edit Profile</h3><div class="profile-form-v31"><input id="profileName" placeholder="Full name" value="${escapeHTML(u.name||"")}"><input id="profileMobile" placeholder="Mobile number" value="${escapeHTML(u.mobile||"")}"><textarea id="profileAddress" rows="3" placeholder="Address">${escapeHTML(u.address||"")}</textarea></div><button class="primary-btn" onclick="saveProfileV31()">Save Profile</button>`);
+}
+
+async function saveProfileV31(){
+  if(!requireLogin()) return;
+  const btn=event?.target; setBusy(btn,"Saving...");
+  const r=await SPT.api("updateProfile",{token:SPT.token,name:val("profileName"),mobile:val("profileMobile"),address:val("profileAddress")});
+  clearBusy(btn); toast(r.message);
+  if(r.success && r.user){SPT.saveLogin(r.user,SPT.token); dashboardTool();}
+}
+
+async function loadMyPayments(){
+  if(!requireLogin()) return;
+  html("dashboardPanel",`<div class="progress-box">Loading payment history...</div>`);
+  const r=await SPT.api("paymentHistory",{token:SPT.token});
+  if(!r.success) return html("dashboardPanel",`<div class="warning-box">${escapeHTML(r.message)}</div>`);
+  const rows=(r.payments||[]).map(p=>`<tr><td>${escapeHTML(p.PlanName)}</td><td>₹${escapeHTML(p.Amount)}</td><td>${escapeHTML(p.TransactionID)}</td><td><span class="payment-history-badge">${escapeHTML(p.Status)}</span></td><td>${escapeHTML(p.CreatedAt)}</td></tr>`).join("");
+  html("dashboardPanel",`<h3>Payment History</h3><div class="table-wrap"><table><thead><tr><th>Plan</th><th>Amount</th><th>Transaction</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows||`<tr><td colspan="5">No payment history found.</td></tr>`}</tbody></table></div>`);
+}
+
+async function loadMyUsage(){
+  if(!requireLogin()) return;
+  html("dashboardPanel",`<div class="progress-box">Loading usage history...</div>`);
+  const r=await SPT.api("usageHistory",{token:SPT.token});
+  if(!r.success) return html("dashboardPanel",`<div class="warning-box">${escapeHTML(r.message)}</div>`);
+  const rows=(r.usage||[]).map(x=>`<tr><td>${escapeHTML(x.Tool)}</td><td>${escapeHTML(x.FileName)}</td><td>${escapeHTML(x.OutputSizeKB)}</td><td>${escapeHTML(x.CreatedAt)}</td></tr>`).join("");
+  html("dashboardPanel",`<h3>Tool Usage History</h3><div class="table-wrap"><table><thead><tr><th>Tool</th><th>File</th><th>Output</th><th>Date</th></tr></thead><tbody>${rows||`<tr><td colspan="4">No usage history found.</td></tr>`}</tbody></table></div>`);
+}
+
+function adminTool() {
+  if (typeof requireLogin === "function" && !requireLogin()) return;
+  if (typeof isAdmin === "function" && !isAdmin()) { workspace.innerHTML = `<div class="warning-box">Admin access only.</div>`; return; }
+  workspace.innerHTML = `
+    <h2>📊 Admin Panel Pro</h2>
+    <p class="tool-subtitle">Review payments, manage users, approve premium access, and monitor feedback.</p>
+    <div class="action-row admin-top-actions">
+      <button class="primary-btn" onclick="loadAdminStats()">📈 Stats</button>
+      <button class="secondary-btn" onclick="loadPayments()">💳 Payments</button>
+      <button class="secondary-btn" onclick="loadUsersV31()">👥 Users</button>
+      <button class="secondary-btn" onclick="loadFeedbacks()">💬 Feedback</button>
+    </div>
+    <div id="adminContent" class="admin-card"><div class="progress-box">Loading admin overview...</div></div>`;
+  setTimeout(()=>{ if(typeof loadAdminStats==="function") loadAdminStats(); },100);
+}
+
+async function loadUsersV31(){
+  if(!requireLogin() || !isAdmin()) return;
+  html("adminContent",`<div class="admin-search-v31"><input id="adminUserSearch" placeholder="Search by name, email, mobile, or plan"><button class="primary-btn" onclick="filterUsersV31()">Search</button></div><div id="userTableV31" class="progress-box">Loading users...</div>`);
+  const r=await SPT.api("listUsers",{token:SPT.token}); window.__v31Users=r.users||[];
+  renderUsersV31(window.__v31Users);
+}
+function filterUsersV31(){const q=val("adminUserSearch").toLowerCase(); renderUsersV31((window.__v31Users||[]).filter(u=>JSON.stringify(u).toLowerCase().includes(q)));}
+function renderUsersV31(users){
+  const rows=(users||[]).map(u=>`<tr><td>${escapeHTML(u.name)}</td><td>${escapeHTML(u.email)}</td><td>${escapeHTML(u.mobile||"")}</td><td>${escapeHTML(u.plan||"Free")}</td><td>${escapeHTML(u.status||"Active")}</td><td><button class="admin-mini-btn success-btn-v31" onclick="manualPremiumV31('${escapeHTML(u.email)}')">Premium</button><button class="admin-mini-btn orange-btn-v31" onclick="updateUserStatusV31('${escapeHTML(u.email)}','Active')">Activate</button><button class="admin-mini-btn danger-btn-v31" onclick="updateUserStatusV31('${escapeHTML(u.email)}','Blocked')">Block</button></td></tr>`).join("");
+  html("userTableV31",`<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Mobile</th><th>Plan</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows||`<tr><td colspan="6">No users found.</td></tr>`}</tbody></table></div>`);
+}
+async function manualPremiumV31(email){const days=prompt("Premium duration in days", "30"); if(!days) return; const r=await SPT.api("setPremium",{token:SPT.token,email,planName:"Manual Premium",days:Number(days)}); toast(r.message); loadUsersV31();}
+async function updateUserStatusV31(email,status){const r=await SPT.api("updateUserStatus",{token:SPT.token,email,status}); toast(r.message); loadUsersV31();}
+
+function contactTool(){workspace.innerHTML=`<h2>Contact Us</h2><div class="policy-card-v31"><p><b>Smart Photo Toolkit Pro</b></p><p>Email: kaitsatnam@gmail.com</p><p>For payment verification, premium activation, refunds, and technical support, please use the feedback form or contact the support email.</p><button class="primary-btn" onclick="showTool('feedback')">Send Feedback</button></div>`;}
+function privacyTool(){workspace.innerHTML=`<h2>Privacy Policy</h2><div class="policy-card-v31"><p>We collect only the information required to create your account, process premium payment verification, and provide support.</p><h3>Information collected</h3><p>Name, email address, mobile number, address, payment transaction ID, tool usage records, and feedback messages.</p><h3>Use of data</h3><p>Your information is used for account access, admin verification, premium activation, support, and security logs.</p><h3>Security</h3><p>Passwords are stored as hashes in the Apps Script backend. Payment verification is handled manually by the administrator.</p></div>`;}
+function termsTool(){workspace.innerHTML=`<h2>Terms and Conditions</h2><div class="policy-card-v31"><p>By using Smart Photo Toolkit Pro, you agree to use the tools responsibly and provide accurate account and payment information.</p><h3>Premium access</h3><p>Premium plans are activated after admin verification of payment details.</p><h3>Availability</h3><p>Tools are provided on a best-effort basis. Browser and device limitations may affect processing speed.</p></div>`;}
+function refundTool(){workspace.innerHTML=`<h2>Refund Policy</h2><div class="policy-card-v31"><p>Refund requests are reviewed manually. If premium access was not activated due to a genuine payment verification issue, contact support with your UTR and payment proof.</p><p>Approved refunds or adjustments will be processed according to manual verification.</p></div>`;}
+
+/* End v31 overrides */

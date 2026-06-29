@@ -1,2 +1,2 @@
-/* Smart Photo Toolkit Pro v29 - style.css helper */
+/* Smart Photo Toolkit Pro v31 - style.css helper */
 html{scroll-behavior:smooth}body{-webkit-tap-highlight-color:transparent;overflow-x:hidden}img{max-width:100%}input,select,textarea,button{font-family:inherit}button,.card,.nav-item,.upload-box{-webkit-user-select:none;user-select:none}.upload-box input[type="file"]{display:none}canvas{max-width:100%}a{color:inherit}*{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}

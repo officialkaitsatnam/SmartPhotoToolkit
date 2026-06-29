@@ -1,4 +1,4 @@
-/* Smart Photo Toolkit Pro v30 - script.js */
+/* Smart Photo Toolkit Pro v31 - script.js */
 const SPT_API_URL = window.SPT_CONFIG?.apiUrl || "https://script.google.com/macros/s/AKfycbzNel2GhBCLmvCt6kH75uODdsYhLnwhFlYb-3tBi3ubLtbvdi9HdGpDLt6SEXaaIJJC3A/exec";
 
 const SPT = {
@@ -231,3 +231,12 @@ async function logToolUsage(tool, extra = {}) {
 
 function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ""; }
 function html(id, content) { const el = document.getElementById(id); if (el) el.innerHTML = content; }
+
+
+/* v31 Enterprise helper functions */
+async function updateFeedbackReplyV31(feedbackId){
+  if(!requireLogin()||!isAdmin()) return;
+  const reply=prompt("Enter admin reply"); if(reply===null) return;
+  const r=await SPT.api("adminReplyFeedback",{token:SPT.token,feedbackId,reply});
+  toast(r.message); if(r.success) loadFeedbacks();
+}
