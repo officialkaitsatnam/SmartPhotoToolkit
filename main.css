@@ -9,12 +9,3 @@
 .plan-card-v28{border:2px solid var(--line);background:var(--soft);border-radius:16px;padding:14px;text-align:left;cursor:pointer;color:var(--text);display:grid;gap:6px}
 .plan-card-v28 b{font-size:18px}.plan-card-v28 span{color:var(--muted);font-weight:800}.plan-card-v28.active{border-color:#2563eb;background:#eff6ff}.plan-card-v28.active b,.plan-card-v28.active span{color:#1d4ed8}
 @media(max-width:900px){.payment-wrap-v28{grid-template-columns:1fr}.plan-grid-v28{grid-template-columns:1fr}}
-
-/* v28.1 Admin/Payment/Feedback UX Fixes */
-.is-busy{opacity:.75;cursor:wait!important;pointer-events:none}
-.admin-top-actions button{transition:.2s ease}.admin-top-actions button:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
-.admin-actions{white-space:nowrap}.admin-mini-btn{border:0;border-radius:9px;padding:8px 10px;font-weight:900;color:#fff;cursor:pointer;margin:2px;transition:.18s}.admin-mini-btn:hover{transform:translateY(-1px);filter:brightness(1.05)}.admin-approve{background:#16a34a}.admin-reject{background:#ef4444}
-.feedback-submit-btn{transition:.2s ease!important}.feedback-submit-btn:hover{background:#16a34a!important;color:#fff!important;transform:translateY(-2px);box-shadow:0 10px 22px rgba(22,163,74,.22)}
-.feedback-box-v281 button:hover{background:#16a34a!important;color:#fff!important}
-.payment-form-v281 button{transition:.2s ease}.payment-form-v281 button:hover{background:#16a34a!important;color:#fff!important;transform:translateY(-2px);box-shadow:0 10px 22px rgba(22,163,74,.22)}
-.table-wrap td .badge{white-space:nowrap}
