@@ -1,5 +1,5 @@
 /* =====================================================
-   Smart Photo Toolkit Pro v28.3
+   Smart Photo Toolkit Pro v28.4
    js/main.js — PART 1
    App Init + Navigation + Auth + Compressor + Name Date
 ===================================================== */
@@ -41,6 +41,36 @@ let lastPassportPDF = null;
 let lastAadhaarPDF = null;
 let lastPassportUrl = "";
 let lastAadhaarUrl = "";
+
+function getCurrentUser() {
+  return (window.SPT && SPT.user) || JSON.parse(localStorage.getItem("spt_user") || "null");
+}
+
+function userIsAdminAccount(user) {
+  return !!(user && String(user.role || "").toLowerCase() === "admin");
+}
+
+function updateAuthUI() {
+  const user = getCurrentUser();
+  const loggedIn = !!user;
+  const isAdminUser = userIsAdminAccount(user);
+
+  document.body.classList.toggle("auth-logged-in", loggedIn);
+  document.body.classList.toggle("auth-admin", isAdminUser);
+
+  document.querySelectorAll("[data-auth='guest']").forEach(el => {
+    el.style.display = loggedIn ? "none" : "block";
+  });
+
+  document.querySelectorAll("[data-auth='user']").forEach(el => {
+    el.style.display = loggedIn ? "block" : "none";
+  });
+
+  document.querySelectorAll("[data-auth='admin']").forEach(el => {
+    el.style.display = isAdminUser ? "block" : "none";
+  });
+}
+
 
 function initApp() {
   const menuBtn = $("#menuBtn");
@@ -89,6 +119,18 @@ function setActive(tool) {
 }
 
 function openTool(tool) {
+  const user = getCurrentUser();
+  const protectedTools = ["dashboard", "payment", "premium"];
+  if (protectedTools.includes(tool) && !user) {
+    setActive("login");
+    return loginTool();
+  }
+  if (tool === "admin" && !userIsAdminAccount(user)) {
+    setActive(user ? "dashboard" : "login");
+    workspace.innerHTML = `<h2>Admin Panel</h2><div class="warning-box">Admin access is available only after signing in with the authorized administrator account.</div><button class="primary-btn" onclick="showTool('login')">Login</button>`;
+    return;
+  }
+
   setActive(tool);
 
   if (tool === "home") return home();
@@ -177,7 +219,7 @@ function toggleForgotBox() {
 }
 
 function dashboardTool() {
-  const u = window.SPT?.user || JSON.parse(localStorage.getItem("spt_user") || "null");
+  const u = getCurrentUser();
 
   if (!u) {
     workspace.innerHTML = `
@@ -343,9 +385,10 @@ function generatePlanQR() {
 }
 
 function premiumTool() {
+  if (typeof requireLogin === "function" && !requireLogin()) return;
   workspace.innerHTML = `
     <h2>👑 Premium Plans</h2>
-    <p class="tool-subtitle">Premium users ko unlimited tools aur priority features milenge.</p>
+    <p class="tool-subtitle">Premium users get unlimited tools, priority access, and faster workflow support.</p>
 
     <div class="info-grid">
       <div><strong>Free Plan</strong><span>Limited uses</span></div>
@@ -533,7 +576,7 @@ async function makeNameDate() {
 
 /* End of PART 1 */
 /* =====================================================
-   Smart Photo Toolkit Pro v28.3
+   Smart Photo Toolkit Pro v28.4
    js/main.js — PART 2
    Passport Photo Maker
 ===================================================== */
@@ -806,7 +849,7 @@ function printPassportPDF() {
 
 /* End of PART 2 */
 /* =====================================================
-   Smart Photo Toolkit Pro v28.3
+   Smart Photo Toolkit Pro v28.4
    js/main.js — PART 3
    Aadhaar Print Tool
 ===================================================== */
@@ -1226,7 +1269,7 @@ async function makeAadhaarFrontBack() {
 
 /* End of PART 3 */
 /* =====================================================
-   Smart Photo Toolkit Pro v28.3
+   Smart Photo Toolkit Pro v28.4
    js/main.js — PART 4
    Aadhaar PDF Output + PDF Resizer + Helper Functions
 ===================================================== */

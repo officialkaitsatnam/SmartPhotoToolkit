@@ -1,4 +1,4 @@
-/* Smart Photo Toolkit Pro v28.3 - script.js */
+/* Smart Photo Toolkit Pro v28.4 - script.js */
 const SPT_API_URL = window.SPT_CONFIG?.apiUrl || "https://script.google.com/macros/s/AKfycbzNel2GhBCLmvCt6kH75uODdsYhLnwhFlYb-3tBi3ubLtbvdi9HdGpDLt6SEXaaIJJC3A/exec";
 
 const SPT = {

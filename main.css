@@ -24,6 +24,14 @@
 .payment-pro-v282{align-items:stretch}.payment-qr-card-v282,.payment-form-card-v282{box-shadow:var(--shadow);overflow:hidden}.payment-badge-v282{display:inline-block;background:#ecfdf5;color:#166534;border:1px solid #86efac;padding:8px 12px;border-radius:999px;font-weight:900;font-size:13px;margin-bottom:8px}.payment-qr-card-v282 h3{font-size:24px;margin:6px 0}.copy-upi-btn-v282{width:100%;margin-top:10px!important}.selected-plan-v282{margin-top:12px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;padding:12px;border-radius:14px;font-weight:800}.payment-info-v282{background:#ecfdf5;border:1px solid #86efac;color:#14532d;padding:12px;border-radius:12px;margin-top:10px;line-height:1.45}.payment-submit-btn-v282{background:#2563eb!important;color:#fff!important;transition:.2s ease}.payment-submit-btn-v282:hover{background:#16a34a!important;transform:translateY(-2px);box-shadow:0 10px 22px rgba(22,163,74,.22)}.plan-card-v28:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:#93c5fd}.plan-card-v28.active{border-color:#2563eb;background:linear-gradient(180deg,#eff6ff,#ffffff)}.qr-img-v28{object-fit:contain;max-height:460px}.payment-form-v281 label{font-weight:900;margin-top:4px}@media(max-width:900px){.qr-img-v28{max-height:none}}
 
 
-/* v28.3 Professional Account, Payment, and Visibility Enhancements */
+/* v28.4 Professional Account, Payment, and Visibility Enhancements */
 .hidden{display:none!important}.link-btn{background:transparent!important;color:#2563eb!important;border:0!important;padding:10px 0!important;margin-top:10px!important;text-decoration:underline;font-weight:900}.link-btn:hover{color:#16a34a!important}.auth-card textarea{resize:vertical}.feedback-submit-btn:hover,.payment-submit-btn-v282:hover,.primary-btn:hover{background:#16a34a!important;color:#fff!important}.feedback-box-v283 button{transition:.2s}.payment-pro-v283{align-items:start}.payment-qr-card-v283{position:sticky;top:20px}.generate-qr-box{margin-top:14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:12px;text-align:left}.generate-qr-box summary{cursor:pointer;font-weight:900;color:#1d4ed8}.generated-qr-img{display:block;width:260px;max-width:100%;margin:12px auto;border:1px solid #e5e7eb;border-radius:16px;background:#fff;padding:10px}.upi-pay-link{width:100%;margin-top:10px}.payment-info-v282{background:#ecfdf5;border:1px solid #86efac;color:#14532d;padding:12px;border-radius:12px;margin-top:12px;line-height:1.5}.stats span{word-break:break-word}.is-busy{opacity:.75;cursor:not-allowed}.admin-actions{white-space:nowrap}
 @media(max-width:900px){.payment-qr-card-v283{position:relative;top:auto}.forgot-grid,.forgot-grid-3{grid-template-columns:1fr!important}}
+
+
+/* v28.4 Authentication-based navigation visibility */
+.nav-item[data-auth="user"],
+.nav-item[data-auth="admin"]{display:none;}
+body.auth-logged-in .nav-item[data-auth="user"]{display:block;}
+body.auth-logged-in .nav-item[data-auth="guest"]{display:none;}
+body.auth-admin .nav-item[data-auth="admin"]{display:block;}
