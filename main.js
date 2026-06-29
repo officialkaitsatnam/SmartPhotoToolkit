@@ -1,5 +1,5 @@
 /* =====================================================
-   Smart Photo Toolkit Pro v31
+   Smart Photo Toolkit Pro v31.1
    js/main.js — PART 1
    App Init + Navigation + Auth + Compressor + Name Date
 ===================================================== */
@@ -602,7 +602,7 @@ async function makeNameDate() {
 
 /* End of PART 1 */
 /* =====================================================
-   Smart Photo Toolkit Pro v31
+   Smart Photo Toolkit Pro v31.1
    js/main.js — PART 2
    Passport Photo Maker
 ===================================================== */
@@ -875,7 +875,7 @@ function printPassportPDF() {
 
 /* End of PART 2 */
 /* =====================================================
-   Smart Photo Toolkit Pro v31
+   Smart Photo Toolkit Pro v31.1
    js/main.js — PART 3
    Aadhaar Print Tool
 ===================================================== */
@@ -1295,7 +1295,7 @@ async function makeAadhaarFrontBack() {
 
 /* End of PART 3 */
 /* =====================================================
-   Smart Photo Toolkit Pro v31
+   Smart Photo Toolkit Pro v31.1
    js/main.js — PART 4
    Aadhaar PDF Output + PDF Resizer + Helper Functions
 ===================================================== */
@@ -1620,7 +1620,7 @@ window.onerror = function(message, source, lineno, colno, error) {
 
 
 /* =====================================================
-   Smart Photo Toolkit Pro v31 Enterprise Overrides
+   Smart Photo Toolkit Pro v31.1 Enterprise Overrides
    Profile, payment history, legal pages, better dashboard
 ===================================================== */
 
@@ -1777,3 +1777,45 @@ function termsTool(){workspace.innerHTML=`<h2>Terms and Conditions</h2><div clas
 function refundTool(){workspace.innerHTML=`<h2>Refund Policy</h2><div class="policy-card-v31"><p>Refund requests are reviewed manually. If premium access was not activated due to a genuine payment verification issue, contact support with your UTR and payment proof.</p><p>Approved refunds or adjustments will be processed according to manual verification.</p></div>`;}
 
 /* End v31 overrides */
+
+
+/* =====================================================
+   Smart Photo Toolkit Pro v31.1 View Mode Fix
+   Static tool cards removed from index. Cards now appear
+   only on Home. Every sidebar/tool click shows only that
+   selected feature in the workspace.
+===================================================== */
+
+function bindHomeToolCardsV311(){
+  document.querySelectorAll("#workspace .card").forEach(card => {
+    card.onclick = () => openTool(card.dataset.tool);
+  });
+}
+
+function home(){
+  workspace.innerHTML = `
+    <h2>Welcome to Smart Photo Toolkit Pro</h2>
+    <p>Choose a tool below to start. When you open any tool, only that selected feature will be displayed.</p>
+
+    <div class="cards home-cards-v311">
+      <div class="card" data-tool="compressor"><b>🖼️</b><h3>Image Compressor</h3><p>Compress images to 20KB, 50KB, 100KB, or a custom size.</p></div>
+      <div class="card" data-tool="namedate"><b>🏷️</b><h3>Name / Date</h3><p>Add name, date, or custom text below your photo.</p></div>
+      <div class="card" data-tool="passport"><b>👤</b><h3>Passport Photo</h3><p>Create a print-ready A4 sheet with 35×45mm photos.</p></div>
+      <div class="card" data-tool="aadhaar"><b>🪪</b><h3>Aadhaar Print</h3><p>Crop, arrange, and download Aadhaar print layouts as PDF.</p></div>
+      <div class="card" data-tool="pdfresizer"><b>📄</b><h3>PDF Resizer</h3><p>Compress and resize PDFs directly in your browser.</p></div>
+    </div>
+
+    <div class="stats">
+      <div><strong>📄 PDF Output</strong><span>Passport and Aadhaar PDF downloads.</span></div>
+      <div><strong>🖨️ Print Ready</strong><span>Professional A4 print-ready layouts.</span></div>
+      <div><strong>🔐 Account System</strong><span>Dashboard, payment history, and premium status.</span></div>
+    </div>
+
+    <div class="footer-links-v31">
+      <button class="secondary-btn" onclick="showTool('privacy')">Privacy Policy</button>
+      <button class="secondary-btn" onclick="showTool('terms')">Terms</button>
+      <button class="secondary-btn" onclick="showTool('refund')">Refund Policy</button>
+      <button class="secondary-btn" onclick="showTool('contact')">Contact</button>
+    </div>`;
+  bindHomeToolCardsV311();
+}
