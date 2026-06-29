@@ -1,23 +1,8 @@
-# Update Guide — v37.2 Alpha
+# Update Guide v37.3
 
-## GitHub
-Replace/upload these root files:
-- index.html
-- style.css
-- main.css
-- main.js
-- script.js
-- manifest.webmanifest
-- sw.js
-- offline.html
-- icon-192.png
-- icon-512.png
-- payment_qr.jpg
-
-## Apps Script
-No update required. Keep your current Apps Script backend.
-
-## Test URL
-https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=37.2-alpha
-
-After upload, press Ctrl + Shift + R.
+1. Extract ZIP.
+2. Upload all files to GitHub repo root.
+3. Do not update Apps Script.
+4. Open: `https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=37.3-hard-fix`
+5. Hard refresh: Ctrl + Shift + R.
+6. Test Document Studio with PDF upload.
