@@ -245,22 +245,23 @@ function dashboardTool() {
 function adminTool() {
   if (typeof requireLogin === "function" && !requireLogin()) return;
   if (typeof isAdmin === "function" && !isAdmin()) {
-    workspace.innerHTML = `<div class="warning-box">Admin access only.</div>`;
+    workspace.innerHTML = `<div class="warning-box">Admin access only. कृपया admin email से login करें.</div>`;
     return;
   }
 
   workspace.innerHTML = `
     <h2>📊 Admin Panel</h2>
-    <p class="tool-subtitle">Users, payments aur stats manage karo.</p>
+    <p class="tool-subtitle">Payment verification, users, feedback aur stats yahin show honge.</p>
 
-    <div class="action-row">
-      <button class="primary-btn" onclick="loadAdminStats()">Stats</button>
-      <button class="secondary-btn" onclick="loadUsers()">Users</button>
-      <button class="secondary-btn" onclick="loadPayments()">Payments</button>
+    <div class="action-row admin-top-actions">
+      <button class="primary-btn" onclick="loadAdminStats()">📈 Stats</button>
+      <button class="secondary-btn" onclick="loadPayments()">💳 Payments</button>
+      <button class="secondary-btn" onclick="loadUsers()">👥 Users</button>
+      <button class="secondary-btn" onclick="loadFeedbacks()">💬 Feedback</button>
     </div>
 
     <div id="adminContent" class="admin-card">
-      Admin option select karo.
+      <div class="progress-box">Admin option select karo. Payment aate hi यहाँ pending requests दिखेंगी.</div>
     </div>
   `;
 }
@@ -268,9 +269,9 @@ function adminTool() {
 function feedbackTool() {
   workspace.innerHTML = `
     <h2>💬 Feedback</h2>
-    <p class="tool-subtitle">Problem ya suggestion bhejo.</p>
+    <p class="tool-subtitle">Problem ya suggestion bhejo. Admin ko dashboard me bhi show hoga.</p>
 
-    <div class="tool-box">
+    <div class="tool-box feedback-box-v28.11">
       <input id="feedbackName" placeholder="Name">
       <input id="feedbackEmail" type="email" placeholder="Email">
       <select id="feedbackType">
@@ -279,7 +280,7 @@ function feedbackTool() {
         <option>Feature Request</option>
       </select>
       <textarea id="feedbackMessage" rows="5" placeholder="Message"></textarea>
-      <button onclick="submitFeedback()">Submit Feedback</button>
+      <button class="feedback-submit-btn" onclick="submitFeedback()">Submit Feedback</button>
     </div>
   `;
 }
@@ -287,37 +288,38 @@ function feedbackTool() {
 function paymentTool() {
   workspace.innerHTML = `
     <h2>💳 Payment Collection</h2>
-    <p class="tool-subtitle">QR scan karke payment karo, fir Transaction ID submit karo.</p>
+    <p class="tool-subtitle">QR scan karke payment karo. Submit ke baad admin ko email alert milega aur request Admin Panel me Pending dikhegi.</p>
 
-    <div class="payment-wrap-v28">
+    <div class="payment-wrap-v28.1">
       <div class="payment-card center">
         <h3>Scan & Pay</h3>
-        <img src="payment_qr.jpg" class="qr-img-v28" alt="Payment QR">
-        <div class="upi-box-v28">UPI ID: kait.satnam@sbi</div>
+        <img src="payment_qr.jpg" class="qr-img-v28.1" alt="Payment QR">
+        <div class="upi-box-v28.1">UPI ID: kait.satnam@sbi</div>
         <p class="small-note">Receiving: State Bank of India 6831</p>
       </div>
 
       <div class="payment-card">
         <h3>Select Plan</h3>
-        <div class="plan-grid-v28">
-          <button class="plan-card-v28 active" data-plan="Monthly Premium" data-amount="49" onclick="selectPaymentPlan(this)">
+        <div class="plan-grid-v28.1">
+          <button class="plan-card-v28.1 active" data-plan="Monthly Premium" data-amount="49" onclick="selectPaymentPlan(this)">
             <b>Monthly</b><span>₹49 / 30 days</span>
           </button>
-          <button class="plan-card-v28" data-plan="Half Year Premium" data-amount="149" onclick="selectPaymentPlan(this)">
+          <button class="plan-card-v28.1" data-plan="Half Year Premium" data-amount="149" onclick="selectPaymentPlan(this)">
             <b>Half Year</b><span>₹149 / 180 days</span>
           </button>
-          <button class="plan-card-v28" data-plan="Yearly Premium" data-amount="499" onclick="selectPaymentPlan(this)">
+          <button class="plan-card-v28.1" data-plan="Yearly Premium" data-amount="499" onclick="selectPaymentPlan(this)">
             <b>Yearly</b><span>₹499 / 365 days</span>
           </button>
         </div>
 
-        <div class="tool-box mt-15">
+        <div class="tool-box mt-15 payment-form-v28.11">
           <input id="paymentPlan" value="Monthly Premium" readonly>
           <input id="paymentAmount" type="number" value="49" readonly>
           <input id="paymentMethod" value="UPI / QR" readonly>
           <input id="paymentTxn" placeholder="Transaction ID / UTR Number">
           <input id="paymentScreenshot" placeholder="Screenshot URL optional">
           <button onclick="submitPayment()">Submit Payment Request</button>
+          <div class="success-box">Submit के बाद status: Pending रहेगा. Admin approve करेगा तो premium activate होगा.</div>
         </div>
       </div>
     </div>
@@ -325,7 +327,7 @@ function paymentTool() {
 }
 
 function selectPaymentPlan(btn) {
-  document.querySelectorAll(".plan-card-v28").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".plan-card-v28.1").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
   const plan = btn.dataset.plan;
   const amount = btn.dataset.amount;
