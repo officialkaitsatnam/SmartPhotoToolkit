@@ -138,36 +138,89 @@ function home() {
 function loginTool() {
   workspace.innerHTML = `
     <h2>🔐 Login / Signup</h2>
-    <p class="tool-subtitle">Account banao, premium features aur dashboard use karo.</p>
+    <p class="tool-subtitle">Login karo, naya account banao, ya forgot password se reset karo.</p>
+
     <div class="auth-grid">
       <div class="auth-card">
         <h3>Login</h3>
-        <div class="form-group"><label>Email</label><input id="loginEmail" type="email" placeholder="Email"></div>
-        <div class="form-group"><label>Password</label><input id="loginPassword" type="password" placeholder="Password"></div>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input id="loginEmail" type="email" placeholder="Email">
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input id="loginPassword" type="password" placeholder="Password">
+        </div>
+
         <button class="primary-btn" onclick="loginSubmit()">Login</button>
+        <button class="link-btn" onclick="toggleForgotBox()">Forgot Password?</button>
       </div>
+
       <div class="auth-card">
         <h3>Signup</h3>
-        <div class="form-group"><label>Name</label><input id="signupName" placeholder="Name"></div>
-        <div class="form-group"><label>Email</label><input id="signupEmail" type="email" placeholder="Email"></div>
-        <div class="form-group"><label>Mobile</label><input id="signupMobile" placeholder="Mobile optional"></div>
-        <div class="form-group"><label>Password</label><input id="signupPassword" type="password" placeholder="Password"></div>
+
+        <div class="form-group">
+          <label>Name</label>
+          <input id="signupName" placeholder="Name">
+        </div>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input id="signupEmail" type="email" placeholder="Email">
+        </div>
+
+        <div class="form-group">
+          <label>Mobile</label>
+          <input id="signupMobile" placeholder="Mobile optional">
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input id="signupPassword" type="password" placeholder="Password">
+        </div>
+
         <button class="primary-btn" onclick="signupSubmit()">Create Account</button>
       </div>
     </div>
-    <div class="auth-card">
+
+    <div id="forgotBox" class="auth-card hidden">
       <h3>Forgot Password</h3>
-      <div class="forgot-grid"><input id="forgotEmail" type="email" placeholder="Registered Email"><button class="secondary-btn" onclick="forgotSubmit()">Send OTP</button></div>
-      <div class="forgot-grid forgot-grid-3"><input id="resetEmail" type="email" placeholder="Email"><input id="resetOtp" placeholder="OTP"><input id="resetPassword" type="password" placeholder="New Password"></div>
+      <p class="tool-subtitle">Email dal kar OTP bhejo. OTP aane ke baad email, OTP aur naya password fill karo.</p>
+
+      <div class="forgot-grid">
+        <input id="forgotEmail" type="email" placeholder="Registered Email">
+        <button class="secondary-btn" onclick="forgotSubmit()">Send OTP</button>
+      </div>
+
+      <div class="forgot-grid forgot-grid-3">
+        <input id="resetEmail" type="email" placeholder="Email">
+        <input id="resetOtp" placeholder="OTP">
+        <input id="resetPassword" type="password" placeholder="New Password">
+      </div>
+
       <button class="primary-btn full-btn" onclick="resetSubmit()">Reset Password</button>
     </div>
   `;
 }
 
-function dashboardTool() {
-  if (typeof requireLogin === "function" && !requireLogin()) return;
+function toggleForgotBox() {
+  const box = document.getElementById("forgotBox");
+  if (box) box.classList.toggle("hidden");
+}
 
-  const u = window.SPT?.user || {};
+function dashboardTool() {
+  const u = window.SPT?.user || JSON.parse(localStorage.getItem("spt_user") || "null");
+
+  if (!u) {
+    workspace.innerHTML = `
+      <h2>👤 Dashboard</h2>
+      <div class="warning-box">Dashboard details dekhne ke liye pehle login karo.</div>
+      <button class="primary-btn" onclick="showTool('login')">Login Now</button>
+    `;
+    return;
+  }
 
   workspace.innerHTML = `
     <h2>👤 Dashboard</h2>
@@ -176,7 +229,7 @@ function dashboardTool() {
     <div class="stats">
       <div><strong>Name</strong><span>${u.name || "-"}</span></div>
       <div><strong>Email</strong><span>${u.email || "-"}</span></div>
-      <div><strong>Plan</strong><span>${u.premium ? "Premium 👑" : "Free"}</span></div>
+      <div><strong>Plan</strong><span>${u.premium ? (u.premiumPlan || "Premium 👑") : "Free"}</span></div>
       <div><strong>Uses Left</strong><span>${u.usesLeft || "-"}</span></div>
       <div><strong>Role</strong><span>${u.role || "User"}</span></div>
       <div><strong>Status</strong><span>${u.status || "Active"}</span></div>
@@ -233,37 +286,65 @@ function feedbackTool() {
 
 function paymentTool() {
   workspace.innerHTML = `
-    <h2>💳 Payment</h2>
-    <p class="tool-subtitle">Payment complete karke details submit karo.</p>
+    <h2>💳 Payment Collection</h2>
+    <p class="tool-subtitle">QR scan karke payment karo, fir Transaction ID submit karo.</p>
 
-    <div class="payment-card center">
-      <img src="assets/images/payment_qr.jpg" class="preview-img" style="max-width:260px">
-      <p class="small-note">UPI/QR payment ke baad transaction details submit karo.</p>
-    </div>
+    <div class="payment-wrap-v28">
+      <div class="payment-card center">
+        <h3>Scan & Pay</h3>
+        <img src="payment_qr.jpg" class="qr-img-v28" alt="Payment QR">
+        <div class="upi-box-v28">UPI ID: kait.satnam@sbi</div>
+        <p class="small-note">Receiving: State Bank of India 6831</p>
+      </div>
 
-    <div class="tool-box">
-      <select id="paymentPlan">
-        <option value="Monthly Premium">Monthly Premium</option>
-        <option value="Yearly Premium">Yearly Premium</option>
-      </select>
-      <input id="paymentAmount" type="number" placeholder="Amount">
-      <input id="paymentMethod" value="UPI / QR">
-      <input id="paymentTxn" placeholder="Transaction ID">
-      <input id="paymentScreenshot" placeholder="Screenshot URL optional">
-      <button onclick="submitPayment()">Submit Payment</button>
+      <div class="payment-card">
+        <h3>Select Plan</h3>
+        <div class="plan-grid-v28">
+          <button class="plan-card-v28 active" data-plan="Monthly Premium" data-amount="49" onclick="selectPaymentPlan(this)">
+            <b>Monthly</b><span>₹49 / 30 days</span>
+          </button>
+          <button class="plan-card-v28" data-plan="Half Year Premium" data-amount="149" onclick="selectPaymentPlan(this)">
+            <b>Half Year</b><span>₹149 / 180 days</span>
+          </button>
+          <button class="plan-card-v28" data-plan="Yearly Premium" data-amount="499" onclick="selectPaymentPlan(this)">
+            <b>Yearly</b><span>₹499 / 365 days</span>
+          </button>
+        </div>
+
+        <div class="tool-box mt-15">
+          <input id="paymentPlan" value="Monthly Premium" readonly>
+          <input id="paymentAmount" type="number" value="49" readonly>
+          <input id="paymentMethod" value="UPI / QR" readonly>
+          <input id="paymentTxn" placeholder="Transaction ID / UTR Number">
+          <input id="paymentScreenshot" placeholder="Screenshot URL optional">
+          <button onclick="submitPayment()">Submit Payment Request</button>
+        </div>
+      </div>
     </div>
   `;
 }
 
+function selectPaymentPlan(btn) {
+  document.querySelectorAll(".plan-card-v28").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  const plan = btn.dataset.plan;
+  const amount = btn.dataset.amount;
+  const p = document.getElementById("paymentPlan");
+  const a = document.getElementById("paymentAmount");
+  if (p) p.value = plan;
+  if (a) a.value = amount;
+}
+
 function premiumTool() {
   workspace.innerHTML = `
-    <h2>👑 Premium</h2>
+    <h2>👑 Premium Plans</h2>
     <p class="tool-subtitle">Premium users ko unlimited tools aur priority features milenge.</p>
 
     <div class="info-grid">
       <div><strong>Free Plan</strong><span>Limited uses</span></div>
       <div><strong>Monthly</strong><span>₹49 / 30 days</span></div>
-      <div><strong>Yearly</strong><span>₹199 / 365 days</span></div>
+      <div><strong>Half Year</strong><span>₹149 / 180 days</span></div>
+      <div><strong>Yearly</strong><span>₹499 / 365 days</span></div>
     </div>
 
     <div class="action-row">
@@ -272,8 +353,6 @@ function premiumTool() {
     </div>
   `;
 }
-
-/* ================= IMAGE COMPRESSOR ================= */
 
 function imageCompressor() {
   workspace.innerHTML = `
