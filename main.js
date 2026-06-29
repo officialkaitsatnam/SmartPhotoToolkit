@@ -181,37 +181,133 @@ function home() {
 
 function loginTool() {
   workspace.innerHTML = `
-    <h2>🔐 Login / Create Account</h2>
-    <p class="tool-subtitle">Access your dashboard, premium tools, payment status, and account history.</p>
+    <section class="auth-pro-shell fade-in">
+      <div class="auth-hero-panel">
+        <div class="auth-brand-row">
+          <div class="auth-brand-icon">📸</div>
+          <div>
+            <h2>Smart Photo Toolkit Pro</h2>
+            <p>Secure access for premium document and photo tools.</p>
+          </div>
+        </div>
 
-    <div class="auth-grid">
-      <div class="auth-card">
-        <h3>Login</h3>
-        <div class="form-group"><label>Email Address</label><input id="loginEmail" type="email" placeholder="Enter your email address"></div>
-        <div class="form-group"><label>Password</label><input id="loginPassword" type="password" placeholder="Enter your password"></div>
-        <button class="primary-btn" onclick="loginSubmit()">Login</button>
-        <button class="link-btn" onclick="toggleForgotBox()">Forgot Password?</button>
+        <div class="auth-hero-content">
+          <span class="auth-pill">v33 Auth Pro</span>
+          <h1>Welcome back</h1>
+          <p>Login to manage your dashboard, payment status, premium plan, and tool history.</p>
+
+          <div class="auth-benefits">
+            <div>✅ Premium dashboard</div>
+            <div>✅ Payment tracking</div>
+            <div>✅ Secure password recovery</div>
+          </div>
+        </div>
       </div>
 
-      <div class="auth-card">
-        <h3>Create New Account</h3>
-        <div class="form-group"><label>Full Name</label><input id="signupName" placeholder="Enter full name"></div>
-        <div class="form-group"><label>Email Address</label><input id="signupEmail" type="email" placeholder="Enter email address"></div>
-        <div class="form-group"><label>Mobile Number</label><input id="signupMobile" placeholder="Enter mobile number"></div>
-        <div class="form-group"><label>Address</label><textarea id="signupAddress" rows="3" placeholder="Enter full address"></textarea></div>
-        <div class="form-group"><label>Password</label><input id="signupPassword" type="password" placeholder="Create a password"></div>
-        <button class="primary-btn" onclick="signupSubmit()">Create Account</button>
-      </div>
-    </div>
+      <div class="auth-form-panel">
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="loginTabBtn" onclick="switchAuthMode('login')">Login</button>
+          <button class="auth-tab" id="signupTabBtn" onclick="switchAuthMode('signup')">Create Account</button>
+        </div>
 
-    <div id="forgotBox" class="auth-card hidden">
-      <h3>Password Recovery</h3>
-      <p class="tool-subtitle">Enter your registered email to receive a one-time password. Then use the OTP to set a new password.</p>
-      <div class="forgot-grid"><input id="forgotEmail" type="email" placeholder="Registered email address"><button class="secondary-btn" onclick="forgotSubmit()">Send OTP</button></div>
-      <div class="forgot-grid forgot-grid-3"><input id="resetEmail" type="email" placeholder="Email address"><input id="resetOtp" placeholder="OTP"><input id="resetPassword" type="password" placeholder="New password"></div>
-      <button class="primary-btn full-btn" onclick="resetSubmit()">Reset Password</button>
-    </div>
+        <div id="authLoginBox" class="auth-mode-box">
+          <h2>Login to your account</h2>
+          <p class="auth-muted">Enter your registered email address and password.</p>
+
+          <div class="form-group pro-field">
+            <label>Email Address</label>
+            <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email">
+          </div>
+
+          <div class="form-group pro-field">
+            <label>Password</label>
+            <input id="loginPassword" type="password" placeholder="Enter your password" autocomplete="current-password">
+          </div>
+
+          <button class="auth-main-btn" onclick="loginSubmit()">Login Securely</button>
+
+          <div class="auth-footer-line">
+            <span>Forgot your password?</span>
+            <button class="auth-text-btn" onclick="toggleForgotBox()">Recover Password</button>
+          </div>
+        </div>
+
+        <div id="authSignupBox" class="auth-mode-box hidden">
+          <h2>Create your account</h2>
+          <p class="auth-muted">Fill in your details to start using Smart Photo Toolkit Pro.</p>
+
+          <div class="form-group pro-field">
+            <label>Full Name</label>
+            <input id="signupName" placeholder="Enter full name" autocomplete="name">
+          </div>
+
+          <div class="form-group pro-field">
+            <label>Email Address</label>
+            <input id="signupEmail" type="email" placeholder="you@example.com" autocomplete="email">
+          </div>
+
+          <div class="auth-two-col">
+            <div class="form-group pro-field">
+              <label>Mobile Number</label>
+              <input id="signupMobile" placeholder="Enter mobile number" autocomplete="tel">
+            </div>
+            <div class="form-group pro-field">
+              <label>Password</label>
+              <input id="signupPassword" type="password" placeholder="Create password" autocomplete="new-password">
+            </div>
+          </div>
+
+          <div class="form-group pro-field">
+            <label>Address</label>
+            <textarea id="signupAddress" rows="3" placeholder="Enter full address"></textarea>
+          </div>
+
+          <button class="auth-main-btn" onclick="signupSubmit()">Create Account</button>
+
+          <div class="auth-footer-line">
+            <span>Already registered?</span>
+            <button class="auth-text-btn" onclick="switchAuthMode('login')">Login here</button>
+          </div>
+        </div>
+
+        <div id="forgotBox" class="auth-recovery-box hidden">
+          <div class="auth-recovery-head">
+            <h3>Password Recovery</h3>
+            <button class="auth-close-btn" onclick="toggleForgotBox()">×</button>
+          </div>
+          <p class="auth-muted">Send an OTP to your registered email, then create a new password.</p>
+
+          <div class="forgot-grid">
+            <input id="forgotEmail" type="email" placeholder="Registered email address">
+            <button class="secondary-btn" onclick="forgotSubmit()">Send OTP</button>
+          </div>
+
+          <div class="forgot-grid forgot-grid-3">
+            <input id="resetEmail" type="email" placeholder="Email address">
+            <input id="resetOtp" placeholder="OTP">
+            <input id="resetPassword" type="password" placeholder="New password">
+          </div>
+
+          <button class="auth-main-btn full-btn" onclick="resetSubmit()">Reset Password</button>
+        </div>
+      </div>
+    </section>
   `;
+}
+
+function switchAuthMode(mode) {
+  const loginBox = document.getElementById("authLoginBox");
+  const signupBox = document.getElementById("authSignupBox");
+  const loginBtn = document.getElementById("loginTabBtn");
+  const signupBtn = document.getElementById("signupTabBtn");
+
+  if (!loginBox || !signupBox || !loginBtn || !signupBtn) return;
+
+  const isSignup = mode === "signup";
+  loginBox.classList.toggle("hidden", isSignup);
+  signupBox.classList.toggle("hidden", !isSignup);
+  loginBtn.classList.toggle("active", !isSignup);
+  signupBtn.classList.toggle("active", isSignup);
 }
 
 function toggleForgotBox() {
