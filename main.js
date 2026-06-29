@@ -139,59 +139,27 @@ function loginTool() {
   workspace.innerHTML = `
     <h2>🔐 Login / Signup</h2>
     <p class="tool-subtitle">Account banao, premium features aur dashboard use karo.</p>
-
     <div class="auth-grid">
       <div class="auth-card">
         <h3>Login</h3>
-        <div class="form-group">
-          <label>Email</label>
-          <input id="loginEmail" type="email" placeholder="Email">
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input id="loginPassword" type="password" placeholder="Password">
-        </div>
+        <div class="form-group"><label>Email</label><input id="loginEmail" type="email" placeholder="Email"></div>
+        <div class="form-group"><label>Password</label><input id="loginPassword" type="password" placeholder="Password"></div>
         <button class="primary-btn" onclick="loginSubmit()">Login</button>
       </div>
-
       <div class="auth-card">
         <h3>Signup</h3>
-        <div class="form-group">
-          <label>Name</label>
-          <input id="signupName" placeholder="Name">
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input id="signupEmail" type="email" placeholder="Email">
-        </div>
-        <div class="form-group">
-          <label>Mobile</label>
-          <input id="signupMobile" placeholder="Mobile optional">
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input id="signupPassword" type="password" placeholder="Password">
-        </div>
+        <div class="form-group"><label>Name</label><input id="signupName" placeholder="Name"></div>
+        <div class="form-group"><label>Email</label><input id="signupEmail" type="email" placeholder="Email"></div>
+        <div class="form-group"><label>Mobile</label><input id="signupMobile" placeholder="Mobile optional"></div>
+        <div class="form-group"><label>Password</label><input id="signupPassword" type="password" placeholder="Password"></div>
         <button class="primary-btn" onclick="signupSubmit()">Create Account</button>
       </div>
     </div>
-
     <div class="auth-card">
       <h3>Forgot Password</h3>
-      <div class="row">
-        <input id="forgotEmail" type="email" placeholder="Registered Email">
-        <button class="secondary-btn" onclick="forgotSubmit()">Send OTP</button>
-      </div>
-
-      <div class="row mt-15">
-        <input id="resetEmail" type="email" placeholder="Email">
-        <input id="resetOtp" placeholder="OTP">
-      </div>
-
-      <div class="row mt-10">
-        <input id="resetPassword" type="password" placeholder="New Password">
-        <button class="primary-btn" onclick="resetSubmit()">Reset Password</button>
-      </div>
+      <div class="forgot-grid"><input id="forgotEmail" type="email" placeholder="Registered Email"><button class="secondary-btn" onclick="forgotSubmit()">Send OTP</button></div>
+      <div class="forgot-grid forgot-grid-3"><input id="resetEmail" type="email" placeholder="Email"><input id="resetOtp" placeholder="OTP"><input id="resetPassword" type="password" placeholder="New Password"></div>
+      <button class="primary-btn full-btn" onclick="resetSubmit()">Reset Password</button>
     </div>
   `;
 }
