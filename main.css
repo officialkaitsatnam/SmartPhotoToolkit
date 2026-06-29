@@ -1041,3 +1041,31 @@ th{
 }
 
 /* End of PART 3 */
+/* Forgot Password Fix */
+.auth-card .row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:10px;
+}
+
+.auth-card .row input{
+  width:100%;
+  padding:13px;
+  border:1px solid #d0d5dd;
+  border-radius:12px;
+  font-size:15px;
+  outline:none;
+  background:#fff;
+}
+
+.auth-card .row button{
+  width:100%;
+  margin:0;
+}
+
+@media(max-width:700px){
+  .auth-card .row{
+    grid-template-columns:1fr;
+  }
+}
