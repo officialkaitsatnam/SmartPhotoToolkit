@@ -1,5 +1,9 @@
-const SPT_CACHE="spt-v35-cache";
-const ASSETS=["./","./index.html","./style.css","./main.css","./main.js","./script.js","./payment_qr.jpg"];
-self.addEventListener("install",e=>{e.waitUntil(caches.open(SPT_CACHE).then(c=>c.addAll(ASSETS)).catch(()=>{}));self.skipWaiting();});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==SPT_CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
-self.addEventListener("fetch",e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request).then(r=>r||caches.match("./index.html"))));});
+const CACHE_NAME = "spt-pro-v35-1";
+const CORE_ASSETS = ["./", "./index.html", "./style.css", "./main.css", "./main.js", "./script.js", "./manifest.webmanifest", "./offline.html", "./icon-192.png", "./icon-512.png"];
+self.addEventListener("install", event => { event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS)).then(()=>self.skipWaiting())); });
+self.addEventListener("activate", event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))).then(()=>self.clients.claim())); });
+self.addEventListener("fetch", event => {
+  const req = event.request;
+  if (req.method !== "GET") return;
+  event.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE_NAME).then(cache => cache.put(req, copy)); return res; }).catch(() => caches.match(req).then(cached => cached || caches.match("./offline.html"))));
+});

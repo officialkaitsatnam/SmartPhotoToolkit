@@ -1979,3 +1979,86 @@ setTimeout(()=>{
     }
   }catch(e){}
 },300);
+
+
+/* =====================================================
+   v35.1 Enterprise UI & UX Final Overrides
+===================================================== */
+function initialsV351(name,email){const src=(name||email||"User").trim();return src.split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase()||"U";}
+function toggleNotifyPanelV351(){let p=document.getElementById('notifyPanelV351'); if(!p){p=document.createElement('div');p.id='notifyPanelV351';p.className='notify-panel';p.innerHTML=`<h3>Notifications</h3><div class="notify-item"><b>Welcome to v35.1</b><span>UI & UX polish, PWA readiness, and improved account interface are active.</span></div><div class="notify-item"><b>Payment workflow</b><span>Use the Payment section to generate QR and submit UTR.</span></div><div class="notify-item"><b>Premium tools</b><span>Login to view dashboard, payments, premium status, and workspace.</span></div>`;document.body.appendChild(p);} p.classList.toggle('show');}
+function addTopbarV351(title){return `<div class="pro-topbar"><div><div class="pro-crumb">Smart Photo Toolkit Pro / ${title}</div></div><button class="notify-btn" onclick="toggleNotifyPanelV351()">🔔 Notifications <span class="notify-dot"></span></button></div>`;}
+
+const _v351Home = home;
+home = function(){
+  workspace.innerHTML = `
+    ${addTopbarV351('Home')}
+    <h2>Welcome to Smart Photo Toolkit Pro 👋</h2>
+    <p class="tool-subtitle">A polished enterprise workspace for passport photos, Aadhaar print layouts, image compression, PDF resizing, payments, premium membership, and future AI tools.</p>
+    <span class="enterprise-chip">✨ v35.1 UI & UX Final</span>
+    <div class="stats">
+      <div><strong>📸 Photo Tools</strong><span>Passport, name/date, and image compression.</span></div>
+      <div><strong>📄 Document Tools</strong><span>Aadhaar print layout and PDF resizing.</span></div>
+      <div><strong>👑 Premium Workspace</strong><span>Payments, dashboard, membership, and history.</span></div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><span>Recommended Plan</span><strong>₹149</strong><span>Half-year premium value.</span></div>
+      <div class="kpi-card"><span>Payment Mode</span><strong>Dynamic QR</strong><span>Generate QR after plan selection.</span></div>
+      <div class="kpi-card"><span>PWA Status</span><strong>Ready</strong><span>Installable app foundation included.</span></div>
+    </div>
+    <div class="install-card-v351"><p>Install Smart Photo Toolkit Pro for a faster app-like experience.</p><button class="primary-btn" onclick="showInstallPrompt()">Install App</button></div>
+  `;
+};
+
+loginTool = function(){
+  workspace.innerHTML = `
+    ${addTopbarV351('Secure Access')}
+    <section class="auth-pro-shell v351 fade-in">
+      <div class="auth-hero-panel">
+        <div class="auth-brand-row"><div class="auth-brand-icon">📸</div><div><h2>Smart Photo Toolkit Pro</h2><p>Enterprise access for premium photo and document tools.</p></div></div>
+        <div class="auth-hero-content">
+          <span class="auth-pill">v35.1 Enterprise UI</span>
+          <h1>Secure workspace for every document task.</h1>
+          <p>Login to manage premium membership, payments, downloads, and your future AI-powered workspace.</p>
+          <div class="auth-benefits"><div>✅ Professional dashboard</div><div>✅ Dynamic payment QR</div><div>✅ Secure password recovery</div><div>✅ PWA-ready experience</div></div>
+        </div>
+      </div>
+      <div class="auth-form-panel">
+        <div class="auth-tabs"><button class="auth-tab active" id="loginTabBtn" onclick="switchAuthMode('login')">Login</button><button class="auth-tab" id="signupTabBtn" onclick="switchAuthMode('signup')">Create Account</button></div>
+        <div id="authLoginBox" class="auth-mode-box">
+          <h2>Welcome back</h2><p class="auth-muted">Enter your registered email and password to continue.</p>
+          <div class="form-group pro-field"><label>Email Address</label><input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
+          <div class="form-group pro-field"><label>Password</label><input id="loginPassword" type="password" placeholder="Enter password" autocomplete="current-password"><button class="field-icon" onclick="togglePasswordV351('loginPassword')" type="button">Show</button></div>
+          <div class="remember-row"><label><input id="rememberMeV351" type="checkbox" checked> Remember me</label><button class="auth-text-btn" onclick="toggleForgotBox()">Forgot Password?</button></div>
+          <button id="loginActionBtnV351" class="auth-main-btn" onclick="loginSubmitV351()">Login Securely</button>
+          <div class="auth-footer-line"><span>New here?</span><button class="auth-text-btn" onclick="switchAuthMode('signup')">Create your account</button></div>
+        </div>
+        <div id="authSignupBox" class="auth-mode-box hidden">
+          <h2>Create professional account</h2><p class="auth-muted">Complete your profile to activate dashboard and premium features.</p>
+          <div class="form-group pro-field"><label>Full Name</label><input id="signupName" placeholder="Enter full name" autocomplete="name"></div>
+          <div class="auth-two-col"><div class="form-group pro-field"><label>Email Address</label><input id="signupEmail" type="email" placeholder="you@example.com"></div><div class="form-group pro-field"><label>Mobile Number</label><input id="signupMobile" placeholder="Enter mobile number"></div></div>
+          <div class="form-group pro-field"><label>Password</label><input id="signupPassword" type="password" placeholder="Create strong password" oninput="updatePasswordStrengthV351(this.value)"><button class="field-icon" onclick="togglePasswordV351('signupPassword')" type="button">Show</button></div><div id="strengthV351" class="password-strength"><span></span></div>
+          <div class="form-group pro-field"><label>Address</label><textarea id="signupAddress" rows="3" placeholder="Enter full address"></textarea></div>
+          <button id="signupActionBtnV351" class="auth-main-btn" onclick="signupSubmitV351()">Create Account</button>
+          <div class="auth-footer-line"><span>Already registered?</span><button class="auth-text-btn" onclick="switchAuthMode('login')">Login here</button></div>
+        </div>
+        <div id="forgotBox" class="auth-recovery-box hidden"><div class="auth-recovery-head"><h3>Password Recovery</h3><button class="auth-close-btn" onclick="toggleForgotBox()">×</button></div><p class="auth-muted">Send an OTP to your registered email, then create a new password.</p><div class="forgot-grid"><input id="forgotEmail" type="email" placeholder="Registered email address"><button class="secondary-btn" onclick="forgotSubmit()">Send OTP</button></div><div class="forgot-grid forgot-grid-3"><input id="resetEmail" type="email" placeholder="Email address"><input id="resetOtp" placeholder="OTP"><input id="resetPassword" type="password" placeholder="New password"></div><button class="auth-main-btn full-btn" onclick="resetSubmit()">Reset Password</button></div>
+      </div>
+    </section>`;
+};
+function togglePasswordV351(id){const el=document.getElementById(id); if(!el)return; el.type = el.type==='password'?'text':'password';}
+function updatePasswordStrengthV351(v){const box=document.getElementById('strengthV351'); if(!box)return; box.classList.remove('ok','strong'); const span=box.querySelector('span'); if(!span)return; if(!v){span.style.width='0';return;} if(v.length>=8 && /[0-9]/.test(v) && /[A-Z]/.test(v)){box.classList.add('strong');span.style.width='100%';} else if(v.length>=5){box.classList.add('ok');span.style.width='55%';} else {span.style.width='25%';}}
+async function loginSubmitV351(){const b=document.getElementById('loginActionBtnV351'); if(b){b.classList.add('loading');b.textContent='Signing in';} try{await loginSubmit();}finally{if(b){b.classList.remove('loading');b.textContent='Login Securely';}}}
+async function signupSubmitV351(){const b=document.getElementById('signupActionBtnV351'); if(b){b.classList.add('loading');b.textContent='Creating account';} try{await signupSubmit();}finally{if(b){b.classList.remove('loading');b.textContent='Create Account';}}}
+
+const _v351Dashboard = dashboardTool;
+dashboardTool = function(){
+  const u = getCurrentUser();
+  if(!u){workspace.innerHTML=`${addTopbarV351('Dashboard')}<h2>My Dashboard</h2><div class="warning-box">Please login to view your account dashboard.</div><button class="primary-btn" onclick="showTool('login')">Login Now</button>`;return;}
+  workspace.innerHTML = `
+    ${addTopbarV351('Dashboard')}
+    <div class="dashboard-profile-v351"><div class="profile-avatar-v351">${initialsV351(u.name,u.email)}</div><div class="profile-title-v351"><h2>${u.name||'User Dashboard'}</h2><p>${u.email||'-'} · ${u.mobile||'Mobile not added'}</p><p>${u.address||'Address not added'}</p></div><span class="profile-badge-v351">${u.premium?'Premium Member':'Free Account'}</span></div>
+    <div class="stats"><div><strong>Current Plan</strong><span>${u.premium ? (u.premiumPlan || 'Premium') : 'Free'}</span></div><div><strong>Premium Ends</strong><span>${u.premiumEnd || '-'}</span></div><div><strong>Uses Left</strong><span>${u.usesLeft || '-'}</span></div><div><strong>Role</strong><span>${u.role || 'User'}</span></div><div><strong>Status</strong><span>${u.status || 'Active'}</span></div><div><strong>Workspace</strong><span>v35.1 Ready</span></div></div>
+    <div class="quick-actions-v351"><button class="primary-btn" onclick="showTool('payment')">Make Payment</button><button class="secondary-btn" onclick="showTool('premium')">View Plans</button><button class="secondary-btn" onclick="showTool('workspace')">My Workspace</button><button class="print-btn" onclick="SPT.logout()">Logout</button></div>`;
+};
+
+setTimeout(()=>{try{if(typeof updateAuthUI==='function') updateAuthUI();}catch(e){}},600);
