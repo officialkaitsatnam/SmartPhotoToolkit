@@ -1,13 +1,8 @@
-# Update Guide v38.4
+# Update Guide v38.5
 
-## GitHub
-Replace all root files from this ZIP.
+1. Extract ZIP.
+2. Upload/replace all root files in GitHub repository.
+3. Open: https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=38.5-pro-polish
+4. If old UI appears, clear site data or hard refresh.
 
-## Apps Script
-No update required.
-
-## After Upload
-Open:
-https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=38.4-nav-profile
-
-Then hard refresh: Ctrl + Shift + R.
+Apps Script: No update required.

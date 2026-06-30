@@ -1,13 +1,8 @@
-# Smart Photo Toolkit Pro v38.4 — Navigation/Profile Fix
+# v38.5 Pro Polish
 
-## Fixed
-- Left sidebar cleaned: account/profile/payment/logout options moved to top-right profile dropdown.
-- Hamburger menu now works on desktop and mobile.
-- Notification panel shifted to top bell icon.
-- Top-right profile menu shows dynamic logged-in user name and profile photo.
-- Added local Edit Profile screen: name, mobile, address, DP upload.
-- Admin option appears only for admin users.
-
-## Not changed
-- Existing v38.3/v37.6 tool engine preserved.
+- Kept v38.4/v37.6 tool engine intact.
+- Improved dashboard/home design with professional cards.
+- Improved sidebar, topbar, profile panel, document/PDF/photo tool cards.
+- Added clickable dashboard cards for all major tools.
+- Added CSS safety fixes for oversized previews and crop areas.
 - Apps Script update not required.

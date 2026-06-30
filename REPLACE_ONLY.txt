@@ -1,3 +1,2 @@
-GitHub: Replace all root files from this ZIP.
-Apps Script: No update required.
-Google Sheet: No update required.
+GitHub: replace all files in root.
+Apps Script: no update required for v38.5.

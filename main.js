@@ -3158,3 +3158,46 @@ setTimeout(()=>{
   if(window.SPT && oldLogout){SPT.logout=function(){oldLogout.call(SPT); setTimeout(updateUserProfileV384,80);};}
   setTimeout(()=>{setupHamburger();setupBell();cleanupSidebar();updateUserProfileV384();},500);
 })();
+
+
+/* =====================================================
+   v38.5 Pro Polish - clean dashboard and functional cards
+===================================================== */
+(function(){
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const getUser=()=>{try{return Object.assign({}, JSON.parse(localStorage.getItem('spt_user')||'null')||{}, JSON.parse(localStorage.getItem('spt_profile_local')||'null')||{})}catch(e){return {}}};
+  const getPhoto=()=>localStorage.getItem('spt_profile_photo')||'';
+  const initials=(n,e)=>String(n||e||'U').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
+  window.enterpriseHomeV385=function(){
+    const u=getUser(); const name=u.name||'Satnam'; const email=u.email||'kaitsatnam@gmail.com'; const photo=getPhoto();
+    workspace.innerHTML=`<div class="ev-shell-pro">
+      <div class="ev-main-pro">
+        <div class="ev-card-pro ev-hero-pro"><div><h1>Smart Photo Toolkit Pro</h1><p>All-in-one image tools for documents, photos, PDF and productivity.<br>Crop, resize, convert and create professional documents with ease.</p></div><div class="ev-badge-pro">v38.5 Pro<small>● All Systems Operational</small></div></div>
+        <div class="ev-card-pro"><div class="ev-section-title"><div><h2>📁 Document Studio</h2><p>Create and print professional documents.</p></div><button class="secondary-btn" onclick="showTool('documentstudio')">Open Studio</button></div>
+          <div class="ev-doc-grid-pro">
+            ${docTile('aadhaar','AADHAAR','Aadhaar Card','85.6 × 54 mm')}
+            ${docTile('pan','PAN','PAN Card','85.6 × 54 mm')}
+            ${docTile('voter','▰▱▰','Voter ID Card','85.6 × 54 mm')}
+            ${docTile('ayushman','PM-JAY','Ayushman Card','85.6 × 54 mm')}
+            ${docTile('abha','ABHA','ABHA Card','85.6 × 54 mm')}
+            ${docTile('dl','DL','Driving Licence','85.6 × 54 mm')}
+          </div>
+          <div class="ev-actions-pro"><button class="ev-action-pro" onclick="showTool('documentstudio')"><span>📄</span>New Document</button><button class="ev-action-pro" onclick="showTool('documentstudio')"><span>📁</span>From Template</button><button class="ev-action-pro" onclick="showTool('workspace')"><span>💾</span>Saved Documents</button><button class="ev-action-pro" onclick="showTool('documentstudio')"><span>🖨️</span>Print Settings</button></div>
+        </div>
+        <div class="ev-card-pro"><div class="ev-section-title"><div><h2>📄 PDF Studio</h2><p>Edit, convert, crop and manage PDF files.</p></div><button class="secondary-btn" onclick="showTool('pdfresizer')">Open PDF Tool</button></div><div class="ev-tool-grid-pro">
+          ${toolBtn('pdfresizer','↔️','PDF Resizer')}${toolBtn('pdfresizer','✂️','Crop PDF')}${toolBtn('pdfresizer','🖼️','PDF to Image')}${toolBtn('pdfresizer','📄','Image to PDF')}${toolBtn('pdfresizer','➕','Merge PDF')}${toolBtn('pdfresizer','✂️','Split PDF')}${toolBtn('pdfresizer','📦','Compress PDF')}
+        </div></div>
+        <div class="ev-card-pro"><div class="ev-section-title"><div><h2>📷 Photo Tools</h2><p>Enhance and edit your photos easily.</p></div><button class="secondary-btn" onclick="showTool('compressor')">Open Tools</button></div><div class="ev-tool-grid-pro">
+          ${toolBtn('compressor','🗜️','Compress Photo')}${toolBtn('passport','👤','Passport Photo')}${toolBtn('namedate','🏷️','Name / Date')}${toolBtn('compressor','↻','Rotate / Flip')}${toolBtn('compressor','🎨','Photo Filters')}${toolBtn('compressor','☀️','Color Adjust')}${toolBtn('premium','👑','Premium')}
+        </div></div>
+      </div>
+      <div class="ev-side-pro"><div class="ev-card-pro ev-profile-pro"><div class="ev-avatar-pro">${photo?`<img src="${photo}">`:initials(name,email)}</div><h3>${esc(name)}</h3><p>${esc(email)}</p><span class="ev-pro-badge">👑 ${u.premium?'Pro Member':'Free Member'}</span><div class="ev-profile-menu-pro"><button onclick="showProfileEditV384('view')">👤 My Profile <span>›</span></button><button onclick="showProfileEditV384('edit')">✏️ Edit Profile <span>›</span></button><button onclick="showTool('premium')">👑 Membership <span>›</span></button><button onclick="showTool('payment')">💳 Payments <span>›</span></button><button onclick="showTool('admin')">📊 Admin Panel <span>›</span></button><button onclick="SPT?.logout?.()">🚪 Logout <span>›</span></button></div></div>
+      <div class="ev-card-pro"><h3>Workspace Info</h3><div class="ev-info-pro"><div class="ev-info-row-pro"><span>Documents</span><b>124</b></div><div class="ev-info-row-pro"><span>Storage Used</span><b>2.45 GB</b></div><div class="ev-info-row-pro"><span>Templates</span><b>18</b></div><div class="ev-info-row-pro"><span>Total Prints</span><b>156</b></div></div></div></div></div>`;
+  };
+  function docTile(type,icon,title,sub){return `<button class="ev-doc-tile-pro" onclick="showTool('documentstudio');setTimeout(()=>{try{ds376SelectDoc('${type}')}catch(e){}},200)"><span class="ev-doc-icon-pro">${esc(icon)}</span><b>${esc(title)}</b><small>${esc(sub)}</small></button>`;}
+  function toolBtn(tool,icon,title){return `<button class="ev-tool-pro" onclick="showTool('${tool}')"><span>${icon}</span><b>${esc(title)}</b></button>`;}
+  const prev=window.openTool;
+  window.openTool=function(tool){if(tool==='home'){try{setActive&&setActive('home');closeMenu&&closeMenu();}catch(e){} return enterpriseHomeV385();} return prev?prev(tool):null;};
+  window.addEventListener('load',()=>setTimeout(()=>{try{enterpriseHomeV385();}catch(e){}},650));
+})();
