@@ -414,3 +414,50 @@ body.dark .ds-type.active,body.dark .ds-type:hover{background:#172554}
 .ds-output-single{max-width:180mm;height:54mm;object-fit:contain;border:1px solid #333;background:white}
 @media(max-width:900px){.ds-pdf-workspace{grid-template-columns:1fr}.ds-sidebox{position:static}.ds-grid{grid-template-columns:1fr}}
 @media(max-width:700px){.ds-card-types{grid-template-columns:1fr 1fr}.ds-type{padding:12px}.ds-canvas-shell{padding:8px}.ds-cropbox::before{font-size:10px;padding:5px 7px}.ds-handle{width:26px;height:26px}.ds-a4-preview{padding:8mm 2mm}.ds-output-card{width:76mm;height:48mm}.ds-output-single{height:48mm;max-width:180mm}}
+
+
+/* =====================================================
+   Smart Photo Toolkit Pro v37.5
+   Document selection UI + compact Passport Studio + user menu
+===================================================== */
+.header-actions{position:relative;gap:12px}
+.spt-user-menu{position:relative;display:inline-block}
+.spt-user-btn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;padding:8px 11px;display:flex;align-items:center;gap:8px;font-weight:900;box-shadow:var(--shadow);cursor:pointer;max-width:220px}
+.spt-avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;font-size:13px;flex:0 0 auto}
+.spt-user-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.spt-user-dropdown{display:none;position:absolute;right:0;top:calc(100% + 10px);width:260px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow2);z-index:2000;overflow:hidden;color:var(--text)}
+.spt-user-menu.open .spt-user-dropdown{display:block;animation:fadeIn .18s ease}
+.spt-user-head{padding:14px;background:linear-gradient(135deg,#eff6ff,#f8fafc);border-bottom:1px solid var(--line)}
+body.dark .spt-user-head{background:linear-gradient(135deg,#172554,#0f172a)}
+.spt-user-head b{display:block}.spt-user-head span{display:block;color:var(--muted);font-size:12px;margin-top:3px;word-break:break-word}
+.spt-user-dropdown button{width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:12px 14px;cursor:pointer;font-weight:800;display:flex;gap:8px;align-items:center}
+.spt-user-dropdown button:hover{background:#eff6ff;color:#1d4ed8}
+body.dark .spt-user-dropdown button:hover{background:#172554;color:#bfdbfe}
+
+.passport-studio-panel{max-width:760px;margin-left:auto;margin-right:auto}
+.passport-studio-canvasbox{max-height:430px;padding:10px!important}
+.passport-studio-canvas{max-height:380px!important;width:auto!important;max-width:100%!important}
+.passport-studio-tools{max-width:780px;margin-left:auto;margin-right:auto}
+.passport-guide{font-size:13px}
+
+.ds-hero{border-radius:24px;background:linear-gradient(135deg,#e0f2fe,#eef2ff)!important;box-shadow:0 12px 32px rgba(37,99,235,.08)}
+.ds-card-types{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important}
+.ds-type{min-height:95px;display:flex;flex-direction:column;justify-content:center;gap:4px;position:relative;overflow:hidden}
+.ds-type::after{content:'';position:absolute;right:-18px;bottom:-18px;width:70px;height:70px;background:rgba(37,99,235,.06);border-radius:50%}
+.ds-type.active{box-shadow:0 14px 32px rgba(37,99,235,.18)}
+.ds-panel{padding:18px!important;border-radius:22px!important}
+.ds-pdf-workspace{grid-template-columns:minmax(0,1fr) 280px!important;gap:18px!important}
+.ds-canvas-shell{max-height:86vh!important;min-height:560px;background:linear-gradient(145deg,#0f172a,#020617)!important;border-radius:22px!important;padding:18px!important}
+.ds-canvas-wrap canvas{border-radius:14px!important;box-shadow:0 0 0 1px rgba(255,255,255,.1),0 16px 45px rgba(0,0,0,.35)}
+.ds-cropbox{border:3px solid #22c55e!important;background:rgba(34,197,94,.09)!important;box-shadow:0 0 0 9999px rgba(15,23,42,.34),0 0 0 1px rgba(255,255,255,.85) inset!important;border-radius:6px!important}
+.ds-cropbox::before{content:'Printable Area • Drag to move'!important;background:rgba(20,83,45,.92)!important;color:#fff!important;font-weight:900!important;letter-spacing:.1px!important}
+.ds-cropbox::after{content:attr(data-size);position:absolute;right:8px;bottom:8px;background:rgba(2,6,23,.78);color:#fff;font-size:12px;line-height:1;padding:6px 8px;border-radius:999px;font-weight:900}
+.ds-handle{width:24px!important;height:24px!important;background:#22c55e!important;border:3px solid #fff!important;border-radius:7px!important}
+.ds-handle.n{left:50%;top:-14px;transform:translateX(-50%);cursor:ns-resize}.ds-handle.s{left:50%;bottom:-14px;transform:translateX(-50%);cursor:ns-resize}.ds-handle.e{right:-14px;top:50%;transform:translateY(-50%);cursor:ew-resize}.ds-handle.w{left:-14px;top:50%;transform:translateY(-50%);cursor:ew-resize}
+.ds-sidebox{border-radius:22px!important;box-shadow:var(--shadow);top:18px!important}.ds-sidebox h3{font-size:19px}.ds-sidebox p{font-size:14px!important}
+.ds-tooltips{display:grid;gap:8px;margin-top:10px}.ds-tip{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:9px;font-size:12px;color:var(--muted)}
+.ds-upload{min-height:90px;display:grid!important;place-items:center!important}
+.ds-a4-preview{margin-left:auto;margin-right:auto}.ds-a4-top{justify-content:center!important;align-items:flex-start!important}
+
+@media(max-width:900px){.ds-pdf-workspace{grid-template-columns:1fr!important}.ds-canvas-shell{min-height:420px}.spt-user-name{max-width:90px}}
+@media(max-width:700px){.header-actions{margin-top:12px}.spt-user-dropdown{right:auto;left:0}.ds-card-types{grid-template-columns:1fr 1fr!important}.ds-canvas-shell{min-height:360px;padding:10px!important}.passport-studio-panel{max-width:100%}.passport-studio-canvasbox{max-height:360px}.passport-studio-canvas{max-height:320px!important}.ds-handle{width:28px!important;height:28px!important}}

@@ -1,25 +1,13 @@
-# Update Guide — v37.4
+# Update Guide v37.5
 
 ## GitHub
-Replace/upload these files in the GitHub root folder:
-
-- index.html
-- style.css
-- main.css
-- main.js
-- script.js
-- manifest.webmanifest
-- sw.js
-- icon-192.png
-- icon-512.png
-- payment_qr.jpg
-- offline.html
+Replace all root files from this ZIP.
 
 ## Apps Script
-No Apps Script update required.
+No update required if your v36/v37 backend is already working.
 
 ## Test URL
-Open:
-https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=37.4-document-studio
+https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=37.5-document-ui
 
-Then hard refresh using Ctrl + Shift + R.
+## Hard Refresh
+Use Ctrl + Shift + R after upload.
