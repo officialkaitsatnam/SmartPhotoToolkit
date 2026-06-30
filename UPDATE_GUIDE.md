@@ -1,13 +1,12 @@
-# Update Guide v37.5
+# Update Guide v37.6
 
 ## GitHub
-Replace all root files from this ZIP.
+Replace/upload all files from this ZIP into the GitHub root folder.
 
 ## Apps Script
-No update required if your v36/v37 backend is already working.
+No update required for v37.6.
 
 ## Test URL
-https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=37.5-document-ui
+https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=37.6
 
-## Hard Refresh
-Use Ctrl + Shift + R after upload.
+Then use Ctrl + Shift + R or open in incognito if old cache appears.

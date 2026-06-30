@@ -1,12 +1,15 @@
-# Smart Photo Toolkit Pro v37.5
+# Smart Photo Toolkit Pro v37.6
 
 ## Added / Fixed
-- Document Studio UI redesigned with larger full-page PDF workspace.
-- Improved printable area selector with 8 handles (corners + edges).
-- Printable area size label added directly on selection box.
-- Aadhaar, Voter ID, PAN, Ayushman, Driving Licence and ABHA icons improved.
-- Passport Studio workspace made compact while final print remains 35x45 mm.
-- Top-right dynamic user profile menu added. Logged-in user's own name appears automatically.
+- Document Studio redesigned to match the requested professional layout.
+- Aadhaar, PAN, Voter ID, Ayushman, ABHA and Driving Licence document tiles included.
+- Front/Back image upload now requires selectable printable area crop for each uploaded image.
+- Full Page PDF crop support remains available for all document types.
+- Crop boxes now support 8 resize handles: corners + side handles.
+- A4 output top margin reduced to 3mm.
+- Front/Back card gap reduced to 3mm for easier fold and lamination.
+- Passport Studio crop upgraded with 8-handle selection while keeping final 35x45mm output.
+- Dynamic top-right user menu retained.
 
 ## Backend
-- Apps Script update is optional. No backend change required for the UI/crop improvements.
+- Apps Script update is not required for this version. This is a frontend/UI and print-layout update.

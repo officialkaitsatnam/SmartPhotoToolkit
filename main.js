@@ -2750,3 +2750,221 @@ setTimeout(()=>{
     passState.crop={x:d.offsetX+(d.w-cropW)/2,y:d.offsetY+(d.h-cropH)/2,w:cropW,h:cropH}; drawPassportStudio(); initPassportCropEvents();
   };
 })();
+
+/* =====================================================
+   Smart Photo Toolkit Pro v37.6
+   Document Studio Final + Passport 8-Handle Crop + Minimal A4 Spacing
+===================================================== */
+(function(){
+  const VERSION = '37.6';
+  window.SPT_V376_VERSION = VERSION;
+
+  const DOCS = {
+    aadhaar:{name:'Aadhaar Card', icon:'<span class="ds376-doc-logo" style="color:#f97316">☀️</span>', size:[85.6,54], label:'Aadhaar'},
+    pan:{name:'PAN Card', icon:'<span class="ds376-doc-logo" style="color:#2563eb">PAN</span>', size:[85.6,54], label:'PAN'},
+    voter:{name:'Voter ID Card', icon:'<span class="ds376-doc-logo">🗳️</span>', size:[85.6,54], label:'Voter ID'},
+    ayushman:{name:'Ayushman Card', icon:'<span class="ds376-doc-logo" style="color:#16a34a">🌿</span>', size:[85.6,54], label:'Ayushman'},
+    abha:{name:'ABHA Card', icon:'<span class="ds376-doc-logo" style="color:#0ea5e9">ABHA</span>', size:[85.6,54], label:'ABHA'},
+    dl:{name:'Driving Licence', icon:'<span class="ds376-doc-logo">🚘</span>', size:[85.6,54], label:'Driving Licence'}
+  };
+
+  const S = window.DS_V376 = {
+    type:'aadhaar', mode:'images', sideMode:'frontback',
+    img:{front:null,back:null}, canvas:{front:null,back:null}, crop:{}, cropActive:null,
+    pdfDoc:null, pdfCanvas:null, pdfPage:1, pdfZoom:1, pdfCrop:{x:40,y:40,w:220,h:140},
+    lastPdf:null, lastOutput:[]
+  };
+
+  function current(){return DOCS[S.type]||DOCS.aadhaar;}
+  function point(e){const t=e.touches&&e.touches[0]; return {x:(t||e).clientX,y:(t||e).clientY};}
+  function handles(cls='ds376-handle'){
+    return ['nw','n','ne','e','se','s','sw','w'].map(h=>`<span class="${cls} ${h}" data-h="${h}"></span>`).join('');
+  }
+  function escapeHtml(x){return String(x||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+
+  window.documentStudioTool = function(){
+    if(!workspace) return;
+    workspace.innerHTML = `
+      <div class="ds376-shell">
+        <div class="ds376-head">
+          <div class="ds376-title"><h2>🪪 Document Studio</h2><p class="tool-subtitle">Select document, upload front/back images or a full-page PDF, crop printable area, and print at the top of A4 with minimum spacing.</p></div>
+          <span class="ds376-badge">v37.6 Document Studio</span>
+        </div>
+        <div class="ds-card-types ds376-types" id="ds376Types"></div>
+        <div class="ds376-tabs">
+          <button class="ds376-tab active" id="ds376ImgTab" onclick="ds376Mode('images')">🖼️ Front / Back Images</button>
+          <button class="ds376-tab" id="ds376PdfTab" onclick="ds376Mode('pdf')">📄 Full Page PDF Crop</button>
+        </div>
+        <div id="ds376Panel"></div>
+        <div id="ds376Output" class="ds376-output"></div>
+      </div>`;
+    ds376RenderTypes();
+    ds376Mode(S.mode||'images');
+  };
+
+  window.ds376RenderTypes = function(){
+    const wrap=document.getElementById('ds376Types'); if(!wrap) return;
+    wrap.innerHTML=Object.entries(DOCS).map(([k,d])=>`<button class="ds-type ds376-type ${S.type===k?'active':''}" onclick="ds376SelectType('${k}')">${d.icon}<b>${d.name}</b><span>${d.size[0]} × ${d.size[1]} mm print card</span></button>`).join('');
+  };
+  window.ds376SelectType=function(k){S.type=k; S.img={front:null,back:null}; S.canvas={front:null,back:null}; S.crop={}; S.pdfDoc=null; S.pdfCanvas=null; S.lastOutput=[]; ds376RenderTypes(); ds376Mode(S.mode||'images');};
+  window.ds376Mode=function(mode){S.mode=mode; document.getElementById('ds376ImgTab')?.classList.toggle('active',mode==='images'); document.getElementById('ds376PdfTab')?.classList.toggle('active',mode==='pdf'); const out=document.getElementById('ds376Output'); if(out) out.innerHTML=''; if(mode==='images') ds376RenderImageMode(); else ds376RenderPdfMode();};
+
+  function printSettingsHtml(){return `
+    <label>Copies<select id="ds376Copies"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option></select></label>
+    <label>Border<select id="ds376Border"><option value="yes">Black Border</option><option value="no">No Border</option></select></label>
+    <label>Output Layout<select id="ds376Layout"><option value="frontback">Front + Back, minimal gap</option><option value="single">Single card top center</option></select></label>`;}
+
+  window.ds376RenderImageMode = function(){
+    const d=current(); const panel=document.getElementById('ds376Panel'); if(!panel) return;
+    panel.innerHTML=`
+      <div class="ds376-panel">
+        <div class="ds376-workgrid">
+          <div class="ds376-left">
+            <div class="ds376-section">
+              <h3>1. Upload ${escapeHtml(d.name)} Images</h3>
+              <p>Upload front and back images. After upload, select exactly which part should be printed.</p>
+              <div class="ds376-upload-grid">
+                <label class="ds376-upload">📤 Upload Front Image<small>JPG, PNG, WEBP</small><input type="file" accept="image/*" onchange="ds376LoadImage('front',this)"></label>
+                <label class="ds376-upload">📤 Upload Back Image<small>JPG, PNG, WEBP</small><input type="file" accept="image/*" onchange="ds376LoadImage('back',this)"></label>
+              </div>
+            </div>
+            <div class="ds376-section">
+              <h3>2. Select Printable Area</h3>
+              <p>Drag the blue border to move. Drag corners or side handles to resize. This selected part will be printed.</p>
+              <div class="ds376-crop-grid" id="ds376ImageCropGrid"></div>
+              <div class="ds376-tip">Tip: For lamination, crop tightly around the card and use minimal spacing in print settings.</div>
+            </div>
+          </div>
+          <div class="ds376-right">
+            <div class="ds376-print-card">
+              <h3>3. Print Preview & Settings</h3>
+              <div class="ds376-a4-preview"><div class="ds376-a4-top" id="ds376LivePreview"><span style="color:#64748b;font-weight:900">Upload and crop images to preview A4 output</span></div></div>
+              <div class="ds376-success">Top spacing and front/back gap are minimized for lamination.</div>
+              ${printSettingsHtml()}
+              <button class="primary-btn" onclick="ds376PreviewImages()">Preview A4 Page</button>
+              <button class="pdf-btn" onclick="ds376DownloadPdf()">Download PDF</button>
+              <button class="print-btn" onclick="ds376PrintPdf()">Print / Save as PDF</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    ds376RenderImageCropGrid();
+  };
+
+  window.ds376LoadImage = async function(side,input){
+    const f=input.files&&input.files[0]; if(!f) return;
+    const src=await readFile(f); const img=await loadImage(src);
+    const source=document.createElement('canvas'); source.width=img.width; source.height=img.height; source.getContext('2d').drawImage(img,0,0);
+    S.img[side]={src,name:f.name,source};
+    ds376RenderImageCropGrid();
+  };
+
+  window.ds376RenderImageCropGrid=function(){
+    const grid=document.getElementById('ds376ImageCropGrid'); if(!grid) return;
+    const sides=[]; if(S.img.front) sides.push('front'); if(S.img.back) sides.push('back');
+    if(!sides.length){grid.innerHTML=`<div class="ds376-tip" style="grid-column:1/-1">Upload front or back image to start selecting printable area.</div>`; return;}
+    grid.innerHTML=sides.map(side=>`<div class="ds376-crop-card"><h4>${side==='front'?'Front':'Back'} - Select Area</h4><div class="ds376-canvas-shell"><div class="ds376-canvas-wrap" id="ds376Wrap_${side}"><canvas id="ds376Canvas_${side}"></canvas><div class="ds376-cropbox" id="ds376Box_${side}" data-label="${side==='front'?'Front Area':'Back Area'}" data-size="">${handles('ds376-handle')}</div></div></div><div class="ds376-toolbar"><button onclick="ds376ResetImageCrop('${side}')">Reset</button><button onclick="ds376ZoomImage('${side}',1.1)">Zoom +</button><button onclick="ds376ZoomImage('${side}',0.9)">Zoom -</button></div></div>`).join('');
+    sides.forEach(side=>ds376DrawImageCanvas(side));
+  };
+  window.ds376DrawImageCanvas=function(side){
+    const item=S.img[side], c=document.getElementById('ds376Canvas_'+side), box=document.getElementById('ds376Box_'+side); if(!item||!c||!box) return;
+    const maxW=Math.min(460, Math.max(260, (workspace?.clientWidth||900)/2-70)); const ratio=item.source.width/item.source.height;
+    c.width=maxW; c.height=Math.max(150,Math.round(maxW/ratio)); c.getContext('2d').drawImage(item.source,0,0,c.width,c.height);
+    if(!S.crop[side]){S.crop[side]={x:Math.round(c.width*.04),y:Math.round(c.height*.04),w:Math.round(c.width*.92),h:Math.round(c.height*.92),zoom:1};}
+    ds376ApplyBox(side); ds376InitBoxEvents(side,'image');
+  };
+  window.ds376ResetImageCrop=function(side){const c=document.getElementById('ds376Canvas_'+side); if(!c)return; S.crop[side]={x:Math.round(c.width*.04),y:Math.round(c.height*.04),w:Math.round(c.width*.92),h:Math.round(c.height*.92),zoom:1}; ds376ApplyBox(side);};
+  window.ds376ZoomImage=function(side,f){toast('For best quality, resize the selection box. Image zoom will be added in v38.');};
+
+  window.ds376ApplyBox=function(side){
+    const box=document.getElementById('ds376Box_'+side); const cr=S.crop[side]; if(!box||!cr) return;
+    box.style.left=cr.x+'px'; box.style.top=cr.y+'px'; box.style.width=cr.w+'px'; box.style.height=cr.h+'px'; box.dataset.size=`${Math.round(cr.w)} × ${Math.round(cr.h)} px`;
+  };
+  window.ds376InitBoxEvents=function(side,type){
+    const box=document.getElementById((type==='pdf'?'ds376PdfBox':'ds376Box_'+side)); const canvas=document.getElementById(type==='pdf'?'ds376PdfCanvas':'ds376Canvas_'+side); if(!box||!canvas) return;
+    const state = type==='pdf' ? S.pdfCrop : (S.crop[side] || (S.crop[side]={x:0,y:0,w:100,h:60}));
+    const start=(e,mode)=>{e.preventDefault(); e.stopPropagation(); const p=point(e); S.cropActive={side,type,mode,sx:p.x,sy:p.y,start:{x:state.x,y:state.y,w:state.w,h:state.h}};};
+    box.onmousedown=e=>start(e,'move'); box.ontouchstart=e=>start(e,'move');
+    box.querySelectorAll('.ds376-handle').forEach(h=>{h.onmousedown=e=>start(e,h.dataset.h); h.ontouchstart=e=>start(e,h.dataset.h);});
+    const move=e=>{
+      if(!S.cropActive || S.cropActive.side!==side || S.cropActive.type!==type) return; e.preventDefault();
+      const p=point(e), dx=p.x-S.cropActive.sx, dy=p.y-S.cropActive.sy, st=S.cropActive.start; let x=st.x,y=st.y,w=st.w,h=st.h, m=S.cropActive.mode;
+      if(m==='move'){x=st.x+dx;y=st.y+dy;} else { if(m.includes('e')) w=st.w+dx; if(m.includes('s')) h=st.h+dy; if(m.includes('w')){w=st.w-dx;x=st.x+dx;} if(m.includes('n')){h=st.h-dy;y=st.y+dy;} }
+      w=Math.max(45,Math.min(w,canvas.width)); h=Math.max(28,Math.min(h,canvas.height)); x=Math.max(0,Math.min(x,canvas.width-w)); y=Math.max(0,Math.min(y,canvas.height-h));
+      Object.assign(state,{x,y,w,h}); if(type==='pdf') ds376ApplyPdfBox(); else ds376ApplyBox(side);
+    };
+    const stop=()=>{S.cropActive=null;};
+    document.addEventListener('mousemove',move,{passive:false}); document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('mouseup',stop); document.addEventListener('touchend',stop);
+  };
+
+  window.ds376CropImageSide=function(side){
+    const item=S.img[side], c=document.getElementById('ds376Canvas_'+side), cr=S.crop[side]; if(!item||!c||!cr) return '';
+    const sx=cr.x*(item.source.width/c.width), sy=cr.y*(item.source.height/c.height), sw=cr.w*(item.source.width/c.width), sh=cr.h*(item.source.height/c.height);
+    const out=document.createElement('canvas'), ctx=out.getContext('2d'); out.width=1200; out.height=Math.round(1200*sh/sw); ctx.fillStyle='#fff'; ctx.fillRect(0,0,out.width,out.height); ctx.drawImage(item.source,sx,sy,sw,sh,0,0,out.width,out.height); return out.toDataURL('image/jpeg',.96);
+  };
+  window.ds376CroppedImages=function(){const arr=[]; if(S.img.front) arr.push(ds376CropImageSide('front')); if(S.img.back) arr.push(ds376CropImageSide('back')); return arr.filter(Boolean);};
+  window.ds376PreviewImages=async function(){const imgs=ds376CroppedImages(); if(!imgs.length) return alert('Please upload and crop front/back image first.'); S.lastOutput=imgs; const copies=Number(document.getElementById('ds376Copies')?.value||1); const border=(document.getElementById('ds376Border')?.value||'yes')==='yes'; S.lastPdf=await ds376CreateA4Pdf(imgs,copies,border,true); ds376ShowLivePreview(imgs,copies); ds376ShowOutput('A4 preview ready. You can download or print now.');};
+  window.ds376ShowLivePreview=function(imgs,copies){const box=document.getElementById('ds376LivePreview'); if(!box) return; let html=''; for(let i=0;i<copies;i++) imgs.forEach(src=>html+=`<img class="ds376-preview-img" src="${src}">`); box.innerHTML=html;};
+
+  window.ds376RenderPdfMode=function(){
+    const d=current(); const panel=document.getElementById('ds376Panel'); if(!panel) return;
+    panel.innerHTML=`<div class="ds376-panel"><div class="ds376-pdf-workgrid"><div><div class="ds376-section"><h3>1. Upload Full Page ${escapeHtml(d.name)} PDF</h3><p>Upload the full-page document PDF downloaded from an official website. Then drag-select the card area.</p><div class="ds376-upload-grid"><label class="ds376-upload">📄 Click to upload PDF<small>Full page PDF only</small><input type="file" accept="application/pdf" onchange="ds376LoadPdf(this)"></label><label>PDF Page<select id="ds376PdfPage" onchange="ds376RenderPdfPage(Number(this.value))"><option value="1">Page 1</option></select></label></div></div><div class="ds376-section"><div class="ds376-zoombar"><button onclick="ds376PdfZoom(.9)">−</button><b id="ds376ZoomText">100%</b><button onclick="ds376PdfZoom(1.1)">+</button><button onclick="ds376FitPdf()">Fit Width</button><button onclick="ds376ResetPdfCrop()">Reset</button></div><div class="ds376-pdf-shell"><div class="ds376-pdf-wrap" id="ds376PdfWrap"><canvas id="ds376PdfCanvas"></canvas><div class="ds376-cropbox" id="ds376PdfBox" data-label="Printable Area" data-size="">${handles('ds376-handle')}</div></div></div><div class="ds376-tip" style="margin-top:12px">Drag inside the box to move. Drag corners or sides to resize the printable area. Output prints near the top of A4.</div></div></div><div class="ds376-pdf-side"><h3>2. Print Settings</h3>${printSettingsHtml()}<button class="secondary-btn" style="width:100%;margin-top:10px" onclick="ds376ResetPdfCrop()">Reset Selection</button><button class="primary-btn" style="width:100%;margin-top:10px" onclick="ds376GeneratePdfCrop()">Crop & Preview A4</button><button class="pdf-btn" style="width:100%;margin-top:10px" onclick="ds376DownloadPdf()">Download PDF</button><button class="print-btn" style="width:100%;margin-top:10px" onclick="ds376PrintPdf()">Print / Save as PDF</button><div class="ds376-a4-preview" style="margin-top:15px;min-height:190mm"><div class="ds376-a4-top" id="ds376LivePreview"><span style="color:#64748b;font-weight:900">Preview will appear here</span></div></div><div class="ds376-how"><b>How to select?</b><br>1. Upload full-page PDF<br>2. Move box to card area<br>3. Resize corners/sides<br>4. Preview A4<br>5. Download or print</div></div></div><div id="ds376Output" class="ds376-output"></div></div>`;
+  };
+  window.ds376LoadPdf=async function(input){
+    const f=input.files&&input.files[0]; if(!f) return; if(!window.pdfjsLib) return alert('PDF library not loaded. Please refresh with internet.');
+    const buf=await f.arrayBuffer(); S.pdfDoc=await pdfjsLib.getDocument({data:buf}).promise; const sel=document.getElementById('ds376PdfPage'); if(sel){sel.innerHTML=''; for(let i=1;i<=S.pdfDoc.numPages;i++) sel.innerHTML+=`<option value="${i}">Page ${i}</option>`;} await ds376RenderPdfPage(1);
+  };
+  window.ds376RenderPdfPage=async function(num){
+    if(!S.pdfDoc) return; S.pdfPage=num||1; const page=await S.pdfDoc.getPage(S.pdfPage); const vp=page.getViewport({scale:3}); const src=document.createElement('canvas'), sctx=src.getContext('2d'); src.width=vp.width; src.height=vp.height; await page.render({canvasContext:sctx,viewport:vp}).promise; S.pdfCanvas=src; ds376DrawPdfCanvas();
+  };
+  window.ds376DrawPdfCanvas=function(){
+    const src=S.pdfCanvas, c=document.getElementById('ds376PdfCanvas'); if(!src||!c) return; const maxW=Math.min(1050,Math.max(320,(workspace?.clientWidth||1000)-410))*S.pdfZoom; const r=src.width/src.height; c.width=maxW; c.height=Math.round(maxW/r); c.getContext('2d').drawImage(src,0,0,c.width,c.height); document.getElementById('ds376ZoomText')&&(document.getElementById('ds376ZoomText').textContent=Math.round(S.pdfZoom*100)+'%'); if(!S.pdfCrop || !S.pdfCrop.w) ds376ResetPdfCrop(); else ds376ApplyPdfBox(); ds376InitBoxEvents('pdf','pdf');
+  };
+  window.ds376PdfZoom=function(f){S.pdfZoom=Math.max(.5,Math.min(2.5,S.pdfZoom*f)); ds376DrawPdfCanvas();}; window.ds376FitPdf=function(){S.pdfZoom=1; ds376DrawPdfCanvas();};
+  window.ds376ResetPdfCrop=function(){const c=document.getElementById('ds376PdfCanvas'); if(!c) return; const ratio=current().size[0]/current().size[1]; let w=Math.round(c.width*.78), h=Math.round(w/ratio); if(h>c.height*.45){h=Math.round(c.height*.32); w=Math.round(h*ratio);} S.pdfCrop={x:Math.round((c.width-w)/2),y:Math.round(c.height*.58),w,h}; ds376ApplyPdfBox();};
+  window.ds376ApplyPdfBox=function(){const box=document.getElementById('ds376PdfBox'), cr=S.pdfCrop; if(!box||!cr) return; box.style.left=cr.x+'px'; box.style.top=cr.y+'px'; box.style.width=cr.w+'px'; box.style.height=cr.h+'px'; box.dataset.size=`${Math.round(cr.w)} × ${Math.round(cr.h)} px`;};
+  window.ds376CropPdf=function(){const preview=document.getElementById('ds376PdfCanvas'), box=document.getElementById('ds376PdfBox'); if(!preview||!box||!S.pdfCanvas) return ''; const cr=preview.getBoundingClientRect(), br=box.getBoundingClientRect(); let rx=(br.left-cr.left)/cr.width, ry=(br.top-cr.top)/cr.height, rw=br.width/cr.width, rh=br.height/cr.height; rx=Math.max(0,Math.min(rx,1)); ry=Math.max(0,Math.min(ry,1)); rw=Math.max(.01,Math.min(rw,1-rx)); rh=Math.max(.01,Math.min(rh,1-ry)); const src=S.pdfCanvas, sx=src.width*rx, sy=src.height*ry, sw=src.width*rw, sh=src.height*rh; const out=document.createElement('canvas'), ctx=out.getContext('2d'); out.width=1200; out.height=Math.round(1200*sh/sw); ctx.fillStyle='#fff'; ctx.fillRect(0,0,out.width,out.height); ctx.drawImage(src,sx,sy,sw,sh,0,0,out.width,out.height); return out.toDataURL('image/jpeg',.96);};
+  window.ds376GeneratePdfCrop=async function(){const img=ds376CropPdf(); if(!img) return alert('Upload PDF and select printable area first.'); const copies=Number(document.getElementById('ds376Copies')?.value||1), border=(document.getElementById('ds376Border')?.value||'yes')==='yes'; S.lastOutput=[img]; S.lastPdf=await ds376CreateA4Pdf([img],copies,border,false); ds376ShowLivePreview([img],copies); ds376ShowOutput('Full-page PDF crop is ready for A4 top-center print.');};
+
+  window.ds376CreateA4Pdf=async function(srcs,copies,border,isCards){
+    const {jsPDF}=window.jspdf; const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}); const [cardW,cardH]=current().size; const gap=3; let y=3;
+    for(let copy=0; copy<copies; copy++){
+      const dims=[]; for(const src of srcs){ if(isCards) dims.push({src,w:cardW,h:cardH}); else { const img=await loadImage(src); let h=cardH, w=h*img.width/img.height; if(w>185){w=185;h=w*img.height/img.width;} dims.push({src,w,h}); } }
+      const totalW=dims.reduce((a,d)=>a+d.w,0)+(dims.length-1)*gap; let x=(210-totalW)/2;
+      for(const d of dims){pdf.addImage(d.src,'JPEG',x,y,d.w,d.h); if(border){pdf.setDrawColor(0);pdf.setLineWidth(.25);pdf.rect(x,y,d.w,d.h);} x+=d.w+gap;}
+      y+=cardH+5; if(y>250 && copy<copies-1){pdf.addPage(); y=3;}
+    }
+    return pdf;
+  };
+  window.ds376ShowOutput=function(msg){const out=document.getElementById('ds376Output'); if(out) out.innerHTML=`<div class="result-card fade-in"><h3>✅ Ready</h3><p>${escapeHtml(msg)}</p></div>`;};
+  window.ds376DownloadPdf=function(){ if(!S.lastPdf) return alert('Please preview/generate PDF first.'); const a=document.createElement('a'); a.href=URL.createObjectURL(S.lastPdf.output('blob')); a.download=current().label.replace(/\s+/g,'-').toLowerCase()+'-a4-print.pdf'; document.body.appendChild(a); a.click(); a.remove(); };
+  window.ds376PrintPdf=function(){ if(!S.lastPdf) return alert('Please preview/generate PDF first.'); S.lastPdf.autoPrint(); window.open(URL.createObjectURL(S.lastPdf.output('blob')),'_blank'); };
+
+  // Route Document Studio to the new v37.6 tool.
+  const oldOpen = window.openTool;
+  window.openTool = function(tool){
+    if(['documentstudio','aadhaar','voter','pan','ayushman','dl','abha'].includes(tool)) { setActive && setActive('documentstudio'); return documentStudioTool(); }
+    return oldOpen ? oldOpen(tool) : null;
+  };
+
+  // Reduce output top margin for existing document and passport generation too.
+  window.createPassportPDF = function(src,name,date){
+    const {jsPDF}=window.jspdf; const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}); const photoW=35, photoH=45, gap=2.5, top=3; let x=4;
+    for(let i=0;i<5;i++){pdf.setFillColor(255,255,255);pdf.rect(x,top,photoW,photoH,'F');pdf.addImage(src,'JPEG',x,top,photoW,photoH);pdf.setDrawColor(0);pdf.setLineWidth(.3);pdf.rect(x,top,photoW,photoH);if(name||date){pdf.setFontSize(7);pdf.text(name||'',x+photoW/2,top+photoH+3,{align:'center'});pdf.text(date||'',x+photoW/2,top+photoH+6,{align:'center'});}x+=photoW+gap;} return pdf;
+  };
+
+  // Upgrade passport canvas crop with 8 handles while preserving 35:45 ratio and final 35x45mm output.
+  window.drawPassportStudio = function(){
+    const c=document.getElementById('passCanvas'); if(!c) return; const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); ctx.fillStyle='#111827'; ctx.fillRect(0,0,c.width,c.height); if(!passState.img){drawEmptyPassport();return;} const d=passState.display; ctx.drawImage(passState.img,d.offsetX,d.offsetY,d.w,d.h); const crop=passState.crop; if(!crop) return; ctx.save(); ctx.beginPath(); ctx.rect(0,0,c.width,c.height); ctx.rect(crop.x,crop.y,crop.w,crop.h); ctx.fillStyle='rgba(15,23,42,.58)'; ctx.fill('evenodd'); ctx.restore(); ctx.strokeStyle='#2563eb'; ctx.lineWidth=3; ctx.strokeRect(crop.x,crop.y,crop.w,crop.h); ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(crop.x+crop.w/3,crop.y);ctx.lineTo(crop.x+crop.w/3,crop.y+crop.h);ctx.moveTo(crop.x+crop.w*2/3,crop.y);ctx.lineTo(crop.x+crop.w*2/3,crop.y+crop.h);ctx.moveTo(crop.x,crop.y+crop.h/3);ctx.lineTo(crop.x+crop.w,crop.y+crop.h/3);ctx.moveTo(crop.x,crop.y+crop.h*2/3);ctx.lineTo(crop.x+crop.w,crop.y+crop.h*2/3);ctx.stroke(); const pts=[['nw',crop.x,crop.y],['n',crop.x+crop.w/2,crop.y],['ne',crop.x+crop.w,crop.y],['e',crop.x+crop.w,crop.y+crop.h/2],['se',crop.x+crop.w,crop.y+crop.h],['s',crop.x+crop.w/2,crop.y+crop.h],['sw',crop.x,crop.y+crop.h],['w',crop.x,crop.y+crop.h/2]]; ctx.fillStyle='#2563eb'; ctx.strokeStyle='#fff'; ctx.lineWidth=3; pts.forEach(([h,x,y])=>{ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fill();ctx.stroke();}); ctx.fillStyle='rgba(29,78,216,.9)'; ctx.fillRect(crop.x+8,crop.y+8,160,28); ctx.fillStyle='#fff';ctx.font='bold 13px Arial';ctx.textAlign='left';ctx.fillText('35×45 mm print area',crop.x+16,crop.y+27);
+  };
+  window.initPassportCropEvents = function(){
+    const c=document.getElementById('passCanvas'); if(!c) return;
+    const hit=(p,crop)=>{const hs=16; const pts={nw:[crop.x,crop.y],n:[crop.x+crop.w/2,crop.y],ne:[crop.x+crop.w,crop.y],e:[crop.x+crop.w,crop.y+crop.h/2],se:[crop.x+crop.w,crop.y+crop.h],s:[crop.x+crop.w/2,crop.y+crop.h],sw:[crop.x,crop.y+crop.h],w:[crop.x,crop.y+crop.h/2]}; for(const [k,[x,y]] of Object.entries(pts)){if(Math.abs(p.x-x)<hs&&Math.abs(p.y-y)<hs)return k;} if(p.x>=crop.x&&p.x<=crop.x+crop.w&&p.y>=crop.y&&p.y<=crop.y+crop.h)return 'move'; return 'draw';};
+    const down=e=>{e.preventDefault(); if(!passState.img)return; const p=getPassportPoint(e), crop=passState.crop; passState.mode=hit(p,crop); if(passState.mode==='draw') passState.crop={x:p.x,y:p.y,w:1,h:1}; passState.start={p,crop:{...(passState.crop||{})}};};
+    const move=e=>{if(!passState.mode||!passState.start||passState.mode==='idle')return; e.preventDefault(); const p=getPassportPoint(e), st=passState.start.crop, dx=p.x-passState.start.p.x, dy=p.y-passState.start.p.y; let x=st.x,y=st.y,w=st.w,h=st.h, m=passState.mode, ratio=35/45; if(m==='move'){x=st.x+dx;y=st.y+dy;} else if(m==='draw'){w=Math.abs(dx); h=w/ratio; x=dx<0?passState.start.p.x-w:passState.start.p.x; y=dy<0?passState.start.p.y-h:passState.start.p.y;} else { if(m.includes('e')) w=st.w+dx; if(m.includes('w')){w=st.w-dx;x=st.x+dx;} if(m.includes('s')) h=st.h+dy; if(m.includes('n')){h=st.h-dy;y=st.y+dy;} if(!['n','s','e','w'].includes(m)){ if(Math.abs(dx)>Math.abs(dy)) h=w/ratio; else w=h*ratio; if(m.includes('w')) x=st.x+st.w-w; if(m.includes('n')) y=st.y+st.h-h; } else { h=w/ratio; } } passState.crop={x,y,w:Math.max(50,w),h:Math.max(65,h)}; clampPassportCrop(); drawPassportStudio();};
+    const up=()=>{if(!passState.img)return; passState.mode='idle'; passState.start=null; cropPassportSelection();}; c.onmousedown=down;c.ontouchstart=down;window.onmousemove=move;window.ontouchmove=move;window.onmouseup=up;window.ontouchend=up;
+  };
+
+  // Ensure top user menu refreshes after v37.6 loads.
+  setTimeout(()=>{try{updateTopUserMenuV375&&updateTopUserMenuV375();}catch(e){}},500);
+})();
