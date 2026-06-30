@@ -3040,3 +3040,121 @@ setTimeout(()=>{
   };
   window.addEventListener('load',()=>setTimeout(()=>{try{if(document.querySelector('.nav-item.active')?.dataset.tool==='home') enterpriseHomeV383();}catch(e){}},350));
 })();
+
+/* =====================================================
+   v38.4 Navigation/Profile/Notification Fix
+   UI-only patch. Existing tools remain untouched.
+===================================================== */
+(function(){
+  const qs = (s)=>document.querySelector(s);
+  const qsa = (s)=>Array.from(document.querySelectorAll(s));
+  const safeUser = ()=>{try{return window.SPT?.user || JSON.parse(localStorage.getItem('spt_user')||'null') || JSON.parse(localStorage.getItem('spt_profile_local')||'null')}catch(e){return null}};
+  const initials = (name,email)=>String(name||email||'U').trim().split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
+  const esc = (s)=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  function localPhoto(){return localStorage.getItem('spt_profile_photo')||''}
+  function mergeUser(u){
+    const local = (()=>{try{return JSON.parse(localStorage.getItem('spt_profile_local')||'null')||{}}catch(e){return {}}})();
+    return Object.assign({}, u||{}, local||{});
+  }
+  window.updateUserProfileV384 = function(){
+    const raw = safeUser();
+    const u = mergeUser(raw||{});
+    const name = u.name || 'Guest User';
+    const email = u.email || 'Login required';
+    const admin = String(u.role||'').toLowerCase()==='admin';
+    document.body.classList.toggle('v384-admin-show', !!admin);
+    const photo = localPhoto();
+    qsa('.spt-avatar').forEach(a=>{a.innerHTML = photo ? `<img src="${photo}" alt="Profile">` : initials(name,email);});
+    qsa('.spt-user-name').forEach(n=>n.textContent=name);
+    const menu = qs('#sptUserMenu .spt-user-dropdown');
+    if(menu){
+      menu.innerHTML = raw ? `
+        <div class="spt-user-head"><b>${esc(name)}${admin?' (Admin)':''}</b><span>${esc(email)}</span></div>
+        <button onclick="showProfileEditV384('view')">👤 My Profile</button>
+        <button onclick="showProfileEditV384('edit')">✏️ Edit Profile</button>
+        <button onclick="showTool('premium')">👑 Membership</button>
+        <button onclick="showTool('payment')">💳 Payments</button>
+        <button onclick="showTool('workspace')">📁 My Workspace</button>
+        <button onclick="showProfileEditV384('settings')">⚙️ Settings</button>
+        <button class="v384-admin-only" onclick="showTool('admin')">📊 Admin Panel</button>
+        <button onclick="SPT?.logout ? SPT.logout() : localStorage.clear(); setTimeout(()=>{updateUserProfileV384();showTool('login')},120)">🚪 Logout</button>` : `
+        <div class="spt-user-head"><b>Welcome</b><span>Please sign in to access dashboard and premium features.</span></div>
+        <button onclick="showTool('login')">🔐 Login / Signup</button>
+        <button onclick="showTool('premium')">👑 Premium Plans</button>
+        <button onclick="showTool('feedback')">💬 Support</button>`;
+    }
+  };
+  window.showProfileEditV384 = function(mode='edit'){
+    const raw = safeUser();
+    if(!raw){ if(typeof showTool==='function') showTool('login'); return; }
+    const u = mergeUser(raw);
+    const photo = localPhoto();
+    const html = `${typeof pageHeader==='function'?pageHeader('My Profile','Manage your account profile and preferences.'):''}
+      <div class="profile-edit-v384">
+        <div class="profile-card-v384">
+          <div class="profile-avatar-preview-v384" id="profileAvatarPreviewV384">${photo?`<img src="${photo}">`:initials(u.name,u.email)}</div>
+          <h2 style="text-align:center;margin:0 0 4px">${esc(u.name||'User')}</h2>
+          <p>${esc(u.email||'-')}<br>${esc(u.mobile||'Mobile not added')}</p>
+          <div class="profile-actions-v384">
+            <button class="secondary-btn" onclick="showTool('payment')">Payments</button>
+            <button class="secondary-btn" onclick="showTool('premium')">Membership</button>
+          </div>
+        </div>
+        <div class="profile-form-v384">
+          <h2>${mode==='view'?'Profile Details':'Edit Profile'}</h2>
+          <label>Profile Photo</label><input id="profilePhotoV384" type="file" accept="image/*">
+          <label>Full Name</label><input id="profileNameV384" value="${esc(u.name||'')}" placeholder="Full name">
+          <label>Mobile Number</label><input id="profileMobileV384" value="${esc(u.mobile||'')}" placeholder="Mobile number">
+          <label>Address</label><textarea id="profileAddressV384" rows="4" placeholder="Address">${esc(u.address||'')}</textarea>
+          <button class="primary-btn" onclick="saveProfileV384()">Save Profile</button>
+          <div class="small-note">Profile changes are saved locally in this version. Backend sync can be added in the next Apps Script update.</div>
+        </div>
+      </div>`;
+    if(window.workspace) workspace.innerHTML=html; else qs('#workspace').innerHTML=html;
+    const inp=qs('#profilePhotoV384');
+    inp?.addEventListener('change',e=>{const f=e.target.files?.[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{localStorage.setItem('spt_profile_photo',r.result); const p=qs('#profileAvatarPreviewV384'); if(p)p.innerHTML=`<img src="${r.result}">`; updateUserProfileV384();}; r.readAsDataURL(f);});
+  };
+  window.saveProfileV384 = function(){
+    const raw = safeUser()||{};
+    const local = Object.assign({}, raw, {
+      name: qs('#profileNameV384')?.value?.trim() || raw.name || 'User',
+      mobile: qs('#profileMobileV384')?.value?.trim() || '',
+      address: qs('#profileAddressV384')?.value?.trim() || ''
+    });
+    localStorage.setItem('spt_profile_local', JSON.stringify(local));
+    if(window.SPT && SPT.user){SPT.user=Object.assign({},SPT.user,local); localStorage.setItem('spt_user',JSON.stringify(SPT.user));}
+    updateUserProfileV384();
+    if(typeof toast==='function') toast('Profile saved successfully');
+  };
+  function setupBell(){
+    const bell = qs('.notify-top'); if(!bell) return;
+    let wrap = bell.parentElement?.classList.contains('v384-bell-wrap') ? bell.parentElement : null;
+    if(!wrap){ wrap=document.createElement('span'); wrap.className='v384-bell-wrap'; bell.parentNode.insertBefore(wrap,bell); wrap.appendChild(bell); }
+    let panel = qs('#v384BellPanel');
+    if(!panel){
+      panel=document.createElement('div'); panel.id='v384BellPanel'; panel.className='v384-bell-panel';
+      panel.innerHTML=`<div class="v384-bell-head"><span>Notifications</span><small>3 new</small></div>
+        <div class="v384-notify-item"><b>Profile menu updated</b><span>Account options are now inside the top-right profile menu.</span></div>
+        <div class="v384-notify-item"><b>Document Studio ready</b><span>Use front/back or full-page PDF crop for print-ready output.</span></div>
+        <div class="v384-notify-item"><b>Premium plans active</b><span>Open Payments to generate QR and submit UTR.</span></div>`;
+      wrap.appendChild(panel);
+    }
+    bell.onclick=(e)=>{e.stopPropagation(); panel.classList.toggle('show');};
+    document.addEventListener('click',e=>{if(!e.target.closest('.v384-bell-wrap'))panel.classList.remove('show');});
+  }
+  function setupHamburger(){
+    const side = qs('#sidebar');
+    ['#desktopMenuBtn','#menuBtn','.top-menu'].forEach(sel=>qsa(sel).forEach(btn=>{
+      btn.onclick=(e)=>{e.preventDefault();e.stopPropagation(); if(innerWidth<=800){side?.classList.toggle('open');}else{document.body.classList.toggle('sidebar-compact');}}
+    }));
+  }
+  function cleanupSidebar(){
+    qsa('.sidebar .nav-item[data-auth], .sidebar .nav-logout').forEach(el=>el.style.display='none');
+    const divider = qs('.sidebar .nav-divider'); if(divider) divider.style.display='none';
+  }
+  const oldSave = window.SPT?.saveLogin;
+  if(window.SPT && oldSave){SPT.saveLogin=function(user,token){oldSave.call(SPT,user,token); setTimeout(updateUserProfileV384,80);};}
+  const oldLogout = window.SPT?.logout;
+  if(window.SPT && oldLogout){SPT.logout=function(){oldLogout.call(SPT); setTimeout(updateUserProfileV384,80);};}
+  setTimeout(()=>{setupHamburger();setupBell();cleanupSidebar();updateUserProfileV384();},500);
+})();
