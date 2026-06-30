@@ -1,12 +1,23 @@
-# Update Guide v37.6
+# Update Guide - v38 Enterprise UI Rewrite
 
 ## GitHub
-Replace/upload all files from this ZIP into the GitHub root folder.
+Replace/upload these files in the GitHub repository root:
+- index.html
+- main.css
+- main.js
+- script.js
+- style.css
+- manifest.webmanifest
+- sw.js
+- offline.html
+- icon-192.png
+- icon-512.png
+- payment_qr.jpg
 
 ## Apps Script
-No update required for v37.6.
+No update required for v38 UI.
 
-## Test URL
-https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=37.6
+## Open after update
+https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=38-real
 
-Then use Ctrl + Shift + R or open in incognito if old cache appears.
+Then press Ctrl + Shift + R.
