@@ -1,5 +1,1 @@
-# Smart Photo Toolkit Pro v37.6
-
-Latest frontend build focused on Document Studio and crop/print workflow.
-
-Upload all root files to GitHub Pages. Apps Script update is not required unless you want to refresh the backend naming only.
+Smart Photo Toolkit Pro v38.3 Enterprise Skin. V37.6 tools preserved, UI skin updated.

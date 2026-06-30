@@ -2968,3 +2968,75 @@ setTimeout(()=>{
   // Ensure top user menu refreshes after v37.6 loads.
   setTimeout(()=>{try{updateTopUserMenuV375&&updateTopUserMenuV375();}catch(e){}},500);
 })();
+
+/* =====================================================
+   v38.3 Enterprise Skin JS — V37.6 tools preserved
+===================================================== */
+(function(){
+  const enterpriseDocIcon = (type)=>{
+    const icons={
+      aadhaar:`<svg viewBox="0 0 120 70" width="96" height="58"><path d="M60 5l7 13 14-8-5 15 16 2-13 10 13 10-16 2 5 15-14-8-7 13-7-13-14 8 5-15-16-2 13-10-13-10 16-2-5-15 14 8z" fill="#f59e0b" opacity=".9"/><text x="60" y="45" text-anchor="middle" font-size="18" font-weight="900" fill="#ef4444">AADHAAR</text></svg>`,
+      pan:`<svg viewBox="0 0 120 70" width="96" height="58"><rect x="10" y="16" width="100" height="42" rx="8" fill="#e8f0ff" stroke="#1d4ed8"/><text x="60" y="43" text-anchor="middle" font-size="24" font-weight="900" fill="#1d4ed8">PAN</text></svg>`,
+      voter:`<svg viewBox="0 0 120 70" width="96" height="58"><rect x="45" y="8" width="18" height="54" fill="#111827" transform="rotate(45 60 35)"/><rect x="38" y="20" width="18" height="40" fill="#f97316" transform="rotate(45 47 40)"/><rect x="58" y="18" width="18" height="40" fill="#16a34a" transform="rotate(45 67 38)"/><circle cx="85" cy="17" r="8" fill="#9ca3af"/><circle cx="98" cy="30" r="7" fill="#9ca3af"/></svg>`,
+      ayushman:`<svg viewBox="0 0 120 70" width="96" height="58"><circle cx="60" cy="35" r="28" fill="#fff7ed" stroke="#f97316"/><path d="M60 48c-18-13-23-22-17-31 6-8 15-3 17 4 2-7 11-12 17-4 6 9 1 18-17 31z" fill="#16a34a"/><text x="60" y="63" text-anchor="middle" font-size="10" font-weight="900" fill="#7c2d12">PM-JAY</text></svg>`,
+      abha:`<svg viewBox="0 0 120 70" width="96" height="58"><path d="M24 44c12-22 24-22 36 0 12-22 24-22 36 0" fill="none" stroke="#0f62fe" stroke-width="6"/><text x="60" y="50" text-anchor="middle" font-size="22" font-weight="900" fill="#1e40af">ABHA</text></svg>`,
+      dl:`<svg viewBox="0 0 120 70" width="96" height="58"><rect x="18" y="14" width="84" height="44" rx="6" fill="#f8fafc" stroke="#111827"/><circle cx="38" cy="36" r="10" fill="#9ca3af"/><rect x="55" y="26" width="35" height="5" fill="#111827"/><rect x="55" y="37" width="42" height="5" fill="#64748b"/><text x="60" y="65" text-anchor="middle" font-size="9" font-weight="900">Driving Licence</text></svg>`
+    };
+    return icons[type]||icons.aadhaar;
+  };
+  window.enterpriseHomeV383=function(){
+    const user=window.SPT?.user||JSON.parse(localStorage.getItem('spt_user')||'null')||{};
+    const name=user.name||'Guest User', email=user.email||'Login to sync profile';
+    workspace.innerHTML=`
+      <div class="ev-shell fade-in">
+        <div>
+          <div class="ev-card ev-hero">
+            <div><h1>Smart Photo Toolkit Pro</h1><p>All-in-one image tools for documents, photos, PDF and productivity. Crop, resize, convert and create professional documents with ease.</p></div>
+            <div class="ev-status">v38.3 Enterprise<span>● All Systems Operational</span></div>
+          </div>
+          <div class="ev-card ev-section">
+            <div class="ev-section-head"><span>📁</span><div><h2>Document Studio</h2><p>Create and print professional documents.</p></div></div>
+            <div class="ev-doc-grid">
+              ${['aadhaar','pan','voter','ayushman','dl'].map(t=>`<button class="ev-doc-tile" onclick="showTool('documentstudio'); setTimeout(()=>{try{ds376SelectType('${t}')}catch(e){}},80)"><div class="ev-doc-icon">${enterpriseDocIcon(t)}</div><b>${({aadhaar:'Aadhaar Card',pan:'PAN Card',voter:'Voter ID Card',ayushman:'Ayushman Card',dl:'Driving Licence'})[t]}</b></button>`).join('')}
+            </div>
+            <div class="ev-actions"><button class="ev-action" onclick="showTool('documentstudio')"><span>📄</span>New Document</button><button class="ev-action" onclick="showTool('documentstudio')"><span>📁</span>From Template</button><button class="ev-action" onclick="showTool('documentstudio')"><span>💾</span>Saved Documents</button><button class="ev-action" onclick="showTool('documentstudio')"><span>🖨️</span>Print Settings</button></div>
+          </div>
+          <div class="ev-card ev-section">
+            <div class="ev-section-head"><span>📄</span><div><h2>PDF Studio</h2><p>Edit, convert, crop and manage PDF files.</p></div></div>
+            <div class="ev-tool-row">
+              <button class="ev-tool" onclick="showTool('pdfresizer')"><span>↔️</span>PDF Resizer</button>
+              <button class="ev-tool" onclick="showTool('pdfresizer')"><span>✂️</span>Crop PDF</button>
+              <button class="ev-tool" onclick="showTool('pdfresizer')"><span>🖼️</span>PDF to Image</button>
+              <button class="ev-tool" onclick="showTool('pdfresizer')"><span>📄</span>Image to PDF</button>
+              <button class="ev-tool" onclick="showTool('pdfresizer')"><span>➕</span>Merge PDF</button>
+              <button class="ev-tool" onclick="showTool('pdfresizer')"><span>✂️</span>Split PDF</button>
+              <button class="ev-tool" onclick="showTool('pdfresizer')"><span>📦</span>Compress PDF</button>
+            </div>
+          </div>
+          <div class="ev-card ev-section">
+            <div class="ev-section-head"><span>📷</span><div><h2>Photo Tools</h2><p>Enhance and edit your photos easily.</p></div></div>
+            <div class="ev-tool-row">
+              <button class="ev-tool" onclick="showTool('compressor')"><span>📉</span>Compress Photo</button>
+              <button class="ev-tool" onclick="showTool('passport')"><span>👤</span>Passport Photo</button>
+              <button class="ev-tool" onclick="showTool('namedate')"><span>🏷️</span>Name / Date</button>
+              <button class="ev-tool" onclick="showTool('compressor')"><span>🔄</span>Rotate / Flip</button>
+              <button class="ev-tool" onclick="showTool('compressor')"><span>🎨</span>Photo Filters</button>
+              <button class="ev-tool" onclick="showTool('compressor')"><span>☀️</span>Color Adjust</button>
+              <button class="ev-tool" onclick="showTool('payment')"><span>👑</span>Premium</button>
+            </div>
+          </div>
+        </div>
+        <div class="ev-right-stack">
+          <div class="ev-card ev-profile-card"><div class="ev-avatar-big">${(name||'U').charAt(0).toUpperCase()}</div><h3>${escapeV383(name)}</h3><p>${escapeV383(email)}</p><span class="ev-pro-badge">👑 ${user.premium?'Pro Member':'Free Member'}</span><div class="ev-menu-list"><button onclick="showTool('dashboard')">👤 My Profile ›</button><button onclick="showTool('dashboard')">✏️ Edit Profile ›</button><button onclick="showTool('premium')">👑 Membership ›</button><button onclick="showTool('payment')">💳 Payments ›</button><button onclick="showTool('admin')">⚙️ Admin Panel ›</button><button onclick="SPT?.logout?.()">🚪 Logout</button></div></div>
+          <div class="ev-card"><h3>Workspace Info</h3><div class="ev-info-row"><span>Documents</span><b>124</b></div><div class="ev-info-row"><span>Storage Used</span><b>2.45 GB</b></div><div class="ev-info-row"><span>Templates</span><b>18</b></div><div class="ev-info-row"><span>Total Prints</span><b>156</b></div></div>
+        </div>
+      </div>`;
+  };
+  function escapeV383(x){return String(x||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+  const prevOpen=window.openTool;
+  window.openTool=function(tool){
+    if(tool==='home') { setActive && setActive('home'); closeMenu && closeMenu(); return enterpriseHomeV383(); }
+    return prevOpen ? prevOpen(tool) : null;
+  };
+  window.addEventListener('load',()=>setTimeout(()=>{try{if(document.querySelector('.nav-item.active')?.dataset.tool==='home') enterpriseHomeV383();}catch(e){}},350));
+})();
