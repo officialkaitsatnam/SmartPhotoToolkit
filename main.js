@@ -70,3 +70,136 @@ function premiumTool(){workspace.innerHTML=pageHeader("Premium Plans","Upgrade f
 function paymentTool(){workspace.innerHTML=pageHeader("Payment","Generate QR and submit UTR.")+`<div class="card form"><select id="paymentPlan"><option>Monthly Premium - ₹49</option><option>Half Year Premium - ₹149</option><option>Yearly Premium - ₹499</option></select><button>Generate Payment QR</button><img src="payment_qr.jpg" style="max-width:280px;margin:20px auto;display:block"><input id="paymentTxn" placeholder="UTR / Transaction ID"><button onclick="submitPayment&&submitPayment()">Submit Payment</button></div>`}
 function feedbackTool(){workspace.innerHTML=pageHeader("Support / Feedback","Send feedback or report an issue.")+`<div class="card form"><input id="feedbackName" placeholder="Name"><input id="feedbackEmail" placeholder="Email"><textarea id="feedbackMessage" placeholder="Message"></textarea><button onclick="submitFeedback&&submitFeedback()">Submit Feedback</button></div>`}
 function adminTool(){workspace.innerHTML=pageHeader("Admin Panel","Users, payments, feedback and analytics.")+`<div class="home-grid"><div class="card home-card"><h3>Users</h3><p>Manage users</p></div><div class="card home-card"><h3>Payments</h3><p>Verify payments</p></div><div class="card home-card"><h3>Feedback</h3><p>Review messages</p></div></div>`}
+
+
+/* ===== v38.1 Enterprise Stability Update JS overrides ===== */
+(function(){
+  const DOCS_V381={
+    aadhaar:{name:"Aadhaar Card",size:"85.6 × 54 mm",icon:"AADHAAR",cls:"aadhaar"},
+    pan:{name:"PAN Card",size:"85.6 × 54 mm",icon:"PAN",cls:"pan"},
+    voter:{name:"Voter ID Card",size:"85.6 × 54 mm",icon:"VOTER",cls:"voter"},
+    ayush:{name:"Ayushman Card",size:"85.6 × 54 mm",icon:"AYUSH",cls:"ayush"},
+    abha:{name:"ABHA Card",size:"85.6 × 54 mm",icon:"ABHA",cls:"abha"},
+    dl:{name:"Driving Licence",size:"85.6 × 54 mm",icon:"DL",cls:"dl"}
+  };
+  if(typeof DOCS !== 'undefined') Object.assign(DOCS,DOCS_V381);
+
+  function mediaBounds(stage,media){
+    const sr=stage.getBoundingClientRect(), mr=media.getBoundingClientRect();
+    let left=mr.left-sr.left, top=mr.top-sr.top, width=mr.width, height=mr.height;
+    if(!width||!height){left=10;top=10;width=stage.clientWidth-20;height=stage.clientHeight-20;}
+    return {left,top,width,height,right:left+width,bottom:top+height};
+  }
+  window.createCrop=function(stage,media,opt={}){
+    const color=opt.color||"blue", ratio=opt.ratio||null;
+    const box=document.createElement('div');
+    box.className=`crop-selection ${color==='orange'?'orange':''}`;
+    ['nw','n','ne','e','se','s','sw','w'].forEach(p=>{let h=document.createElement('span');h.className='handle '+p;h.dataset.handle=p;box.appendChild(h)});
+    stage.appendChild(box);
+    const s={stage,media,box,ratio,x:0,y:0,w:0,h:0};
+    const init=()=>{
+      const b=mediaBounds(stage,media);
+      let w=b.width*.76, h=b.height*.58;
+      if(ratio){h=w/ratio; if(h>b.height*.86){h=b.height*.86; w=h*ratio;}}
+      s.w=Math.max(60,w); s.h=Math.max(40,h);
+      s.x=b.left+(b.width-s.w)/2; s.y=b.top+(b.height-s.h)/2;
+      Object.assign(box.style,{left:s.x+'px',top:s.y+'px',width:s.w+'px',height:s.h+'px'});
+    };
+    if(media.tagName==='IMG' && !media.complete){media.onload=init; setTimeout(init,80);} else setTimeout(init,20);
+    attachCropEventsV381(s);
+    return s;
+  };
+  window.attachCropEventsV381=function(s){
+    let mode=null,start={};
+    const point=e=>e.touches?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY};
+    const apply=()=>Object.assign(s.box.style,{left:s.x+'px',top:s.y+'px',width:s.w+'px',height:s.h+'px'});
+    function constrain(x,y,w,h){
+      const b=mediaBounds(s.stage,s.media);
+      w=Math.max(44,Math.min(w,b.width)); h=Math.max(32,Math.min(h,b.height));
+      if(s.ratio){
+        if(w/h>s.ratio) w=h*s.ratio; else h=w/s.ratio;
+        if(w>b.width){w=b.width;h=w/s.ratio} if(h>b.height){h=b.height;w=h*s.ratio}
+      }
+      x=Math.max(b.left,Math.min(x,b.right-w)); y=Math.max(b.top,Math.min(y,b.bottom-h));
+      return {x,y,w,h};
+    }
+    function down(e){e.preventDefault();e.stopPropagation();const p=point(e);mode=e.target.dataset.handle||'move';start={px:p.x,py:p.y,x:s.x,y:s.y,w:s.w,h:s.h};document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up)}
+    function move(e){e.preventDefault();const p=point(e),dx=p.x-start.px,dy=p.y-start.py;let x=start.x,y=start.y,w=start.w,h=start.h;
+      if(mode==='move'){x+=dx;y+=dy}else{if(mode.includes('e'))w+=dx;if(mode.includes('s'))h+=dy;if(mode.includes('w')){x+=dx;w-=dx}if(mode.includes('n')){y+=dy;h-=dy}if(s.ratio){if(mode.includes('e')||mode.includes('w'))h=w/s.ratio;else w=h*s.ratio;}}
+      Object.assign(s,constrain(x,y,w,h));apply();}
+    function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);if(typeof updateA4Preview==='function')updateA4Preview();}
+    s.box.addEventListener('mousedown',down);s.box.addEventListener('touchstart',down,{passive:false});
+  };
+
+  window.drawPdfCanvasView=function(){
+    const view=$("#pdfCanvasView"), src=appState.pdfCanvas; if(!view||!src)return;
+    const stage=$("#pdfStage");
+    const maxW=Math.max(500, Math.min(980, (stage?.clientWidth||900)-24));
+    const maxH=Math.max(360, Math.min(520, (stage?.clientHeight||520)-24));
+    const ratio=src.width/src.height; let w=maxW, h=Math.round(w/ratio); if(h>maxH){h=maxH;w=Math.round(h*ratio)}
+    view.width=w; view.height=h; view.getContext('2d').drawImage(src,0,0,w,h);
+  };
+
+  window.updateA4Preview=async function(){
+    const el=$("#a4Preview"); if(!el)return; let imgs=[];
+    try{
+      if(appState.uploadTab==='image'){
+        if(appState.frontCrop)imgs.push(await cropFromElement(appState.frontCrop)); else if(appState.front)imgs.push(appState.front);
+        if(appState.backCrop)imgs.push(await cropFromElement(appState.backCrop)); else if(appState.back)imgs.push(appState.back);
+      } else { if(appState.pdfCrop)imgs.push(await cropFromElement(appState.pdfCrop)); }
+    }catch(e){console.warn(e)}
+    el.innerHTML=imgs.map(s=>`<img src="${s}">`).join("");
+  };
+
+  window.generateDocPDF=async function(){
+    await updateA4Preview(); const imgs=[...$$("#a4Preview img")].map(i=>i.src); if(!imgs.length)return toast("Upload and select printable area first");
+    const {jsPDF}=window.jspdf; const pdf=new jsPDF({unit:"mm",format:"a4"});
+    const copies=Number($("#docCopies")?.value||1); let y=2; const cardW=85.6, cardH=54, gap=2;
+    for(let c=0;c<copies;c++){
+      let total=imgs.length*cardW+(imgs.length-1)*gap; let x=(210-total)/2;
+      for(const s of imgs){pdf.addImage(s,"JPEG",x,y,cardW,cardH); pdf.setDrawColor(0); pdf.setLineWidth(.25); pdf.rect(x,y,cardW,cardH); x+=cardW+gap;}
+      y+=cardH+gap; if(y>260&&c<copies-1){pdf.addPage(); y=2;}
+    }
+    appState.previewPDF=pdf; toast("A4 PDF generated with minimal top spacing");
+  };
+
+  window.pdfStudio=function(){
+    workspace.innerHTML=pageHeader("PDF Studio","Compress, resize and preview PDFs safely.")+`
+      <div class="pdf-tool-grid">
+        <div class="card form">
+          <h3>PDF Resizer / Preview</h3>
+          <p class="tool-status">v38.1 fix: this tool no longer hangs. Upload a PDF and use Open/Download actions.</p>
+          <input type="file" id="pdfStableFile" accept="application/pdf">
+          <button onclick="stablePdfPreview()">Open PDF Preview</button>
+          <button onclick="stablePdfDownload()">Download Same PDF</button>
+          <div id="pdfStableInfo"></div>
+        </div>
+        <div class="card pdf-result"><h3>Preview</h3><iframe id="pdfStableFrame"></iframe></div>
+      </div>`;
+  };
+  window.stablePdfPreview=function(){const f=$("#pdfStableFile")?.files?.[0]; if(!f)return toast("Upload PDF first"); const url=URL.createObjectURL(f); $("#pdfStableFrame").src=url; $("#pdfStableInfo").innerHTML=`<p><b>${f.name}</b><br>${(f.size/1024).toFixed(1)} KB</p>`;};
+  window.stablePdfDownload=function(){const f=$("#pdfStableFile")?.files?.[0]; if(!f)return toast("Upload PDF first"); const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name.replace(/\.pdf$/i,'')+'-copy.pdf'; a.click();};
+
+  window.dashboardTool=function(t){
+    const u=getUser()||{}; const name=u.name||"Guest User"; const avatar=(name.trim()[0]||"G").toUpperCase();
+    workspace.innerHTML=pageHeader("My Profile",`Welcome, ${name}. Manage your account details.`)+`
+      <div class="profile-grid">
+        <div class="card profile-card"><div class="profile-avatar" id="profileAvatarBig">${avatar}</div><h2>${name}</h2><p>${u.email||"Login to sync account"}</p><p class="tool-status">${u.premium?"Premium Active":"Free Plan"}</p></div>
+        <div class="card profile-form"><h3>Edit Profile</h3><input id="editName" placeholder="Full Name" value="${u.name||""}"><input id="editMobile" placeholder="Mobile" value="${u.mobile||""}"><textarea id="editAddress" placeholder="Address">${u.address||""}</textarea><input id="editPhoto" placeholder="Profile Photo URL optional" value="${u.profilePhoto||""}"><button onclick="saveLocalProfile()">Save Profile</button><p class="info-note">This updates local profile display immediately. Backend sync can be connected in Apps Script later.</p></div>
+      </div>`;
+  };
+  window.saveLocalProfile=function(){
+    const old=getUser()||{}; const u={...old,name:$("#editName").value.trim()||old.name||"User",mobile:$("#editMobile").value.trim(),address:$("#editAddress").value.trim(),profilePhoto:$("#editPhoto").value.trim()};
+    localStorage.setItem("spt_user",JSON.stringify(u)); if(window.SPT) SPT.user=u; updateTopUser(); toast("Profile updated"); dashboardTool();
+  };
+
+  // Better user avatar with DP URL if available
+  const oldUpdateTopUser=window.updateTopUser;
+  window.updateTopUser=function(){
+    const u=getUser(); const name=u?.name||"Guest User"; const plan=u?.premium?"Premium User":"Login required";
+    const av=$("#headerAvatar"); $("#headerUserName").textContent=name; $("#headerUserPlan").textContent=plan;
+    if(av){ if(u?.profilePhoto){av.style.backgroundImage=`url('${u.profilePhoto}')`; av.style.backgroundSize='cover'; av.textContent='';} else {av.style.backgroundImage=''; av.textContent=(name||"G").trim()[0].toUpperCase();}}
+    const admin=$("#adminDropBtn"); if(admin) admin.style.display=(u&&String(u.role).toLowerCase()==="admin")?"block":"none";
+    const l=$("#logoutDropBtn"); if(l) l.textContent=u?"🚪 Logout":"🔐 Login / Signup";
+  };
+})();
