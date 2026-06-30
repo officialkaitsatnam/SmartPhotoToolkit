@@ -1,15 +1,15 @@
-# Smart Photo Toolkit v38.2 Enterprise Hard Fix
+# Smart Photo Toolkit Pro v37.6
 
-## Fixed
-- Crop preview oversize issue fixed for image and PDF uploads.
-- Crop box now stays inside the visible media area.
-- Passport Studio uses the same 8-handle crop engine.
-- Document Studio image and PDF crop fit inside the workspace.
-- PDF Studio safe preview/download mode added to avoid hanging.
-- Profile edit local-save foundation added with top-right DP/name refresh.
-- A4 preview/print spacing kept minimal for lamination.
+## Added / Fixed
+- Document Studio redesigned to match the requested professional layout.
+- Aadhaar, PAN, Voter ID, Ayushman, ABHA and Driving Licence document tiles included.
+- Front/Back image upload now requires selectable printable area crop for each uploaded image.
+- Full Page PDF crop support remains available for all document types.
+- Crop boxes now support 8 resize handles: corners + side handles.
+- A4 output top margin reduced to 3mm.
+- Front/Back card gap reduced to 3mm for easier fold and lamination.
+- Passport Studio crop upgraded with 8-handle selection while keeping final 35x45mm output.
+- Dynamic top-right user menu retained.
 
-## Update Required
-- GitHub files: YES
-- Apps Script: NO
-- Google Sheet: NO
+## Backend
+- Apps Script update is not required for this version. This is a frontend/UI and print-layout update.

@@ -2299,3 +2299,672 @@ dashboardTool = function(){
 };
 
 setTimeout(()=>{try{if(typeof updateAuthUI==='function') updateAuthUI();}catch(e){}},600);
+
+/* =====================================================
+   Smart Photo Toolkit Pro v37.4
+   Document Studio Real Fix
+   Front/Back Image Upload + Full Page PDF Drag Crop
+===================================================== */
+
+const DS_V374 = {
+  selectedType: 'aadhaar',
+  mode: 'images',
+  frontSrc: '',
+  backSrc: '',
+  croppedSrc: '',
+  pdfCanvas: null,
+  pdfDoc: null,
+  pageNum: 1,
+  lastPdf: null,
+  crop: {x:40,y:40,w:300,h:190,active:false,mode:'move',sx:0,sy:0,start:null},
+  types: {
+    aadhaar: {icon:'🪪', name:'Aadhaar Card', size:[85.6,54], note:'Use front/back images or full-page downloaded Aadhaar PDF.'},
+    voter: {icon:'🗳️', name:'Voter ID Card', size:[85.6,54], note:'Upload Voter card front/back image or a full-page PDF and crop the printable area.'},
+    pan: {icon:'💳', name:'PAN Card', size:[85.6,54], note:'Upload PAN card image or full-page PDF and select the card area.'},
+    ayushman: {icon:'❤️', name:'Ayushman Card', size:[85.6,54], note:'Upload Ayushman card front/back or downloaded PDF and crop the printable card area.'},
+    dl: {icon:'🚘', name:'Driving Licence', size:[85.6,54], note:'Upload DL front/back image or PDF and create A4 print-ready output.'},
+    abha: {icon:'🩺', name:'ABHA Card', size:[85.6,54], note:'Upload ABHA card image or full-page PDF and crop for print.'}
+  }
+};
+
+function documentStudioTool(){
+  if(!workspace) return;
+  workspace.innerHTML = `
+    <h2>🪪 Document Studio</h2>
+    <p class="tool-subtitle">Print Aadhaar, Voter ID, PAN, Ayushman, Driving Licence and ABHA cards from front/back images or a full-page downloaded PDF.</p>
+    <div class="ds-hero">
+      <strong>v37.4 Document Studio</strong>
+      <span>Choose a document, upload front/back images or upload a full-page PDF, drag-select the printable card area, then generate a top-centered A4 PDF.</span>
+    </div>
+    <div class="ds-card-types" id="dsTypeWrap"></div>
+    <div class="ds-tabs">
+      <button class="ds-tab active" id="dsImagesTab" onclick="dsSwitchModeV374('images')">Front / Back Images</button>
+      <button class="ds-tab" id="dsPdfTab" onclick="dsSwitchModeV374('pdf')">Full Page PDF Crop</button>
+    </div>
+    <div id="dsPanel"></div>
+    <div id="dsOutput"></div>
+  `;
+  dsRenderTypesV374();
+  dsSwitchModeV374('images');
+}
+
+function dsRenderTypesV374(){
+  const wrap = document.getElementById('dsTypeWrap');
+  if(!wrap) return;
+  wrap.innerHTML = Object.entries(DS_V374.types).map(([key,t])=>`
+    <button class="ds-type ${DS_V374.selectedType===key?'active':''}" onclick="dsSelectTypeV374('${key}')">
+      ${t.icon} ${t.name}<span>${t.size[0]} × ${t.size[1]} mm print card</span>
+    </button>
+  `).join('');
+}
+function dsSelectTypeV374(type){
+  DS_V374.selectedType = type;
+  dsRenderTypesV374();
+  dsSwitchModeV374(DS_V374.mode || 'images');
+}
+function dsSwitchModeV374(mode){
+  DS_V374.mode = mode;
+  document.getElementById('dsImagesTab')?.classList.toggle('active', mode==='images');
+  document.getElementById('dsPdfTab')?.classList.toggle('active', mode==='pdf');
+  const panel = document.getElementById('dsPanel');
+  const out = document.getElementById('dsOutput');
+  if(out) out.innerHTML='';
+  if(!panel) return;
+  if(mode==='images') panel.innerHTML = dsImagesPanelV374();
+  else panel.innerHTML = dsPdfPanelV374();
+}
+function dsCurrentV374(){return DS_V374.types[DS_V374.selectedType] || DS_V374.types.aadhaar;}
+function dsOptionsV374(){
+  return `<div class="ds-control-grid">
+    <label>Copies<select id="dsCopies"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option></select></label>
+    <label>Output Layout<select id="dsLayout"><option value="single">Single card top center</option><option value="frontback">Front + Back top center</option></select></label>
+    <label>Border<select id="dsBorder"><option value="yes">Black border</option><option value="no">No border</option></select></label>
+  </div>`;
+}
+function dsImagesPanelV374(){
+  const t=dsCurrentV374();
+  return `<div class="ds-panel fade-in">
+    <h3>${t.icon} ${t.name} — Front / Back Image Upload</h3>
+    <p class="tool-subtitle">Upload front and back images, then generate an A4 PDF with cards aligned at the top center.</p>
+    ${dsOptionsV374()}
+    <div class="ds-grid mt-15">
+      <label class="ds-upload">Upload Front Image<input id="dsFrontImg" type="file" accept="image/*" onchange="dsLoadImgV374('front',this)"></label>
+      <label class="ds-upload">Upload Back Image<input id="dsBackImg" type="file" accept="image/*" onchange="dsLoadImgV374('back',this)"></label>
+    </div>
+    <div class="ds-preview-row" id="dsImgPreview"></div>
+    <div class="ds-note">Tip: Use this mode when you already have separate front and back card images. For full-page documents downloaded from a website, use the Full Page PDF Crop tab.</div>
+    <div class="action-row"><button class="primary-btn" onclick="dsGenerateFromImagesV374()">Generate A4 Print PDF</button></div>
+  </div>`;
+}
+async function dsLoadImgV374(side,input){
+  const f=input.files && input.files[0]; if(!f) return;
+  const data=await readFile(f);
+  if(side==='front') DS_V374.frontSrc=data; else DS_V374.backSrc=data;
+  const p=document.getElementById('dsImgPreview');
+  if(p){
+    p.innerHTML = `${DS_V374.frontSrc?`<div class="ds-preview-card"><b>Front</b><br><img src="${DS_V374.frontSrc}"></div>`:''}${DS_V374.backSrc?`<div class="ds-preview-card"><b>Back</b><br><img src="${DS_V374.backSrc}"></div>`:''}`;
+  }
+}
+async function dsGenerateFromImagesV374(){
+  if(!DS_V374.frontSrc && !DS_V374.backSrc) return alert('Please upload front or back image first.');
+  const imgs=[]; if(DS_V374.frontSrc) imgs.push(DS_V374.frontSrc); if(DS_V374.backSrc) imgs.push(DS_V374.backSrc);
+  const copies=Number(document.getElementById('dsCopies')?.value||1);
+  const border=(document.getElementById('dsBorder')?.value||'yes')==='yes';
+  DS_V374.lastPdf = await dsCreateA4PdfV374(imgs,copies,border,true);
+  dsShowOutputV374(imgs,copies,true);
+}
+function dsPdfPanelV374(){
+  const t=dsCurrentV374();
+  return `<div class="ds-panel fade-in">
+    <h3>${t.icon} ${t.name} — Full Page PDF Crop</h3>
+    <p class="tool-subtitle">Upload the full-page PDF downloaded from a website. Drag and resize the orange printable area, then generate A4 print output.</p>
+    ${dsOptionsV374()}
+    <div class="ds-control-grid mt-15">
+      <label class="ds-upload">Upload Full Page PDF<input id="dsFullPdf" type="file" accept="application/pdf" onchange="dsLoadPdfV374(this)"></label>
+      <label>PDF Page<select id="dsPageSelect" onchange="dsRenderPdfPageV374(Number(this.value))"><option value="1">Page 1</option></select></label>
+      <label>Crop Ratio<select id="dsRatioLock"><option value="card">Lock card ratio</option><option value="free">Free selection</option></select></label>
+    </div>
+    <div id="dsPdfWork"></div>
+  </div>`;
+}
+async function dsLoadPdfV374(input){
+  const f=input.files && input.files[0]; if(!f) return;
+  if(!window.pdfjsLib) return alert('PDF library not loaded. Please refresh with internet enabled.');
+  const work=document.getElementById('dsPdfWork');
+  if(work) work.innerHTML='<div class="progress-box">Loading PDF...</div>';
+  const buf=await f.arrayBuffer();
+  DS_V374.pdfDoc = await pdfjsLib.getDocument({data:buf}).promise;
+  const sel=document.getElementById('dsPageSelect');
+  if(sel){
+    sel.innerHTML='';
+    for(let i=1;i<=DS_V374.pdfDoc.numPages;i++){sel.innerHTML += `<option value="${i}">Page ${i}</option>`;}
+  }
+  await dsRenderPdfPageV374(1);
+}
+async function dsRenderPdfPageV374(pageNum){
+  if(!DS_V374.pdfDoc) return;
+  DS_V374.pageNum=pageNum||1;
+  const work=document.getElementById('dsPdfWork');
+  if(work) work.innerHTML='<div class="progress-box">Rendering page...</div>';
+  const page=await DS_V374.pdfDoc.getPage(DS_V374.pageNum);
+  const viewport=page.getViewport({scale:2.5});
+  const source=document.createElement('canvas');
+  const sctx=source.getContext('2d');
+  source.width=viewport.width; source.height=viewport.height;
+  await page.render({canvasContext:sctx, viewport}).promise;
+  DS_V374.pdfCanvas=source;
+  if(work){
+    work.innerHTML=`<div class="ds-pdf-workspace">
+      <div class="ds-canvas-shell"><div class="ds-canvas-wrap" id="dsCanvasWrap"><canvas id="dsPdfCanvas"></canvas><div class="ds-cropbox" id="dsCropBox"><span class="ds-handle nw" data-h="nw"></span><span class="ds-handle ne" data-h="ne"></span><span class="ds-handle sw" data-h="sw"></span><span class="ds-handle se" data-h="se"></span></div></div></div>
+      <div class="ds-sidebox"><h3>Printable Area</h3><p>Move the orange box on the card area. Resize it from corners. The selected area will be printed at the top center of an A4 page.</p><label>Copies<select id="dsCopiesSide"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option></select></label><label>Border<select id="dsBorderSide"><option value="yes">Black border</option><option value="no">No border</option></select></label><div class="ds-actions"><button class="secondary-btn" onclick="dsResetCropV374()">Reset Selection</button><button class="primary-btn" onclick="dsGenerateFromPdfCropV374()">Crop & Generate A4 PDF</button></div><div class="ds-note">Works for Aadhaar, Voter ID, PAN, Ayushman, Driving Licence and ABHA full-page PDFs.</div></div>
+    </div>`;
+  }
+  const c=document.getElementById('dsPdfCanvas');
+  const ctx=c.getContext('2d');
+  const maxW=Math.min(900, Math.max(320, (workspace?.clientWidth||900)-360));
+  const ratio=source.width/source.height;
+  c.width=maxW; c.height=Math.round(maxW/ratio);
+  ctx.drawImage(source,0,0,c.width,c.height);
+  dsResetCropV374();
+  dsInitCropEventsV374();
+}
+function dsResetCropV374(){
+  const c=document.getElementById('dsPdfCanvas'); if(!c) return;
+  const cardRatio = dsCurrentV374().size[0]/dsCurrentV374().size[1];
+  let w=Math.round(c.width*0.70), h=Math.round(w/cardRatio);
+  if(h>c.height*0.45){h=Math.round(c.height*0.30);w=Math.round(h*cardRatio);}
+  DS_V374.crop.x=Math.round((c.width-w)/2); DS_V374.crop.y=Math.round(c.height*0.65); DS_V374.crop.w=w; DS_V374.crop.h=h;
+  dsApplyCropV374();
+}
+function dsApplyCropV374(){
+  const box=document.getElementById('dsCropBox'); if(!box) return;
+  const cr=DS_V374.crop; box.style.left=cr.x+'px'; box.style.top=cr.y+'px'; box.style.width=cr.w+'px'; box.style.height=cr.h+'px';
+}
+function dsPointV374(e){const t=e.touches&&e.touches[0]; return {x:(t||e).clientX,y:(t||e).clientY};}
+function dsInitCropEventsV374(){
+  const box=document.getElementById('dsCropBox'); const canvas=document.getElementById('dsPdfCanvas'); if(!box||!canvas) return;
+  const start=(e,mode)=>{e.preventDefault(); e.stopPropagation(); const p=dsPointV374(e); DS_V374.crop.active=true; DS_V374.crop.mode=mode; DS_V374.crop.sx=p.x; DS_V374.crop.sy=p.y; DS_V374.crop.start={x:DS_V374.crop.x,y:DS_V374.crop.y,w:DS_V374.crop.w,h:DS_V374.crop.h};};
+  box.onmousedown=e=>start(e,'move'); box.ontouchstart=e=>start(e,'move');
+  box.querySelectorAll('.ds-handle').forEach(h=>{h.onmousedown=e=>start(e,h.dataset.h); h.ontouchstart=e=>start(e,h.dataset.h);});
+  const move=e=>{
+    if(!DS_V374.crop.active) return; e.preventDefault();
+    const p=dsPointV374(e), dx=p.x-DS_V374.crop.sx, dy=p.y-DS_V374.crop.sy;
+    const st=DS_V374.crop.start; let {x,y,w,h}=st;
+    const lock=(document.getElementById('dsRatioLock')?.value||'card')==='card'; const ratio=dsCurrentV374().size[0]/dsCurrentV374().size[1];
+    if(DS_V374.crop.mode==='move'){x=st.x+dx; y=st.y+dy;}
+    else{
+      if(DS_V374.crop.mode.includes('e')) w=st.w+dx;
+      if(DS_V374.crop.mode.includes('s')) h=st.h+dy;
+      if(DS_V374.crop.mode.includes('w')){w=st.w-dx; x=st.x+dx;}
+      if(DS_V374.crop.mode.includes('n')){h=st.h-dy; y=st.y+dy;}
+      if(lock){
+        if(Math.abs(dx)>Math.abs(dy)) h=w/ratio; else w=h*ratio;
+        if(DS_V374.crop.mode.includes('w')) x=st.x+st.w-w;
+        if(DS_V374.crop.mode.includes('n')) y=st.y+st.h-h;
+      }
+    }
+    w=Math.max(60,Math.min(w,canvas.width)); h=Math.max(38,Math.min(h,canvas.height));
+    x=Math.max(0,Math.min(x,canvas.width-w)); y=Math.max(0,Math.min(y,canvas.height-h));
+    Object.assign(DS_V374.crop,{x,y,w,h}); dsApplyCropV374();
+  };
+  const stop=()=>{DS_V374.crop.active=false;};
+  document.addEventListener('mousemove',move,{passive:false}); document.addEventListener('mouseup',stop);
+  document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('touchend',stop);
+}
+function dsCropPdfAreaV374(){
+  const preview=document.getElementById('dsPdfCanvas'), box=document.getElementById('dsCropBox'); if(!preview||!box||!DS_V374.pdfCanvas) return '';
+  const canvasRect=preview.getBoundingClientRect(); const boxRect=box.getBoundingClientRect();
+  let relX=(boxRect.left-canvasRect.left)/canvasRect.width, relY=(boxRect.top-canvasRect.top)/canvasRect.height, relW=boxRect.width/canvasRect.width, relH=boxRect.height/canvasRect.height;
+  relX=Math.max(0,Math.min(relX,1)); relY=Math.max(0,Math.min(relY,1)); relW=Math.max(.01,Math.min(relW,1-relX)); relH=Math.max(.01,Math.min(relH,1-relY));
+  const src=DS_V374.pdfCanvas; const sx=src.width*relX, sy=src.height*relY, sw=src.width*relW, sh=src.height*relH;
+  const out=document.createElement('canvas'); const ctx=out.getContext('2d'); out.width=1200; out.height=Math.round(1200*sh/sw); ctx.fillStyle='#fff'; ctx.fillRect(0,0,out.width,out.height); ctx.drawImage(src,sx,sy,sw,sh,0,0,out.width,out.height);
+  return out.toDataURL('image/jpeg',.96);
+}
+async function dsGenerateFromPdfCropV374(){
+  const cropped=dsCropPdfAreaV374(); if(!cropped) return alert('Please upload a full-page PDF and select the printable area.');
+  DS_V374.croppedSrc=cropped;
+  const copies=Number(document.getElementById('dsCopiesSide')?.value || document.getElementById('dsCopies')?.value || 1);
+  const border=((document.getElementById('dsBorderSide')?.value || document.getElementById('dsBorder')?.value || 'yes')==='yes');
+  DS_V374.lastPdf=await dsCreateA4PdfV374([cropped],copies,border,false);
+  dsShowOutputV374([cropped],copies,false);
+}
+async function dsCreateA4PdfV374(srcs,copies,border,isCards){
+  const {jsPDF}=window.jspdf; const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const size=dsCurrentV374().size; const cardW=size[0], cardH=size[1], gap=8; let y=10;
+  for(let copy=0;copy<copies;copy++){
+    const dims=[];
+    for(const src of srcs){
+      if(isCards) dims.push({src,w:cardW,h:cardH});
+      else { const img=await loadImage(src); const h=cardH, w=Math.min(180,h*img.width/img.height); dims.push({src,w,h}); }
+    }
+    const totalW=dims.reduce((a,d)=>a+d.w,0)+(dims.length-1)*gap; let x=(210-totalW)/2;
+    for(const d of dims){ pdf.addImage(d.src,'JPEG',x,y,d.w,d.h); if(border){pdf.setDrawColor(0);pdf.setLineWidth(.25);pdf.rect(x,y,d.w,d.h);} x+=d.w+gap; }
+    y += cardH + 8; if(y>250 && copy<copies-1){pdf.addPage(); y=10;}
+  }
+  return pdf;
+}
+function dsShowOutputV374(srcs,copies,isCards){
+  const out=document.getElementById('dsOutput'); if(!out) return;
+  const imgs=[]; for(let i=0;i<copies;i++){ for(const src of srcs){ imgs.push(`<img class="${isCards?'ds-output-card':'ds-output-single'}" src="${src}">`);} }
+  out.innerHTML=`<div class="result-card fade-in"><h3>✅ A4 Print PDF Ready</h3><div class="ds-success">Your selected printable area has been converted into a top-centered A4 print-ready PDF.</div><div class="action-row"><button class="open-btn" onclick="dsOpenPdfV374()">📂 Open PDF</button><button class="pdf-btn" onclick="dsDownloadPdfV374()">📄 Download PDF</button><button class="print-btn" onclick="dsPrintPdfV374()">🖨️ Print PDF</button></div><div class="ds-a4-preview"><div class="ds-a4-top">${imgs.join('')}</div></div></div>`;
+}
+function dsPdfUrlV374(){ if(!DS_V374.lastPdf) return ''; return URL.createObjectURL(DS_V374.lastPdf.output('blob')); }
+function dsOpenPdfV374(){ if(!DS_V374.lastPdf) return alert('Generate PDF first.'); window.open(dsPdfUrlV374(),'_blank'); }
+function dsDownloadPdfV374(){ if(!DS_V374.lastPdf) return alert('Generate PDF first.'); const a=document.createElement('a'); a.href=dsPdfUrlV374(); a.download=(DS_V374.selectedType||'document')+'-a4-print.pdf'; document.body.appendChild(a); a.click(); a.remove(); }
+function dsPrintPdfV374(){ if(!DS_V374.lastPdf) return alert('Generate PDF first.'); DS_V374.lastPdf.autoPrint(); window.open(dsPdfUrlV374(),'_blank'); }
+
+/* Override routing and sidebar for v37.4 */
+const _openToolV374 = typeof openTool === 'function' ? openTool : null;
+openTool = function(tool){
+  if(tool==='documentstudio' || tool==='aadhaar' || tool==='voter' || tool==='pan' || tool==='ayushman' || tool==='dl' || tool==='abha') return documentStudioTool();
+  if(_openToolV374) return _openToolV374(tool);
+};
+setTimeout(()=>{
+  try{
+    document.querySelectorAll('[data-tool="aadhaar"]').forEach(b=>{b.dataset.tool='documentstudio'; b.textContent='🪪 Document Studio'; b.onclick=()=>openTool('documentstudio');});
+    if(!document.querySelector('[data-tool="documentstudio"]')){
+      const side=document.getElementById('sidebar'); const pdf=document.querySelector('[data-tool="pdfresizer"]');
+      const btn=document.createElement('button'); btn.className='nav-item'; btn.dataset.tool='documentstudio'; btn.textContent='🪪 Document Studio'; btn.onclick=()=>openTool('documentstudio');
+      side.insertBefore(btn,pdf||null);
+    }
+  }catch(e){}
+},500);
+
+
+/* =====================================================
+   Smart Photo Toolkit Pro v37.5
+   Document Studio UI upgrade + dynamic user menu
+===================================================== */
+(function(){
+  window.SPT_V375_VERSION = '37.5';
+
+  function safeUser(){
+    try{return (window.SPT && SPT.user) || JSON.parse(localStorage.getItem('spt_user')||'null') || null;}catch(e){return null;}
+  }
+  function initials(name){return String(name||'U').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase() || 'U';}
+  window.updateTopUserMenuV375 = function(){
+    const actions=document.querySelector('.header-actions'); if(!actions) return;
+    let root=document.getElementById('sptUserMenu');
+    const u=safeUser(); const isLogged=!!(u && (u.name||u.email));
+    const displayName=isLogged?(u.name||u.email||'User'):'Login / Signup';
+    const email=isLogged?(u.email||''):'Access your account';
+    const role=String(u?.role||'user').toLowerCase();
+    const admin=role==='admin';
+    const menuHtml=isLogged?`
+      <div class="spt-user-head"><b>${displayName}${admin?' (Admin)':''}</b><span>${email}</span></div>
+      <button onclick="showTool('dashboard')">👤 My Profile</button>
+      <button onclick="showTool('dashboard')">✏️ Edit Profile</button>
+      <button onclick="showTool('premium')">👑 Membership</button>
+      <button onclick="showTool('payment')">💳 Payments</button>
+      <button onclick="toast('Workspace is coming in the next release')">📁 My Workspace</button>
+      <button onclick="toast('Settings are coming in the next release')">⚙️ Settings</button>
+      ${admin?`<button onclick="showTool('admin')">📊 Admin Panel</button><button onclick="loadPayments && loadPayments()">💰 Payment Verification</button>`:''}
+      <button onclick="SPT.logout()">🚪 Logout</button>`:`
+      <div class="spt-user-head"><b>Welcome</b><span>Please sign in to access dashboard and premium features.</span></div>
+      <button onclick="showTool('login')">🔐 Login / Create Account</button>`;
+    if(!root){
+      root=document.createElement('div'); root.id='sptUserMenu'; root.className='spt-user-menu';
+      actions.appendChild(root);
+      document.addEventListener('click',e=>{ if(!root.contains(e.target)) root.classList.remove('open'); });
+    }
+    root.innerHTML=`<button class="spt-user-btn" type="button"><span class="spt-avatar">${initials(displayName)}</span><span class="spt-user-name">${displayName}</span><span>▾</span></button><div class="spt-user-dropdown">${menuHtml}</div>`;
+    root.querySelector('.spt-user-btn').onclick=(e)=>{e.stopPropagation(); root.classList.toggle('open');};
+  };
+  const oldSave=window.SPT && SPT.saveLogin;
+  if(window.SPT && oldSave){SPT.saveLogin=function(user,token){oldSave.call(SPT,user,token); setTimeout(updateTopUserMenuV375,80);};}
+  const oldLogout=window.SPT && SPT.logout;
+  if(window.SPT && oldLogout){SPT.logout=function(){oldLogout.call(SPT); setTimeout(updateTopUserMenuV375,80);};}
+  setTimeout(updateTopUserMenuV375,300);
+
+  const DOC_ICON_MAP_V375={aadhaar:'🪪',voter:'🗳️',pan:'💳',ayushman:'❤️',dl:'🚘',abha:'🩺'};
+  const DOC_NOTES_V375={
+    aadhaar:'Upload Aadhaar front/back images or a full-page UIDAI PDF and select the printable card area.',
+    voter:'Upload Voter ID front/back images or a full-page downloaded PDF and crop the card area.',
+    pan:'Upload PAN card image/PDF, then drag-select the printable PAN card area.',
+    ayushman:'Upload Ayushman Bharat card image/PDF and create A4 top-center print.',
+    dl:'Upload Driving Licence front/back or full-page PDF and crop the licence area.',
+    abha:'Upload ABHA card image/PDF and print it clearly on A4.'
+  };
+  if(window.DS_V374 && DS_V374.types){
+    Object.keys(DS_V374.types).forEach(k=>{DS_V374.types[k].icon=DOC_ICON_MAP_V375[k]||DS_V374.types[k].icon; DS_V374.types[k].note=DOC_NOTES_V375[k]||DS_V374.types[k].note;});
+  }
+
+  window.documentStudioTool = function(){
+    if(!workspace) return;
+    workspace.innerHTML = `
+      <h2>🪪 Document Studio</h2>
+      <p class="tool-subtitle">Print Aadhaar, Voter ID, PAN, Ayushman, Driving Licence and ABHA from front/back images or a full-page downloaded PDF.</p>
+      <div class="ds-hero">
+        <strong>v37.5 Document Studio</strong>
+        <span>Choose a document, upload images or a full-page PDF, then use the improved green selection tool to select the printable area for A4 top-center print.</span>
+      </div>
+      <div class="ds-card-types" id="dsTypeWrap"></div>
+      <div class="ds-tabs">
+        <button class="ds-tab active" id="dsImagesTab" onclick="dsSwitchModeV374('images')">Front / Back Images</button>
+        <button class="ds-tab" id="dsPdfTab" onclick="dsSwitchModeV374('pdf')">Full Page PDF Crop</button>
+      </div>
+      <div id="dsPanel"></div>
+      <div id="dsOutput"></div>`;
+    dsRenderTypesV374(); dsSwitchModeV374('images');
+  };
+
+  window.dsRenderTypesV374 = function(){
+    const wrap=document.getElementById('dsTypeWrap'); if(!wrap||!window.DS_V374) return;
+    wrap.innerHTML=Object.entries(DS_V374.types).map(([key,t])=>`
+      <button class="ds-type ${DS_V374.selectedType===key?'active':''}" onclick="dsSelectTypeV374('${key}')">
+        <b>${t.icon} ${t.name}</b><span>${t.note||''}</span>
+      </button>`).join('');
+  };
+
+  window.dsPdfPanelV374 = function(){
+    const t=dsCurrentV374();
+    return `<div class="ds-panel fade-in">
+      <h3>${t.icon} ${t.name} — Full Page PDF Crop</h3>
+      <p class="tool-subtitle">Upload any full-page PDF downloaded from a website. The PDF will open in a large workspace. Drag/resize the printable area just like a professional crop tool.</p>
+      ${dsOptionsV374()}
+      <div class="ds-control-grid mt-15">
+        <label class="ds-upload">📄 Upload Full Page PDF<input id="dsFullPdf" type="file" accept="application/pdf" onchange="dsLoadPdfV374(this)"></label>
+        <label>PDF Page<select id="dsPageSelect" onchange="dsRenderPdfPageV374(Number(this.value))"><option value="1">Page 1</option></select></label>
+        <label>Crop Ratio<select id="dsRatioLock"><option value="card">Lock card ratio</option><option value="free">Free selection</option></select></label>
+      </div>
+      <div id="dsPdfWork"></div>
+    </div>`;
+  };
+
+  window.dsRenderPdfPageV374 = async function(pageNum){
+    if(!DS_V374.pdfDoc) return;
+    DS_V374.pageNum=pageNum||1;
+    const work=document.getElementById('dsPdfWork'); if(work) work.innerHTML='<div class="progress-box">Rendering page...</div>';
+    const page=await DS_V374.pdfDoc.getPage(DS_V374.pageNum);
+    const viewport=page.getViewport({scale:3});
+    const source=document.createElement('canvas'); const sctx=source.getContext('2d');
+    source.width=viewport.width; source.height=viewport.height;
+    await page.render({canvasContext:sctx, viewport}).promise;
+    DS_V374.pdfCanvas=source;
+    if(work){work.innerHTML=`<div class="ds-pdf-workspace">
+      <div class="ds-canvas-shell"><div class="ds-canvas-wrap" id="dsCanvasWrap"><canvas id="dsPdfCanvas"></canvas><div class="ds-cropbox" id="dsCropBox" data-size=""><span class="ds-handle nw" data-h="nw"></span><span class="ds-handle n" data-h="n"></span><span class="ds-handle ne" data-h="ne"></span><span class="ds-handle e" data-h="e"></span><span class="ds-handle se" data-h="se"></span><span class="ds-handle s" data-h="s"></span><span class="ds-handle sw" data-h="sw"></span><span class="ds-handle w" data-h="w"></span></div></div></div>
+      <div class="ds-sidebox"><h3>Printable Selection</h3><p>Drag the green box over the card area. Resize from corners or edges. The selected part will print at the top center of A4.</p><label>Copies<select id="dsCopiesSide"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option></select></label><label>Border<select id="dsBorderSide"><option value="yes">Black border</option><option value="no">No border</option></select></label><div class="ds-actions"><button class="secondary-btn" onclick="dsResetCropV374()">Reset Selection</button><button class="primary-btn" onclick="dsGenerateFromPdfCropV374()">Crop & Generate A4 PDF</button></div><div class="ds-tooltips"><div class="ds-tip">✅ Larger workspace for easier selection.</div><div class="ds-tip">✅ Works for Aadhaar, Voter, PAN, Ayushman, DL and ABHA.</div><div class="ds-tip">✅ Front/back image upload remains available.</div></div></div>
+    </div>`;}
+    const c=document.getElementById('dsPdfCanvas'); const ctx=c.getContext('2d');
+    const side=window.innerWidth>900?330:30;
+    const maxW=Math.min(1180, Math.max(360, (workspace?.clientWidth||1000)-side));
+    const ratio=source.width/source.height;
+    c.width=maxW; c.height=Math.round(maxW/ratio);
+    ctx.drawImage(source,0,0,c.width,c.height);
+    dsResetCropV374(); dsInitCropEventsV374();
+  };
+
+  window.dsResetCropV374 = function(){
+    const c=document.getElementById('dsPdfCanvas'); if(!c) return;
+    const cardRatio=dsCurrentV374().size[0]/dsCurrentV374().size[1];
+    let w=Math.round(c.width*0.78), h=Math.round(w/cardRatio);
+    if(h>c.height*0.38){h=Math.round(c.height*0.32); w=Math.round(h*cardRatio);}
+    DS_V374.crop.x=Math.round((c.width-w)/2); DS_V374.crop.y=Math.round(c.height*0.60); DS_V374.crop.w=w; DS_V374.crop.h=h; dsApplyCropV374();
+  };
+
+  window.dsApplyCropV374 = function(){
+    const box=document.getElementById('dsCropBox'); if(!box) return;
+    const cr=DS_V374.crop; box.style.left=cr.x+'px'; box.style.top=cr.y+'px'; box.style.width=cr.w+'px'; box.style.height=cr.h+'px'; box.dataset.size=`${Math.round(cr.w)} × ${Math.round(cr.h)} px`;
+  };
+
+  window.dsInitCropEventsV374 = function(){
+    const box=document.getElementById('dsCropBox'); const canvas=document.getElementById('dsPdfCanvas'); if(!box||!canvas) return;
+    const start=(e,mode)=>{e.preventDefault(); e.stopPropagation(); const p=dsPointV374(e); DS_V374.crop.active=true; DS_V374.crop.mode=mode; DS_V374.crop.sx=p.x; DS_V374.crop.sy=p.y; DS_V374.crop.start={x:DS_V374.crop.x,y:DS_V374.crop.y,w:DS_V374.crop.w,h:DS_V374.crop.h};};
+    box.onmousedown=e=>start(e,'move'); box.ontouchstart=e=>start(e,'move');
+    box.querySelectorAll('.ds-handle').forEach(h=>{h.onmousedown=e=>start(e,h.dataset.h); h.ontouchstart=e=>start(e,h.dataset.h);});
+    const move=e=>{
+      if(!DS_V374.crop.active) return; e.preventDefault();
+      const p=dsPointV374(e), dx=p.x-DS_V374.crop.sx, dy=p.y-DS_V374.crop.sy, st=DS_V374.crop.start; let x=st.x,y=st.y,w=st.w,h=st.h;
+      const lock=(document.getElementById('dsRatioLock')?.value||'card')==='card'; const ratio=dsCurrentV374().size[0]/dsCurrentV374().size[1]; const m=DS_V374.crop.mode;
+      if(m==='move'){x=st.x+dx; y=st.y+dy;} else {
+        if(m.includes('e')) w=st.w+dx; if(m.includes('s')) h=st.h+dy; if(m.includes('w')){w=st.w-dx; x=st.x+dx;} if(m.includes('n')){h=st.h-dy; y=st.y+dy;}
+        if(lock && !['n','s','e','w'].includes(m)){
+          if(Math.abs(dx)>Math.abs(dy)) h=w/ratio; else w=h*ratio;
+          if(m.includes('w')) x=st.x+st.w-w; if(m.includes('n')) y=st.y+st.h-h;
+        }
+      }
+      w=Math.max(60,Math.min(w,canvas.width)); h=Math.max(38,Math.min(h,canvas.height)); x=Math.max(0,Math.min(x,canvas.width-w)); y=Math.max(0,Math.min(y,canvas.height-h));
+      Object.assign(DS_V374.crop,{x,y,w,h}); dsApplyCropV374();
+    };
+    const stop=()=>{DS_V374.crop.active=false;};
+    document.onmousemove=move; document.onmouseup=stop; document.ontouchmove=move; document.ontouchend=stop;
+  };
+
+  // Compact passport workspace without changing final print size.
+  const oldPassportTool=window.passportTool;
+  window.passportTool=function(){
+    if(oldPassportTool) oldPassportTool();
+    setTimeout(()=>{
+      const c=document.getElementById('passCanvas');
+      if(c && !passState.img){c.width=Math.min(680,Math.max(330,(workspace?.clientWidth||680)-80)); c.height=Math.round(c.width*0.58); drawEmptyPassport();}
+      const guide=document.querySelector('.passport-guide'); if(guide) guide.textContent='Select only the printable face area. The final output still prints at exact 35×45 mm.';
+    },30);
+  };
+  const oldLoadPass=window.loadPassportImage;
+  window.loadPassportImage=async function(){
+    const f=document.getElementById('passImage')?.files?.[0]; if(!f) return;
+    passState.img=await loadImage(await readFile(f)); passState.cropped='';
+    const c=document.getElementById('passCanvas'); if(c){const maxW=Math.min(680,Math.max(330,Math.round((workspace?.clientWidth||680)-80))); c.width=maxW; c.height=Math.round(maxW*0.58);}
+    preparePassportDisplay();
+    const d=passState.display, ratio=35/45; let cropH=Math.min(d.h*.70,d.w/ratio*.70), cropW=cropH*ratio; if(cropW>d.w*.70){cropW=d.w*.70; cropH=cropW/ratio;}
+    passState.crop={x:d.offsetX+(d.w-cropW)/2,y:d.offsetY+(d.h-cropH)/2,w:cropW,h:cropH}; drawPassportStudio(); initPassportCropEvents();
+  };
+})();
+
+/* =====================================================
+   Smart Photo Toolkit Pro v37.6
+   Document Studio Final + Passport 8-Handle Crop + Minimal A4 Spacing
+===================================================== */
+(function(){
+  const VERSION = '37.6';
+  window.SPT_V376_VERSION = VERSION;
+
+  const DOCS = {
+    aadhaar:{name:'Aadhaar Card', icon:'<span class="ds376-doc-logo" style="color:#f97316">☀️</span>', size:[85.6,54], label:'Aadhaar'},
+    pan:{name:'PAN Card', icon:'<span class="ds376-doc-logo" style="color:#2563eb">PAN</span>', size:[85.6,54], label:'PAN'},
+    voter:{name:'Voter ID Card', icon:'<span class="ds376-doc-logo">🗳️</span>', size:[85.6,54], label:'Voter ID'},
+    ayushman:{name:'Ayushman Card', icon:'<span class="ds376-doc-logo" style="color:#16a34a">🌿</span>', size:[85.6,54], label:'Ayushman'},
+    abha:{name:'ABHA Card', icon:'<span class="ds376-doc-logo" style="color:#0ea5e9">ABHA</span>', size:[85.6,54], label:'ABHA'},
+    dl:{name:'Driving Licence', icon:'<span class="ds376-doc-logo">🚘</span>', size:[85.6,54], label:'Driving Licence'}
+  };
+
+  const S = window.DS_V376 = {
+    type:'aadhaar', mode:'images', sideMode:'frontback',
+    img:{front:null,back:null}, canvas:{front:null,back:null}, crop:{}, cropActive:null,
+    pdfDoc:null, pdfCanvas:null, pdfPage:1, pdfZoom:1, pdfCrop:{x:40,y:40,w:220,h:140},
+    lastPdf:null, lastOutput:[]
+  };
+
+  function current(){return DOCS[S.type]||DOCS.aadhaar;}
+  function point(e){const t=e.touches&&e.touches[0]; return {x:(t||e).clientX,y:(t||e).clientY};}
+  function handles(cls='ds376-handle'){
+    return ['nw','n','ne','e','se','s','sw','w'].map(h=>`<span class="${cls} ${h}" data-h="${h}"></span>`).join('');
+  }
+  function escapeHtml(x){return String(x||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+
+  window.documentStudioTool = function(){
+    if(!workspace) return;
+    workspace.innerHTML = `
+      <div class="ds376-shell">
+        <div class="ds376-head">
+          <div class="ds376-title"><h2>🪪 Document Studio</h2><p class="tool-subtitle">Select document, upload front/back images or a full-page PDF, crop printable area, and print at the top of A4 with minimum spacing.</p></div>
+          <span class="ds376-badge">v37.6 Document Studio</span>
+        </div>
+        <div class="ds-card-types ds376-types" id="ds376Types"></div>
+        <div class="ds376-tabs">
+          <button class="ds376-tab active" id="ds376ImgTab" onclick="ds376Mode('images')">🖼️ Front / Back Images</button>
+          <button class="ds376-tab" id="ds376PdfTab" onclick="ds376Mode('pdf')">📄 Full Page PDF Crop</button>
+        </div>
+        <div id="ds376Panel"></div>
+        <div id="ds376Output" class="ds376-output"></div>
+      </div>`;
+    ds376RenderTypes();
+    ds376Mode(S.mode||'images');
+  };
+
+  window.ds376RenderTypes = function(){
+    const wrap=document.getElementById('ds376Types'); if(!wrap) return;
+    wrap.innerHTML=Object.entries(DOCS).map(([k,d])=>`<button class="ds-type ds376-type ${S.type===k?'active':''}" onclick="ds376SelectType('${k}')">${d.icon}<b>${d.name}</b><span>${d.size[0]} × ${d.size[1]} mm print card</span></button>`).join('');
+  };
+  window.ds376SelectType=function(k){S.type=k; S.img={front:null,back:null}; S.canvas={front:null,back:null}; S.crop={}; S.pdfDoc=null; S.pdfCanvas=null; S.lastOutput=[]; ds376RenderTypes(); ds376Mode(S.mode||'images');};
+  window.ds376Mode=function(mode){S.mode=mode; document.getElementById('ds376ImgTab')?.classList.toggle('active',mode==='images'); document.getElementById('ds376PdfTab')?.classList.toggle('active',mode==='pdf'); const out=document.getElementById('ds376Output'); if(out) out.innerHTML=''; if(mode==='images') ds376RenderImageMode(); else ds376RenderPdfMode();};
+
+  function printSettingsHtml(){return `
+    <label>Copies<select id="ds376Copies"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option></select></label>
+    <label>Border<select id="ds376Border"><option value="yes">Black Border</option><option value="no">No Border</option></select></label>
+    <label>Output Layout<select id="ds376Layout"><option value="frontback">Front + Back, minimal gap</option><option value="single">Single card top center</option></select></label>`;}
+
+  window.ds376RenderImageMode = function(){
+    const d=current(); const panel=document.getElementById('ds376Panel'); if(!panel) return;
+    panel.innerHTML=`
+      <div class="ds376-panel">
+        <div class="ds376-workgrid">
+          <div class="ds376-left">
+            <div class="ds376-section">
+              <h3>1. Upload ${escapeHtml(d.name)} Images</h3>
+              <p>Upload front and back images. After upload, select exactly which part should be printed.</p>
+              <div class="ds376-upload-grid">
+                <label class="ds376-upload">📤 Upload Front Image<small>JPG, PNG, WEBP</small><input type="file" accept="image/*" onchange="ds376LoadImage('front',this)"></label>
+                <label class="ds376-upload">📤 Upload Back Image<small>JPG, PNG, WEBP</small><input type="file" accept="image/*" onchange="ds376LoadImage('back',this)"></label>
+              </div>
+            </div>
+            <div class="ds376-section">
+              <h3>2. Select Printable Area</h3>
+              <p>Drag the blue border to move. Drag corners or side handles to resize. This selected part will be printed.</p>
+              <div class="ds376-crop-grid" id="ds376ImageCropGrid"></div>
+              <div class="ds376-tip">Tip: For lamination, crop tightly around the card and use minimal spacing in print settings.</div>
+            </div>
+          </div>
+          <div class="ds376-right">
+            <div class="ds376-print-card">
+              <h3>3. Print Preview & Settings</h3>
+              <div class="ds376-a4-preview"><div class="ds376-a4-top" id="ds376LivePreview"><span style="color:#64748b;font-weight:900">Upload and crop images to preview A4 output</span></div></div>
+              <div class="ds376-success">Top spacing and front/back gap are minimized for lamination.</div>
+              ${printSettingsHtml()}
+              <button class="primary-btn" onclick="ds376PreviewImages()">Preview A4 Page</button>
+              <button class="pdf-btn" onclick="ds376DownloadPdf()">Download PDF</button>
+              <button class="print-btn" onclick="ds376PrintPdf()">Print / Save as PDF</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    ds376RenderImageCropGrid();
+  };
+
+  window.ds376LoadImage = async function(side,input){
+    const f=input.files&&input.files[0]; if(!f) return;
+    const src=await readFile(f); const img=await loadImage(src);
+    const source=document.createElement('canvas'); source.width=img.width; source.height=img.height; source.getContext('2d').drawImage(img,0,0);
+    S.img[side]={src,name:f.name,source};
+    ds376RenderImageCropGrid();
+  };
+
+  window.ds376RenderImageCropGrid=function(){
+    const grid=document.getElementById('ds376ImageCropGrid'); if(!grid) return;
+    const sides=[]; if(S.img.front) sides.push('front'); if(S.img.back) sides.push('back');
+    if(!sides.length){grid.innerHTML=`<div class="ds376-tip" style="grid-column:1/-1">Upload front or back image to start selecting printable area.</div>`; return;}
+    grid.innerHTML=sides.map(side=>`<div class="ds376-crop-card"><h4>${side==='front'?'Front':'Back'} - Select Area</h4><div class="ds376-canvas-shell"><div class="ds376-canvas-wrap" id="ds376Wrap_${side}"><canvas id="ds376Canvas_${side}"></canvas><div class="ds376-cropbox" id="ds376Box_${side}" data-label="${side==='front'?'Front Area':'Back Area'}" data-size="">${handles('ds376-handle')}</div></div></div><div class="ds376-toolbar"><button onclick="ds376ResetImageCrop('${side}')">Reset</button><button onclick="ds376ZoomImage('${side}',1.1)">Zoom +</button><button onclick="ds376ZoomImage('${side}',0.9)">Zoom -</button></div></div>`).join('');
+    sides.forEach(side=>ds376DrawImageCanvas(side));
+  };
+  window.ds376DrawImageCanvas=function(side){
+    const item=S.img[side], c=document.getElementById('ds376Canvas_'+side), box=document.getElementById('ds376Box_'+side); if(!item||!c||!box) return;
+    const maxW=Math.min(460, Math.max(260, (workspace?.clientWidth||900)/2-70)); const ratio=item.source.width/item.source.height;
+    c.width=maxW; c.height=Math.max(150,Math.round(maxW/ratio)); c.getContext('2d').drawImage(item.source,0,0,c.width,c.height);
+    if(!S.crop[side]){S.crop[side]={x:Math.round(c.width*.04),y:Math.round(c.height*.04),w:Math.round(c.width*.92),h:Math.round(c.height*.92),zoom:1};}
+    ds376ApplyBox(side); ds376InitBoxEvents(side,'image');
+  };
+  window.ds376ResetImageCrop=function(side){const c=document.getElementById('ds376Canvas_'+side); if(!c)return; S.crop[side]={x:Math.round(c.width*.04),y:Math.round(c.height*.04),w:Math.round(c.width*.92),h:Math.round(c.height*.92),zoom:1}; ds376ApplyBox(side);};
+  window.ds376ZoomImage=function(side,f){toast('For best quality, resize the selection box. Image zoom will be added in v38.');};
+
+  window.ds376ApplyBox=function(side){
+    const box=document.getElementById('ds376Box_'+side); const cr=S.crop[side]; if(!box||!cr) return;
+    box.style.left=cr.x+'px'; box.style.top=cr.y+'px'; box.style.width=cr.w+'px'; box.style.height=cr.h+'px'; box.dataset.size=`${Math.round(cr.w)} × ${Math.round(cr.h)} px`;
+  };
+  window.ds376InitBoxEvents=function(side,type){
+    const box=document.getElementById((type==='pdf'?'ds376PdfBox':'ds376Box_'+side)); const canvas=document.getElementById(type==='pdf'?'ds376PdfCanvas':'ds376Canvas_'+side); if(!box||!canvas) return;
+    const state = type==='pdf' ? S.pdfCrop : (S.crop[side] || (S.crop[side]={x:0,y:0,w:100,h:60}));
+    const start=(e,mode)=>{e.preventDefault(); e.stopPropagation(); const p=point(e); S.cropActive={side,type,mode,sx:p.x,sy:p.y,start:{x:state.x,y:state.y,w:state.w,h:state.h}};};
+    box.onmousedown=e=>start(e,'move'); box.ontouchstart=e=>start(e,'move');
+    box.querySelectorAll('.ds376-handle').forEach(h=>{h.onmousedown=e=>start(e,h.dataset.h); h.ontouchstart=e=>start(e,h.dataset.h);});
+    const move=e=>{
+      if(!S.cropActive || S.cropActive.side!==side || S.cropActive.type!==type) return; e.preventDefault();
+      const p=point(e), dx=p.x-S.cropActive.sx, dy=p.y-S.cropActive.sy, st=S.cropActive.start; let x=st.x,y=st.y,w=st.w,h=st.h, m=S.cropActive.mode;
+      if(m==='move'){x=st.x+dx;y=st.y+dy;} else { if(m.includes('e')) w=st.w+dx; if(m.includes('s')) h=st.h+dy; if(m.includes('w')){w=st.w-dx;x=st.x+dx;} if(m.includes('n')){h=st.h-dy;y=st.y+dy;} }
+      w=Math.max(45,Math.min(w,canvas.width)); h=Math.max(28,Math.min(h,canvas.height)); x=Math.max(0,Math.min(x,canvas.width-w)); y=Math.max(0,Math.min(y,canvas.height-h));
+      Object.assign(state,{x,y,w,h}); if(type==='pdf') ds376ApplyPdfBox(); else ds376ApplyBox(side);
+    };
+    const stop=()=>{S.cropActive=null;};
+    document.addEventListener('mousemove',move,{passive:false}); document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('mouseup',stop); document.addEventListener('touchend',stop);
+  };
+
+  window.ds376CropImageSide=function(side){
+    const item=S.img[side], c=document.getElementById('ds376Canvas_'+side), cr=S.crop[side]; if(!item||!c||!cr) return '';
+    const sx=cr.x*(item.source.width/c.width), sy=cr.y*(item.source.height/c.height), sw=cr.w*(item.source.width/c.width), sh=cr.h*(item.source.height/c.height);
+    const out=document.createElement('canvas'), ctx=out.getContext('2d'); out.width=1200; out.height=Math.round(1200*sh/sw); ctx.fillStyle='#fff'; ctx.fillRect(0,0,out.width,out.height); ctx.drawImage(item.source,sx,sy,sw,sh,0,0,out.width,out.height); return out.toDataURL('image/jpeg',.96);
+  };
+  window.ds376CroppedImages=function(){const arr=[]; if(S.img.front) arr.push(ds376CropImageSide('front')); if(S.img.back) arr.push(ds376CropImageSide('back')); return arr.filter(Boolean);};
+  window.ds376PreviewImages=async function(){const imgs=ds376CroppedImages(); if(!imgs.length) return alert('Please upload and crop front/back image first.'); S.lastOutput=imgs; const copies=Number(document.getElementById('ds376Copies')?.value||1); const border=(document.getElementById('ds376Border')?.value||'yes')==='yes'; S.lastPdf=await ds376CreateA4Pdf(imgs,copies,border,true); ds376ShowLivePreview(imgs,copies); ds376ShowOutput('A4 preview ready. You can download or print now.');};
+  window.ds376ShowLivePreview=function(imgs,copies){const box=document.getElementById('ds376LivePreview'); if(!box) return; let html=''; for(let i=0;i<copies;i++) imgs.forEach(src=>html+=`<img class="ds376-preview-img" src="${src}">`); box.innerHTML=html;};
+
+  window.ds376RenderPdfMode=function(){
+    const d=current(); const panel=document.getElementById('ds376Panel'); if(!panel) return;
+    panel.innerHTML=`<div class="ds376-panel"><div class="ds376-pdf-workgrid"><div><div class="ds376-section"><h3>1. Upload Full Page ${escapeHtml(d.name)} PDF</h3><p>Upload the full-page document PDF downloaded from an official website. Then drag-select the card area.</p><div class="ds376-upload-grid"><label class="ds376-upload">📄 Click to upload PDF<small>Full page PDF only</small><input type="file" accept="application/pdf" onchange="ds376LoadPdf(this)"></label><label>PDF Page<select id="ds376PdfPage" onchange="ds376RenderPdfPage(Number(this.value))"><option value="1">Page 1</option></select></label></div></div><div class="ds376-section"><div class="ds376-zoombar"><button onclick="ds376PdfZoom(.9)">−</button><b id="ds376ZoomText">100%</b><button onclick="ds376PdfZoom(1.1)">+</button><button onclick="ds376FitPdf()">Fit Width</button><button onclick="ds376ResetPdfCrop()">Reset</button></div><div class="ds376-pdf-shell"><div class="ds376-pdf-wrap" id="ds376PdfWrap"><canvas id="ds376PdfCanvas"></canvas><div class="ds376-cropbox" id="ds376PdfBox" data-label="Printable Area" data-size="">${handles('ds376-handle')}</div></div></div><div class="ds376-tip" style="margin-top:12px">Drag inside the box to move. Drag corners or sides to resize the printable area. Output prints near the top of A4.</div></div></div><div class="ds376-pdf-side"><h3>2. Print Settings</h3>${printSettingsHtml()}<button class="secondary-btn" style="width:100%;margin-top:10px" onclick="ds376ResetPdfCrop()">Reset Selection</button><button class="primary-btn" style="width:100%;margin-top:10px" onclick="ds376GeneratePdfCrop()">Crop & Preview A4</button><button class="pdf-btn" style="width:100%;margin-top:10px" onclick="ds376DownloadPdf()">Download PDF</button><button class="print-btn" style="width:100%;margin-top:10px" onclick="ds376PrintPdf()">Print / Save as PDF</button><div class="ds376-a4-preview" style="margin-top:15px;min-height:190mm"><div class="ds376-a4-top" id="ds376LivePreview"><span style="color:#64748b;font-weight:900">Preview will appear here</span></div></div><div class="ds376-how"><b>How to select?</b><br>1. Upload full-page PDF<br>2. Move box to card area<br>3. Resize corners/sides<br>4. Preview A4<br>5. Download or print</div></div></div><div id="ds376Output" class="ds376-output"></div></div>`;
+  };
+  window.ds376LoadPdf=async function(input){
+    const f=input.files&&input.files[0]; if(!f) return; if(!window.pdfjsLib) return alert('PDF library not loaded. Please refresh with internet.');
+    const buf=await f.arrayBuffer(); S.pdfDoc=await pdfjsLib.getDocument({data:buf}).promise; const sel=document.getElementById('ds376PdfPage'); if(sel){sel.innerHTML=''; for(let i=1;i<=S.pdfDoc.numPages;i++) sel.innerHTML+=`<option value="${i}">Page ${i}</option>`;} await ds376RenderPdfPage(1);
+  };
+  window.ds376RenderPdfPage=async function(num){
+    if(!S.pdfDoc) return; S.pdfPage=num||1; const page=await S.pdfDoc.getPage(S.pdfPage); const vp=page.getViewport({scale:3}); const src=document.createElement('canvas'), sctx=src.getContext('2d'); src.width=vp.width; src.height=vp.height; await page.render({canvasContext:sctx,viewport:vp}).promise; S.pdfCanvas=src; ds376DrawPdfCanvas();
+  };
+  window.ds376DrawPdfCanvas=function(){
+    const src=S.pdfCanvas, c=document.getElementById('ds376PdfCanvas'); if(!src||!c) return; const maxW=Math.min(1050,Math.max(320,(workspace?.clientWidth||1000)-410))*S.pdfZoom; const r=src.width/src.height; c.width=maxW; c.height=Math.round(maxW/r); c.getContext('2d').drawImage(src,0,0,c.width,c.height); document.getElementById('ds376ZoomText')&&(document.getElementById('ds376ZoomText').textContent=Math.round(S.pdfZoom*100)+'%'); if(!S.pdfCrop || !S.pdfCrop.w) ds376ResetPdfCrop(); else ds376ApplyPdfBox(); ds376InitBoxEvents('pdf','pdf');
+  };
+  window.ds376PdfZoom=function(f){S.pdfZoom=Math.max(.5,Math.min(2.5,S.pdfZoom*f)); ds376DrawPdfCanvas();}; window.ds376FitPdf=function(){S.pdfZoom=1; ds376DrawPdfCanvas();};
+  window.ds376ResetPdfCrop=function(){const c=document.getElementById('ds376PdfCanvas'); if(!c) return; const ratio=current().size[0]/current().size[1]; let w=Math.round(c.width*.78), h=Math.round(w/ratio); if(h>c.height*.45){h=Math.round(c.height*.32); w=Math.round(h*ratio);} S.pdfCrop={x:Math.round((c.width-w)/2),y:Math.round(c.height*.58),w,h}; ds376ApplyPdfBox();};
+  window.ds376ApplyPdfBox=function(){const box=document.getElementById('ds376PdfBox'), cr=S.pdfCrop; if(!box||!cr) return; box.style.left=cr.x+'px'; box.style.top=cr.y+'px'; box.style.width=cr.w+'px'; box.style.height=cr.h+'px'; box.dataset.size=`${Math.round(cr.w)} × ${Math.round(cr.h)} px`;};
+  window.ds376CropPdf=function(){const preview=document.getElementById('ds376PdfCanvas'), box=document.getElementById('ds376PdfBox'); if(!preview||!box||!S.pdfCanvas) return ''; const cr=preview.getBoundingClientRect(), br=box.getBoundingClientRect(); let rx=(br.left-cr.left)/cr.width, ry=(br.top-cr.top)/cr.height, rw=br.width/cr.width, rh=br.height/cr.height; rx=Math.max(0,Math.min(rx,1)); ry=Math.max(0,Math.min(ry,1)); rw=Math.max(.01,Math.min(rw,1-rx)); rh=Math.max(.01,Math.min(rh,1-ry)); const src=S.pdfCanvas, sx=src.width*rx, sy=src.height*ry, sw=src.width*rw, sh=src.height*rh; const out=document.createElement('canvas'), ctx=out.getContext('2d'); out.width=1200; out.height=Math.round(1200*sh/sw); ctx.fillStyle='#fff'; ctx.fillRect(0,0,out.width,out.height); ctx.drawImage(src,sx,sy,sw,sh,0,0,out.width,out.height); return out.toDataURL('image/jpeg',.96);};
+  window.ds376GeneratePdfCrop=async function(){const img=ds376CropPdf(); if(!img) return alert('Upload PDF and select printable area first.'); const copies=Number(document.getElementById('ds376Copies')?.value||1), border=(document.getElementById('ds376Border')?.value||'yes')==='yes'; S.lastOutput=[img]; S.lastPdf=await ds376CreateA4Pdf([img],copies,border,false); ds376ShowLivePreview([img],copies); ds376ShowOutput('Full-page PDF crop is ready for A4 top-center print.');};
+
+  window.ds376CreateA4Pdf=async function(srcs,copies,border,isCards){
+    const {jsPDF}=window.jspdf; const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}); const [cardW,cardH]=current().size; const gap=3; let y=3;
+    for(let copy=0; copy<copies; copy++){
+      const dims=[]; for(const src of srcs){ if(isCards) dims.push({src,w:cardW,h:cardH}); else { const img=await loadImage(src); let h=cardH, w=h*img.width/img.height; if(w>185){w=185;h=w*img.height/img.width;} dims.push({src,w,h}); } }
+      const totalW=dims.reduce((a,d)=>a+d.w,0)+(dims.length-1)*gap; let x=(210-totalW)/2;
+      for(const d of dims){pdf.addImage(d.src,'JPEG',x,y,d.w,d.h); if(border){pdf.setDrawColor(0);pdf.setLineWidth(.25);pdf.rect(x,y,d.w,d.h);} x+=d.w+gap;}
+      y+=cardH+5; if(y>250 && copy<copies-1){pdf.addPage(); y=3;}
+    }
+    return pdf;
+  };
+  window.ds376ShowOutput=function(msg){const out=document.getElementById('ds376Output'); if(out) out.innerHTML=`<div class="result-card fade-in"><h3>✅ Ready</h3><p>${escapeHtml(msg)}</p></div>`;};
+  window.ds376DownloadPdf=function(){ if(!S.lastPdf) return alert('Please preview/generate PDF first.'); const a=document.createElement('a'); a.href=URL.createObjectURL(S.lastPdf.output('blob')); a.download=current().label.replace(/\s+/g,'-').toLowerCase()+'-a4-print.pdf'; document.body.appendChild(a); a.click(); a.remove(); };
+  window.ds376PrintPdf=function(){ if(!S.lastPdf) return alert('Please preview/generate PDF first.'); S.lastPdf.autoPrint(); window.open(URL.createObjectURL(S.lastPdf.output('blob')),'_blank'); };
+
+  // Route Document Studio to the new v37.6 tool.
+  const oldOpen = window.openTool;
+  window.openTool = function(tool){
+    if(['documentstudio','aadhaar','voter','pan','ayushman','dl','abha'].includes(tool)) { setActive && setActive('documentstudio'); return documentStudioTool(); }
+    return oldOpen ? oldOpen(tool) : null;
+  };
+
+  // Reduce output top margin for existing document and passport generation too.
+  window.createPassportPDF = function(src,name,date){
+    const {jsPDF}=window.jspdf; const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}); const photoW=35, photoH=45, gap=2.5, top=3; let x=4;
+    for(let i=0;i<5;i++){pdf.setFillColor(255,255,255);pdf.rect(x,top,photoW,photoH,'F');pdf.addImage(src,'JPEG',x,top,photoW,photoH);pdf.setDrawColor(0);pdf.setLineWidth(.3);pdf.rect(x,top,photoW,photoH);if(name||date){pdf.setFontSize(7);pdf.text(name||'',x+photoW/2,top+photoH+3,{align:'center'});pdf.text(date||'',x+photoW/2,top+photoH+6,{align:'center'});}x+=photoW+gap;} return pdf;
+  };
+
+  // Upgrade passport canvas crop with 8 handles while preserving 35:45 ratio and final 35x45mm output.
+  window.drawPassportStudio = function(){
+    const c=document.getElementById('passCanvas'); if(!c) return; const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); ctx.fillStyle='#111827'; ctx.fillRect(0,0,c.width,c.height); if(!passState.img){drawEmptyPassport();return;} const d=passState.display; ctx.drawImage(passState.img,d.offsetX,d.offsetY,d.w,d.h); const crop=passState.crop; if(!crop) return; ctx.save(); ctx.beginPath(); ctx.rect(0,0,c.width,c.height); ctx.rect(crop.x,crop.y,crop.w,crop.h); ctx.fillStyle='rgba(15,23,42,.58)'; ctx.fill('evenodd'); ctx.restore(); ctx.strokeStyle='#2563eb'; ctx.lineWidth=3; ctx.strokeRect(crop.x,crop.y,crop.w,crop.h); ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(crop.x+crop.w/3,crop.y);ctx.lineTo(crop.x+crop.w/3,crop.y+crop.h);ctx.moveTo(crop.x+crop.w*2/3,crop.y);ctx.lineTo(crop.x+crop.w*2/3,crop.y+crop.h);ctx.moveTo(crop.x,crop.y+crop.h/3);ctx.lineTo(crop.x+crop.w,crop.y+crop.h/3);ctx.moveTo(crop.x,crop.y+crop.h*2/3);ctx.lineTo(crop.x+crop.w,crop.y+crop.h*2/3);ctx.stroke(); const pts=[['nw',crop.x,crop.y],['n',crop.x+crop.w/2,crop.y],['ne',crop.x+crop.w,crop.y],['e',crop.x+crop.w,crop.y+crop.h/2],['se',crop.x+crop.w,crop.y+crop.h],['s',crop.x+crop.w/2,crop.y+crop.h],['sw',crop.x,crop.y+crop.h],['w',crop.x,crop.y+crop.h/2]]; ctx.fillStyle='#2563eb'; ctx.strokeStyle='#fff'; ctx.lineWidth=3; pts.forEach(([h,x,y])=>{ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fill();ctx.stroke();}); ctx.fillStyle='rgba(29,78,216,.9)'; ctx.fillRect(crop.x+8,crop.y+8,160,28); ctx.fillStyle='#fff';ctx.font='bold 13px Arial';ctx.textAlign='left';ctx.fillText('35×45 mm print area',crop.x+16,crop.y+27);
+  };
+  window.initPassportCropEvents = function(){
+    const c=document.getElementById('passCanvas'); if(!c) return;
+    const hit=(p,crop)=>{const hs=16; const pts={nw:[crop.x,crop.y],n:[crop.x+crop.w/2,crop.y],ne:[crop.x+crop.w,crop.y],e:[crop.x+crop.w,crop.y+crop.h/2],se:[crop.x+crop.w,crop.y+crop.h],s:[crop.x+crop.w/2,crop.y+crop.h],sw:[crop.x,crop.y+crop.h],w:[crop.x,crop.y+crop.h/2]}; for(const [k,[x,y]] of Object.entries(pts)){if(Math.abs(p.x-x)<hs&&Math.abs(p.y-y)<hs)return k;} if(p.x>=crop.x&&p.x<=crop.x+crop.w&&p.y>=crop.y&&p.y<=crop.y+crop.h)return 'move'; return 'draw';};
+    const down=e=>{e.preventDefault(); if(!passState.img)return; const p=getPassportPoint(e), crop=passState.crop; passState.mode=hit(p,crop); if(passState.mode==='draw') passState.crop={x:p.x,y:p.y,w:1,h:1}; passState.start={p,crop:{...(passState.crop||{})}};};
+    const move=e=>{if(!passState.mode||!passState.start||passState.mode==='idle')return; e.preventDefault(); const p=getPassportPoint(e), st=passState.start.crop, dx=p.x-passState.start.p.x, dy=p.y-passState.start.p.y; let x=st.x,y=st.y,w=st.w,h=st.h, m=passState.mode, ratio=35/45; if(m==='move'){x=st.x+dx;y=st.y+dy;} else if(m==='draw'){w=Math.abs(dx); h=w/ratio; x=dx<0?passState.start.p.x-w:passState.start.p.x; y=dy<0?passState.start.p.y-h:passState.start.p.y;} else { if(m.includes('e')) w=st.w+dx; if(m.includes('w')){w=st.w-dx;x=st.x+dx;} if(m.includes('s')) h=st.h+dy; if(m.includes('n')){h=st.h-dy;y=st.y+dy;} if(!['n','s','e','w'].includes(m)){ if(Math.abs(dx)>Math.abs(dy)) h=w/ratio; else w=h*ratio; if(m.includes('w')) x=st.x+st.w-w; if(m.includes('n')) y=st.y+st.h-h; } else { h=w/ratio; } } passState.crop={x,y,w:Math.max(50,w),h:Math.max(65,h)}; clampPassportCrop(); drawPassportStudio();};
+    const up=()=>{if(!passState.img)return; passState.mode='idle'; passState.start=null; cropPassportSelection();}; c.onmousedown=down;c.ontouchstart=down;window.onmousemove=move;window.ontouchmove=move;window.onmouseup=up;window.ontouchend=up;
+  };
+
+  // Ensure top user menu refreshes after v37.6 loads.
+  setTimeout(()=>{try{updateTopUserMenuV375&&updateTopUserMenuV375();}catch(e){}},500);
+})();

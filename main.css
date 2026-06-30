@@ -372,3 +372,112 @@ body.dark .passport-studio-panel .passport-guide{
     padding:8px;
   }
 }
+
+/* =====================================================
+   v37.4 Document Studio Real Fix
+   Front/Back Image Upload + Full Page PDF Drag Crop
+===================================================== */
+.ds-hero{background:linear-gradient(135deg,#eff6ff,#f8fafc);border:1px solid var(--line);border-radius:22px;padding:18px;margin:14px 0;display:grid;gap:8px}
+body.dark .ds-hero{background:linear-gradient(135deg,#0f172a,#111827)}
+.ds-card-types{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.ds-type{border:1px solid var(--line);background:var(--card);border-radius:16px;padding:14px;text-align:left;cursor:pointer;box-shadow:var(--shadow);transition:.18s;font-weight:900}
+.ds-type span{display:block;color:var(--muted);font-size:12px;margin-top:5px;font-weight:600}
+.ds-type.active,.ds-type:hover{border-color:var(--blue);background:#eff6ff;transform:translateY(-2px)}
+body.dark .ds-type.active,body.dark .ds-type:hover{background:#172554}
+.ds-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.ds-tab{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;padding:11px 15px;font-weight:900;cursor:pointer}
+.ds-tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.ds-panel{background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:12px}
+.ds-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.ds-control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;align-items:end}
+.ds-upload{border:2px dashed #93c5fd;background:#eff6ff;border-radius:18px;padding:18px;text-align:center;cursor:pointer;font-weight:900;color:#1d4ed8;display:block}
+.ds-upload input{display:none}
+.ds-preview-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;align-items:flex-start}
+.ds-preview-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;min-width:180px;color:#111827}
+.ds-preview-card img{max-width:220px;max-height:150px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
+.ds-note{background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;border-radius:14px;padding:12px;line-height:1.5;margin-top:12px}
+.ds-success{background:#ecfdf5;border:1px solid #86efac;color:#14532d;border-radius:14px;padding:12px;line-height:1.5;margin-top:12px}
+.ds-pdf-workspace{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start;margin-top:14px}
+.ds-canvas-shell{background:#0b1220;border-radius:18px;padding:14px;overflow:auto;text-align:center;position:relative;max-height:74vh}
+.ds-canvas-wrap{position:relative;display:inline-block;touch-action:none;line-height:0}
+.ds-canvas-wrap canvas{display:block;background:#fff;border-radius:10px;max-width:100%;height:auto}
+.ds-cropbox{position:absolute;border:3px solid #f97316;background:rgba(249,115,22,.08);box-shadow:0 0 0 9999px rgba(15,23,42,.28);cursor:move;touch-action:none;box-sizing:border-box}
+.ds-cropbox::before{content:'Printable Area';position:absolute;left:8px;top:8px;background:rgba(0,0,0,.75);color:#fff;font-size:12px;line-height:1;padding:6px 8px;border-radius:999px}
+.ds-handle{position:absolute;width:22px;height:22px;background:#f97316;border:3px solid #fff;border-radius:50%;box-shadow:0 3px 10px rgba(0,0,0,.35);touch-action:none}
+.ds-handle.nw{left:-13px;top:-13px;cursor:nwse-resize}.ds-handle.ne{right:-13px;top:-13px;cursor:nesw-resize}.ds-handle.sw{left:-13px;bottom:-13px;cursor:nesw-resize}.ds-handle.se{right:-13px;bottom:-13px;cursor:nwse-resize}
+.ds-sidebox{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;position:sticky;top:12px}
+.ds-sidebox h3{margin-bottom:8px}.ds-sidebox p{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:10px}.ds-sidebox label{display:block;font-weight:900;margin-top:10px;margin-bottom:6px}.ds-sidebox select,.ds-sidebox input{width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:12px}
+.ds-actions{display:grid;gap:8px;margin-top:12px}.ds-actions button{width:100%;margin:0}
+.ds-a4-preview{background:white;color:#111827;border:1px solid #ddd;margin-top:15px;padding:5mm 4mm;width:210mm;min-height:297mm;max-width:100%;overflow:hidden}
+.ds-a4-top{display:flex;justify-content:center;align-items:flex-start;gap:8mm;flex-wrap:wrap}
+.ds-output-card{width:85.6mm;height:54mm;object-fit:contain;border:1px solid #333;background:white}
+.ds-output-single{max-width:180mm;height:54mm;object-fit:contain;border:1px solid #333;background:white}
+@media(max-width:900px){.ds-pdf-workspace{grid-template-columns:1fr}.ds-sidebox{position:static}.ds-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.ds-card-types{grid-template-columns:1fr 1fr}.ds-type{padding:12px}.ds-canvas-shell{padding:8px}.ds-cropbox::before{font-size:10px;padding:5px 7px}.ds-handle{width:26px;height:26px}.ds-a4-preview{padding:8mm 2mm}.ds-output-card{width:76mm;height:48mm}.ds-output-single{height:48mm;max-width:180mm}}
+
+
+/* =====================================================
+   Smart Photo Toolkit Pro v37.5
+   Document selection UI + compact Passport Studio + user menu
+===================================================== */
+.header-actions{position:relative;gap:12px}
+.spt-user-menu{position:relative;display:inline-block}
+.spt-user-btn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;padding:8px 11px;display:flex;align-items:center;gap:8px;font-weight:900;box-shadow:var(--shadow);cursor:pointer;max-width:220px}
+.spt-avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;font-size:13px;flex:0 0 auto}
+.spt-user-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.spt-user-dropdown{display:none;position:absolute;right:0;top:calc(100% + 10px);width:260px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow2);z-index:2000;overflow:hidden;color:var(--text)}
+.spt-user-menu.open .spt-user-dropdown{display:block;animation:fadeIn .18s ease}
+.spt-user-head{padding:14px;background:linear-gradient(135deg,#eff6ff,#f8fafc);border-bottom:1px solid var(--line)}
+body.dark .spt-user-head{background:linear-gradient(135deg,#172554,#0f172a)}
+.spt-user-head b{display:block}.spt-user-head span{display:block;color:var(--muted);font-size:12px;margin-top:3px;word-break:break-word}
+.spt-user-dropdown button{width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:12px 14px;cursor:pointer;font-weight:800;display:flex;gap:8px;align-items:center}
+.spt-user-dropdown button:hover{background:#eff6ff;color:#1d4ed8}
+body.dark .spt-user-dropdown button:hover{background:#172554;color:#bfdbfe}
+
+.passport-studio-panel{max-width:760px;margin-left:auto;margin-right:auto}
+.passport-studio-canvasbox{max-height:430px;padding:10px!important}
+.passport-studio-canvas{max-height:380px!important;width:auto!important;max-width:100%!important}
+.passport-studio-tools{max-width:780px;margin-left:auto;margin-right:auto}
+.passport-guide{font-size:13px}
+
+.ds-hero{border-radius:24px;background:linear-gradient(135deg,#e0f2fe,#eef2ff)!important;box-shadow:0 12px 32px rgba(37,99,235,.08)}
+.ds-card-types{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important}
+.ds-type{min-height:95px;display:flex;flex-direction:column;justify-content:center;gap:4px;position:relative;overflow:hidden}
+.ds-type::after{content:'';position:absolute;right:-18px;bottom:-18px;width:70px;height:70px;background:rgba(37,99,235,.06);border-radius:50%}
+.ds-type.active{box-shadow:0 14px 32px rgba(37,99,235,.18)}
+.ds-panel{padding:18px!important;border-radius:22px!important}
+.ds-pdf-workspace{grid-template-columns:minmax(0,1fr) 280px!important;gap:18px!important}
+.ds-canvas-shell{max-height:86vh!important;min-height:560px;background:linear-gradient(145deg,#0f172a,#020617)!important;border-radius:22px!important;padding:18px!important}
+.ds-canvas-wrap canvas{border-radius:14px!important;box-shadow:0 0 0 1px rgba(255,255,255,.1),0 16px 45px rgba(0,0,0,.35)}
+.ds-cropbox{border:3px solid #22c55e!important;background:rgba(34,197,94,.09)!important;box-shadow:0 0 0 9999px rgba(15,23,42,.34),0 0 0 1px rgba(255,255,255,.85) inset!important;border-radius:6px!important}
+.ds-cropbox::before{content:'Printable Area • Drag to move'!important;background:rgba(20,83,45,.92)!important;color:#fff!important;font-weight:900!important;letter-spacing:.1px!important}
+.ds-cropbox::after{content:attr(data-size);position:absolute;right:8px;bottom:8px;background:rgba(2,6,23,.78);color:#fff;font-size:12px;line-height:1;padding:6px 8px;border-radius:999px;font-weight:900}
+.ds-handle{width:24px!important;height:24px!important;background:#22c55e!important;border:3px solid #fff!important;border-radius:7px!important}
+.ds-handle.n{left:50%;top:-14px;transform:translateX(-50%);cursor:ns-resize}.ds-handle.s{left:50%;bottom:-14px;transform:translateX(-50%);cursor:ns-resize}.ds-handle.e{right:-14px;top:50%;transform:translateY(-50%);cursor:ew-resize}.ds-handle.w{left:-14px;top:50%;transform:translateY(-50%);cursor:ew-resize}
+.ds-sidebox{border-radius:22px!important;box-shadow:var(--shadow);top:18px!important}.ds-sidebox h3{font-size:19px}.ds-sidebox p{font-size:14px!important}
+.ds-tooltips{display:grid;gap:8px;margin-top:10px}.ds-tip{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:9px;font-size:12px;color:var(--muted)}
+.ds-upload{min-height:90px;display:grid!important;place-items:center!important}
+.ds-a4-preview{margin-left:auto;margin-right:auto}.ds-a4-top{justify-content:center!important;align-items:flex-start!important}
+
+@media(max-width:900px){.ds-pdf-workspace{grid-template-columns:1fr!important}.ds-canvas-shell{min-height:420px}.spt-user-name{max-width:90px}}
+@media(max-width:700px){.header-actions{margin-top:12px}.spt-user-dropdown{right:auto;left:0}.ds-card-types{grid-template-columns:1fr 1fr!important}.ds-canvas-shell{min-height:360px;padding:10px!important}.passport-studio-panel{max-width:100%}.passport-studio-canvasbox{max-height:360px}.passport-studio-canvas{max-height:320px!important}.ds-handle{width:28px!important;height:28px!important}}
+
+/* =====================================================
+   Smart Photo Toolkit Pro v37.6
+   Document Studio Final UI + A4 Minimal Spacing
+===================================================== */
+.header-actions{margin-left:auto;justify-content:flex-end}.header{align-items:flex-start}.spt-user-menu{margin-left:4px}.spt-user-btn{padding:9px 13px;border:1px solid rgba(37,99,235,.18)}
+.spt-avatar{width:34px;height:34px;font-size:14px;box-shadow:0 8px 18px rgba(37,99,235,.25)}
+
+/* Document Studio v37.6 layout */
+.ds376-shell{display:grid;gap:18px}.ds376-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.ds376-title h2{margin:0 0 4px}.ds376-badge{background:#e8f0ff;color:#1d4ed8;border-radius:999px;padding:9px 13px;font-weight:900;box-shadow:var(--shadow)}
+.ds-card-types.ds376-types{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))!important;gap:12px!important}.ds376-type{min-height:106px!important;background:#fff!important}.ds376-doc-logo{font-size:28px;line-height:1;margin-bottom:7px}.ds376-type b{font-size:15px}.ds376-type span{font-size:12px!important}.ds376-type.active{border-color:#2563eb!important;background:linear-gradient(135deg,#eff6ff,#fff)!important}
+.ds376-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.ds376-tab{border:1px solid var(--line);background:var(--card);color:var(--text);padding:12px 18px;border-radius:14px;font-weight:900;cursor:pointer}.ds376-tab.active{background:#2563eb;color:#fff;border-color:#2563eb;box-shadow:0 12px 25px rgba(37,99,235,.2)}
+.ds376-panel{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:18px;margin-top:14px}.ds376-workgrid{display:grid;grid-template-columns:minmax(0,1.35fr) 360px;gap:18px;align-items:start}.ds376-left{display:grid;gap:14px}.ds376-right{position:sticky;top:18px;display:grid;gap:14px}.ds376-section{background:var(--soft);border:1px solid var(--line);border-radius:20px;padding:16px}.ds376-section h3{margin:0 0 8px}.ds376-section p{color:var(--muted);font-size:14px;line-height:1.45;margin:0 0 10px}
+.ds376-upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ds376-upload{border:2px dashed #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:18px;min-height:120px;display:grid;place-items:center;text-align:center;font-weight:900;cursor:pointer;padding:18px}.ds376-upload input{display:none}.ds376-upload small{display:block;color:#475569;font-weight:700;margin-top:5px}.ds376-crop-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.ds376-crop-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px}.ds376-crop-card h4{margin:0 0 8px}.ds376-canvas-shell{background:linear-gradient(145deg,#0f172a,#020617);border-radius:18px;padding:12px;overflow:auto}.ds376-canvas-wrap{position:relative;display:inline-block;max-width:100%;touch-action:none}.ds376-canvas-wrap canvas{display:block;max-width:100%;border-radius:12px;background:#fff}.ds376-cropbox{position:absolute;border:3px solid #2563eb;background:rgba(37,99,235,.08);box-shadow:0 0 0 9999px rgba(15,23,42,.28),0 0 0 1px rgba(255,255,255,.8) inset;box-sizing:border-box;cursor:move;touch-action:none;border-radius:6px}.ds376-cropbox::before{content:attr(data-label);position:absolute;left:7px;top:7px;background:rgba(29,78,216,.94);color:#fff;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:900;line-height:1}.ds376-cropbox::after{content:attr(data-size);position:absolute;right:7px;bottom:7px;background:rgba(2,6,23,.78);color:#fff;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:900;line-height:1}.ds376-handle{position:absolute;width:22px;height:22px;background:#2563eb;border:3px solid #fff;border-radius:50%;box-shadow:0 3px 12px rgba(0,0,0,.35);touch-action:none}.ds376-handle.nw{left:-13px;top:-13px;cursor:nwse-resize}.ds376-handle.n{left:50%;top:-13px;transform:translateX(-50%);cursor:ns-resize}.ds376-handle.ne{right:-13px;top:-13px;cursor:nesw-resize}.ds376-handle.e{right:-13px;top:50%;transform:translateY(-50%);cursor:ew-resize}.ds376-handle.se{right:-13px;bottom:-13px;cursor:nwse-resize}.ds376-handle.s{left:50%;bottom:-13px;transform:translateX(-50%);cursor:ns-resize}.ds376-handle.sw{left:-13px;bottom:-13px;cursor:nesw-resize}.ds376-handle.w{left:-13px;top:50%;transform:translateY(-50%);cursor:ew-resize}.ds376-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ds376-toolbar button{border:1px solid var(--line);background:#fff;color:#1d4ed8;border-radius:12px;padding:9px 12px;font-weight:900;cursor:pointer}.ds376-tip{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;padding:11px;border-radius:14px;font-weight:800;line-height:1.45}.ds376-print-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:var(--shadow)}.ds376-print-card label{display:block;font-weight:900;margin:12px 0 6px}.ds376-print-card select,.ds376-print-card input{width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:12px}.ds376-print-card .primary-btn,.ds376-print-card .print-btn,.ds376-print-card .pdf-btn{width:100%;margin-top:10px}.ds376-a4-preview{background:#fff;border:1px solid #d1d5db;border-radius:4px;box-shadow:0 14px 38px rgba(15,23,42,.12);width:210mm;min-height:297mm;max-width:100%;padding:3mm 3mm;color:#111;overflow:hidden}.ds376-a4-top{display:flex;justify-content:center;align-items:flex-start;gap:3mm;flex-wrap:wrap}.ds376-preview-img{width:85.6mm;height:54mm;object-fit:contain;border:1px dashed #ef4444;background:#fff}.ds376-success{color:#16a34a;font-weight:900;margin:10px 0}.ds376-pdf-workgrid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px}.ds376-pdf-shell{background:linear-gradient(145deg,#0f172a,#020617);border-radius:20px;padding:14px;overflow:auto;min-height:620px}.ds376-pdf-wrap{position:relative;display:inline-block;touch-action:none}.ds376-pdf-wrap canvas{display:block;background:#fff;border-radius:12px;max-width:100%}.ds376-zoombar{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-bottom:10px}.ds376-zoombar button{border:0;background:#111827;color:white;border-radius:10px;padding:9px 12px;font-weight:900;cursor:pointer}.ds376-pdf-side{background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px;position:sticky;top:18px}.ds376-pdf-side label{font-weight:900;display:block;margin:12px 0 6px}.ds376-pdf-side select{width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:12px}.ds376-how{background:#eff6ff;border:1px dashed #93c5fd;color:#1d4ed8;border-radius:16px;padding:12px;font-size:13px;line-height:1.6}.ds376-output{margin-top:16px}
+
+/* Smaller top spacing in all A4 previews/output */
+.print-area,.ds-a4-preview,.ds376-a4-preview{padding-top:3mm!important}.passport-single-row{margin-left:3mm!important;gap:2mm!important}.pass-photo{width:35mm!important;height:45mm!important}
+
+@media(max-width:1100px){.ds376-workgrid,.ds376-pdf-workgrid{grid-template-columns:1fr}.ds376-right,.ds376-pdf-side{position:static}.ds376-pdf-shell{min-height:430px}.ds376-crop-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.ds376-upload-grid{grid-template-columns:1fr}.ds-card-types.ds376-types{grid-template-columns:1fr 1fr!important}.ds376-type{min-height:92px!important}.ds376-doc-logo{font-size:23px}.ds376-panel{padding:12px}.ds376-section{padding:12px}.ds376-handle{width:28px;height:28px}.ds376-a4-preview{padding:3mm 2mm}.ds376-preview-img{width:78mm;height:49mm}.ds376-pdf-shell{padding:8px;min-height:340px}.ds376-canvas-shell{padding:8px}}
