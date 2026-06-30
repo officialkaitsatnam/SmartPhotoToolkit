@@ -1,0 +1,291 @@
+if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";}
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s), workspace=$("#workspace");
+let appState={tool:"home", docType:"aadhaar", docMode:"both", uploadTab:"image", front:null, back:null, pdfCanvas:null, pdfPages:0, pdfPage:1, frontCrop:null, backCrop:null, pdfCrop:null, previewPDF:null, passportImg:null, passportCrop:null, passportPdf:null};
+const DOCS={aadhaar:{name:"Aadhaar Card",size:"85.6 × 54 mm",icon:"AADHAAR",cls:"aadhaar"},pan:{name:"PAN Card",size:"85.6 × 54 mm",icon:"PAN",cls:"pan"},voter:{name:"Voter ID Card",size:"85.6 × 54 mm",icon:"▰▰▰",cls:"voter"},ayush:{name:"Ayushman Card",size:"85.6 × 54 mm",icon:"✿",cls:"ayush"},abha:{name:"ABHA Card",size:"85.6 × 54 mm",icon:"ABHA",cls:"abha"},dl:{name:"Driving Licence",size:"85.6 × 54 mm",icon:"♛",cls:"dl"}};
+
+window.addEventListener("load",()=>{setTimeout(()=>{$("#loader").style.display="none"},350);initApp();});
+function initApp(){
+  $("#menuBtn")?.addEventListener("click",()=>$("#sidebar").classList.toggle("open"));
+  $$(".nav-item[data-tool]").forEach(b=>b.onclick=()=>showTool(b.dataset.tool));
+  $("#userTrigger")?.addEventListener("click",()=>$("#userDropdown").classList.toggle("show"));
+  document.addEventListener("click",e=>{if(!e.target.closest(".user-menu"))$("#userDropdown")?.classList.remove("show")});
+  updateTopUser(); home();
+}
+function setActive(tool){$$(".nav-item[data-tool]").forEach(b=>b.classList.toggle("active",b.dataset.tool===tool));$("#sidebar")?.classList.remove("open");}
+function showTool(tool){appState.tool=tool;setActive(tool); if(tool==="home")return home(); if(tool==="imageStudio")return imageStudio(); if(tool==="documentStudio")return documentStudio(); if(tool==="pdfStudio"||tool==="pdfresizer")return pdfStudio(); if(tool==="login")return loginTool(); if(tool==="dashboard"||tool==="workspace"||tool==="downloads"||tool==="orders"||tool==="settings")return dashboardTool(tool); if(tool==="premium")return premiumTool(); if(tool==="payment")return paymentTool(); if(tool==="feedback")return feedbackTool(); if(tool==="admin")return adminTool(); return home();}
+function toast(msg){let t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
+function getUser(){try{return window.SPT?.user || JSON.parse(localStorage.getItem("spt_user")||"null")}catch(e){return null}}
+function updateTopUser(){const u=getUser(); const name=u?.name||"Guest User"; const plan=u?.premium?"Premium User":"Login required"; $("#headerUserName").textContent=name; $("#headerUserPlan").textContent=plan; $("#headerAvatar").textContent=(name||"G").trim()[0].toUpperCase(); $("#adminDropBtn").style.display=(u&&String(u.role).toLowerCase()==="admin")?"block":"none"; $("#logoutDropBtn").textContent=u?"🚪 Logout":"🔐 Login / Signup";}
+function logoutOrLogin(){const u=getUser(); if(u&&window.SPT?.logout){SPT.logout(); setTimeout(updateTopUser,100);} else showTool("login");}
+
+function pageHeader(title,sub,extra=""){return `<div class="page-title"><div><h1>${title}</h1><p>${sub}</p></div>${extra||`<button class="help-btn">▶ How to use?</button>`}</div>`}
+function home(){workspace.innerHTML=pageHeader("Smart Photo Toolkit Pro","Enterprise photo, document and PDF toolkit.")+`<div class="home-grid"><div class="card home-card" onclick="showTool('imageStudio')"><b>🖼️</b><h3>Image Studio</h3><p>Passport photo, compression, resize, crop, converter and name/date tools.</p></div><div class="card home-card" onclick="showTool('documentStudio')"><b>▤</b><h3>Document Studio</h3><p>Aadhaar, PAN, Voter, Ayushman, ABHA and Driving Licence A4 print.</p></div><div class="card home-card" onclick="showTool('pdfStudio')"><b>▧</b><h3>PDF Studio</h3><p>Compress, resize and print-ready PDF tools.</p></div></div>`}
+
+function imageStudio(){workspace.innerHTML=pageHeader("Image Studio","Create passport photos and prepare images for print.")+`<div class="home-grid"><div class="card home-card" onclick="passportStudio()"><b>👤</b><h3>Passport Photo Studio</h3><p>Aadhaar-style 8-handle crop, 35×45 mm print output.</p></div><div class="card home-card" onclick="compressorTool()"><b>🖼️</b><h3>Image Compressor</h3><p>Compress images to target KB.</p></div><div class="card home-card" onclick="nameDateTool()"><b>🏷️</b><h3>Name / Date</h3><p>Add name, date or custom text below photo.</p></div><div class="card home-card" onclick="imageResizeTool()"><b>📏</b><h3>Resize Image</h3><p>Resize image by width and height.</p></div><div class="card home-card" onclick="imageConverterTool()"><b>🔄</b><h3>Image Converter</h3><p>Convert to JPG, PNG or WEBP.</p></div></div>`}
+function passportStudio(){workspace.innerHTML=pageHeader("Passport Photo Studio","Upload a photo, drag-select printable area, then generate A4 passport sheet.")+`<div class="card flow-card"><h3>Upload Full Photo</h3><label class="dropzone"><input type="file" accept="image/*" onchange="loadPassportImg(event)"><div>📤 Click to upload photo<br><small>JPG, PNG, WEBP</small></div></label><div class="pdf-settings"><input id="passName" placeholder="Name optional"><select id="passLayout"><option value="5">5 Photos</option><option value="4">4 Photos</option><option value="6">6 Photos</option><option value="8">8 Photos</option><option value="12">12 Photos</option></select></div></div><div class="card flow-card"><h3>Select Printable Area</h3><div class="crop-stage" id="passportStage"><div class="info-note">Upload a photo to start. Crop box supports move + 8-side resize.</div></div><div class="crop-tools"><button onclick="resetPassportCrop()">Reset</button><button onclick="makePassportPDF()">Generate A4 PDF</button><button onclick="downloadPassportPDF()">Download PDF</button><button onclick="printGeneratedPDF('passport')">Print</button></div></div><div id="passportOutput"></div>`}
+async function loadPassportImg(e){const f=e.target.files[0]; if(!f)return; appState.passportImg=await readFile(f); const stage=$("#passportStage"); stage.innerHTML=`<img src="${appState.passportImg}" id="passportImg">`; setTimeout(()=>{appState.passportCrop=createCrop(stage,$("#passportImg"),{ratio:35/45,color:"orange"});},100)}
+function resetPassportCrop(){if(!appState.passportImg)return; const stage=$("#passportStage"); stage.innerHTML=`<img src="${appState.passportImg}" id="passportImg">`; setTimeout(()=>{appState.passportCrop=createCrop(stage,$("#passportImg"),{ratio:35/45,color:"orange"});},50)}
+async function makePassportPDF(){if(!appState.passportCrop)return toast("Upload and select photo area first"); const src=await cropFromElement(appState.passportCrop); const n=Number($("#passLayout").value||5); const {jsPDF}=window.jspdf; const pdf=new jsPDF({unit:"mm",format:"a4"}); let x=5,y=3,gap=3,w=35,h=45; for(let i=0;i<n;i++){if(x+w>205){x=5;y+=h+gap+7} pdf.addImage(src,"JPEG",x,y,w,h); pdf.setDrawColor(0); pdf.rect(x,y,w,h); x+=w+gap;} appState.passportPdf=pdf; $("#passportOutput").innerHTML=`<div class="preview-a4"><b>Passport PDF Ready</b><p>Top margin minimized to 3mm.</p></div>`; toast("Passport PDF generated")}
+function downloadPassportPDF(){if(!appState.passportPdf)return toast("Generate PDF first"); appState.passportPdf.save("passport-photo-a4.pdf")}
+
+function documentStudio(){renderDocumentStudio()}
+function renderDocumentStudio(){const d=DOCS[appState.docType]; workspace.innerHTML=pageHeader("Document Studio","Select document, upload and print with perfect settings.")+`
+<div class="section-title">1. Select Document</div><div class="doc-grid">${Object.entries(DOCS).map(([k,v])=>`<button class="doc-tile ${appState.docType===k?'active':''}" onclick="setDocType('${k}')"><span class="doc-icon ${v.cls}">${v.icon}</span><b>${v.name}</b><small>${v.size}</small></button>`).join("")}</div>
+<div class="section-title">2. Select Mode</div><div class="mode-row"><button class="mode-btn ${appState.docMode==='front'?'active':''}" onclick="setDocMode('front')">▣ Front</button><button class="mode-btn ${appState.docMode==='back'?'active':''}" onclick="setDocMode('back')">▣ Back</button><button class="mode-btn ${appState.docMode==='both'?'active':''}" onclick="setDocMode('both')">▣ Front + Back</button></div>
+<div class="studio-grid"><div class="left-flow"><div class="flow-card"><h3>3. Upload Document (Image or PDF)</h3><div class="tabs"><button class="tab ${appState.uploadTab==='image'?'active':''}" onclick="setUploadTab('image')">Image Upload</button><button class="tab ${appState.uploadTab==='pdf'?'active':''}" onclick="setUploadTab('pdf')">PDF Upload (Full Page)</button></div><div id="uploadArea">${appState.uploadTab==='image'?imageUploadHTML():pdfUploadHTML()}</div></div><div class="flow-card"><h3>4. Select Printable Area (Drag & Resize)</h3><div id="cropArea">${appState.uploadTab==='image'?imageCropHTML():pdfCropHTML()}</div><div class="info-note">ⓘ Drag the border or corners to select the area you want to print.</div></div><div class="bottom-actions"><button class="ghost-btn" onclick="home()">← Back to Documents</button><button class="download-preview" onclick="downloadDocPDF()">⇩ Download Preview</button><button class="print-main" onclick="printGeneratedPDF('doc')">▣ Print / Save as PDF</button></div></div><div class="right-panel"><div class="preview-a4"><h3>5. Print Preview (A4)</h3><div class="a4-paper"><div class="preview-line" id="a4Preview"></div></div><div class="ok-note">✓ Top spacing and gap minimized for lamination</div></div><div class="print-settings"><h3>6. Print Settings</h3><div class="setting-row"><span>Paper Size</span><b>A4 (210 × 297 mm)</b></div><div class="setting-row"><span>Orientation</span><b>Portrait</b></div><div class="setting-row"><span>Margin</span><b>Minimal (3mm)</b></div><div class="setting-row"><span>Spacing (Front - Back)</span><b>3mm</b></div><label>Copies<select id="docCopies" onchange="updateA4Preview()"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option></select></label></div></div></div>`; initAfterRender();}
+function setDocType(k){appState.docType=k; renderDocumentStudio()} function setDocMode(m){appState.docMode=m; renderDocumentStudio()} function setUploadTab(t){appState.uploadTab=t; renderDocumentStudio()}
+function imageUploadHTML(){let needBack=appState.docMode!=="front", needFront=appState.docMode!=="back"; return `<div class="upload-row">${needFront?`<label class="upload-card"><div class="upload-head"><span><i class="green-dot"></i>Front Image</span><b class="change-link">Change</b></div><input type="file" accept="image/*" onchange="loadDocImage(event,'front')">${appState.front?`<img src="${appState.front}">`:`<div class="dropzone">Upload Front Image</div>`}</label>`:""}${needBack?`<label class="upload-card"><div class="upload-head"><span><i class="green-dot"></i>Back Image</span><b class="change-link">Change</b></div><input type="file" accept="image/*" onchange="loadDocImage(event,'back')">${appState.back?`<img src="${appState.back}">`:`<div class="dropzone">Upload Back Image</div>`}</label>`:""}</div><small>Supported: JPG, PNG, WEBP (Max 10MB)</small>`}
+function pdfUploadHTML(){return `<label class="dropzone"><input type="file" accept="application/pdf" onchange="loadFullPDF(event)"><div>☁️ Click to upload full page PDF<br><small>Official downloaded PDF</small></div></label><div class="pdf-settings"><label>Page<select id="pdfPageSelect" onchange="renderPdfPage(Number(this.value))">${Array.from({length:appState.pdfPages||1},(_,i)=>`<option value="${i+1}" ${appState.pdfPage===i+1?'selected':''}>Page ${i+1}</option>`).join("")}</select></label><label>Zoom<select><option>Fit Width</option><option>100%</option></select></label></div>`}
+function imageCropHTML(){let needBack=appState.docMode!=="front", needFront=appState.docMode!=="back"; return `<div class="crop-grid">${needFront?`<div class="crop-box-panel"><div class="crop-label">Front - Select Area</div><div class="crop-stage" id="frontStage">${appState.front?`<img src="${appState.front}" id="frontCropImg">`:`Upload front image first`}</div><div class="crop-tools"><button onclick="zoomCrop('front',1.08)">⌕</button><button onclick="zoomCrop('front',.92)">⌔</button><button onclick="resetDocCrop('front')">Reset</button></div></div>`:""}${needBack?`<div class="crop-box-panel"><div class="crop-label">Back - Select Area</div><div class="crop-stage" id="backStage">${appState.back?`<img src="${appState.back}" id="backCropImg">`:`Upload back image first`}</div><div class="crop-tools"><button onclick="zoomCrop('back',1.08)">⌕</button><button onclick="zoomCrop('back',.92)">⌔</button><button onclick="resetDocCrop('back')">Reset</button></div></div>`:""}</div>`}
+function pdfCropHTML(){return `<div class="crop-stage large" id="pdfStage">${appState.pdfCanvas?`<canvas id="pdfCanvasView"></canvas>`:`Upload full page PDF first`}</div><div class="crop-tools"><button onclick="resetDocCrop('pdf')">Reset Selection</button><button onclick="generateDocPDF()">Crop & Generate A4 PDF</button></div>`}
+async function loadDocImage(e,side){const f=e.target.files[0]; if(!f)return; appState[side]=await readFile(f); appState[side+'Crop']=null; renderDocumentStudio();}
+function initAfterRender(){setTimeout(()=>{ if(appState.uploadTab==='image'){ if(appState.front&&$("#frontStage")){appState.frontCrop=createCrop($("#frontStage"),$("#frontCropImg"),{color:"blue"});} if(appState.back&&$("#backStage")){appState.backCrop=createCrop($("#backStage"),$("#backCropImg"),{color:"blue"});}} if(appState.uploadTab==='pdf'&&appState.pdfCanvas&&$("#pdfCanvasView")){drawPdfCanvasView(); appState.pdfCrop=createCrop($("#pdfStage"),$("#pdfCanvasView"),{color:"orange"});} updateA4Preview();},100)}
+function resetDocCrop(side){if(side==='pdf'){appState.pdfCrop=null;renderDocumentStudio();return} appState[side+'Crop']=null;renderDocumentStudio()}
+function zoomCrop(side,f){toast("Zoom controls are ready; drag handles for precise selection.")}
+async function loadFullPDF(e){const f=e.target.files[0]; if(!f)return; if(!window.pdfjsLib)return toast("PDF library not loaded"); const buf=await f.arrayBuffer(); const pdf=await pdfjsLib.getDocument({data:buf}).promise; appState.pdfDoc=pdf; appState.pdfPages=pdf.numPages; appState.pdfPage=1; await renderPdfPage(1); renderDocumentStudio();}
+async function renderPdfPage(n){if(!appState.pdfDoc)return; appState.pdfPage=n; const page=await appState.pdfDoc.getPage(n); const viewport=page.getViewport({scale:2.4}); const c=document.createElement('canvas'); c.width=viewport.width; c.height=viewport.height; await page.render({canvasContext:c.getContext('2d'),viewport}).promise; appState.pdfCanvas=c; if($("#pdfCanvasView")) drawPdfCanvasView();}
+function drawPdfCanvasView(){const view=$("#pdfCanvasView"), src=appState.pdfCanvas; if(!view||!src)return; const ctx=view.getContext('2d'); const maxW=900, ratio=src.width/src.height; view.width=maxW; view.height=Math.round(maxW/ratio); ctx.drawImage(src,0,0,view.width,view.height)}
+async function updateA4Preview(){const el=$("#a4Preview"); if(!el)return; let imgs=[]; if(appState.uploadTab==='image'){if(appState.frontCrop)imgs.push(await cropFromElement(appState.frontCrop)); else if(appState.front)imgs.push(appState.front); if(appState.backCrop)imgs.push(await cropFromElement(appState.backCrop)); else if(appState.back)imgs.push(appState.back);} else {if(appState.pdfCrop)imgs.push(await cropFromElement(appState.pdfCrop));} el.innerHTML=imgs.map(s=>`<img src="${s}">`).join("");}
+async function generateDocPDF(){await updateA4Preview(); const imgs=[...$$("#a4Preview img")].map(i=>i.src); if(!imgs.length)return toast("Upload and select printable area first"); const {jsPDF}=window.jspdf; const pdf=new jsPDF({unit:"mm",format:"a4"}); const copies=Number($("#docCopies")?.value||1); let y=3; for(let c=0;c<copies;c++){let x=(210-(imgs.length*85.6+(imgs.length-1)*3))/2; for(const s of imgs){pdf.addImage(s,"JPEG",x,y,85.6,54); pdf.setDrawColor(0); pdf.rect(x,y,85.6,54); x+=88.6;} y+=57; if(y>260&&c<copies-1){pdf.addPage(); y=3}} appState.previewPDF=pdf; toast("A4 PDF generated")}
+async function downloadDocPDF(){if(!appState.previewPDF)await generateDocPDF(); if(appState.previewPDF)appState.previewPDF.save(`${DOCS[appState.docType].name.replaceAll(' ','-')}-A4.pdf`)}
+function printGeneratedPDF(type){let pdf= type==='passport'?appState.passportPdf:appState.previewPDF; if(!pdf){if(type==='doc')generateDocPDF(); return toast("Generate PDF first")} pdf.autoPrint(); window.open(URL.createObjectURL(pdf.output('blob')),'_blank')}
+
+function createCrop(stage,media,opt={}){const color=opt.color||"blue", ratio=opt.ratio||null; const box=document.createElement('div'); box.className=`crop-selection ${color==='orange'?'orange':''}`; const sw=stage.clientWidth, sh=stage.clientHeight; let w=sw*.72,h=sh*.55; if(ratio){h=w/ratio;if(h>sh*.8){h=sh*.8;w=h*ratio}} let x=(sw-w)/2,y=(sh-h)/2; Object.assign(box.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px'}); ['nw','n','ne','e','se','s','sw','w'].forEach(p=>{let h=document.createElement('span');h.className='handle '+p;h.dataset.handle=p;box.appendChild(h)}); stage.appendChild(box); let state={stage,media,box,ratio,x,y,w,h}; attachCropEvents(state); return state;}
+function attachCropEvents(s){let mode=null,start={}; const point=e=>e.touches?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY}; s.box.addEventListener('mousedown',down); s.box.addEventListener('touchstart',down,{passive:false}); function down(e){e.preventDefault(); const p=point(e); mode=e.target.dataset.handle||'move'; start={px:p.x,py:p.y,x:s.x,y:s.y,w:s.w,h:s.h}; document.addEventListener('mousemove',move); document.addEventListener('mouseup',up); document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('touchend',up)} function move(e){e.preventDefault(); const p=point(e), dx=p.x-start.px, dy=p.y-start.py; let x=start.x,y=start.y,w=start.w,h=start.h; if(mode==='move'){x+=dx;y+=dy}else{ if(mode.includes('e'))w+=dx; if(mode.includes('s'))h+=dy; if(mode.includes('w')){x+=dx;w-=dx} if(mode.includes('n')){y+=dy;h-=dy} if(s.ratio){ if(['e','w','ne','nw','se','sw'].includes(mode))h=w/s.ratio; else w=h*s.ratio; }} w=Math.max(40,w);h=Math.max(30,h); x=Math.max(0,Math.min(x,s.stage.clientWidth-w)); y=Math.max(0,Math.min(y,s.stage.clientHeight-h)); s.x=x;s.y=y;s.w=w;s.h=h; Object.assign(s.box.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px'});} function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);updateA4Preview();}}
+async function cropFromElement(s){const media=s.media; let srcW,srcH,drawW,drawH,offX,offY,source; if(media.tagName==='CANVAS'){source=media;srcW=media.width;srcH=media.height;} else {source=await loadImage(media.src);srcW=source.width;srcH=source.height;} const mr=media.getBoundingClientRect(), sr=s.stage.getBoundingClientRect(); drawW=mr.width;drawH=mr.height;offX=mr.left-sr.left;offY=mr.top-sr.top; let rx=(s.x-offX)/drawW, ry=(s.y-offY)/drawH, rw=s.w/drawW, rh=s.h/drawH; rx=Math.max(0,Math.min(rx,1));ry=Math.max(0,Math.min(ry,1));rw=Math.max(.01,Math.min(rw,1-rx));rh=Math.max(.01,Math.min(rh,1-ry)); const c=document.createElement('canvas'), ctx=c.getContext('2d'); c.width=1200; c.height=Math.round(1200*(srcH*rh)/(srcW*rw)); ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height); ctx.drawImage(source,srcW*rx,srcH*ry,srcW*rw,srcH*rh,0,0,c.width,c.height); return c.toDataURL('image/jpeg',.94)}
+function readFile(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})} function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src})}
+
+function compressorTool(){workspace.innerHTML=pageHeader("Image Compressor","Compress images to a target size.")+`<div class="card form"><input type="file" id="compFile" accept="image/*"><input id="targetKB" value="100" placeholder="Target KB"><button onclick="compressSimple()">Compress</button><div id="compOut"></div></div>`}
+async function compressSimple(){const f=$("#compFile").files[0]; if(!f)return; const img=await loadImage(await readFile(f)); const c=document.createElement('canvas'),ctx=c.getContext('2d'); const w=900,h=Math.round(img.height*900/img.width); c.width=w;c.height=h;ctx.drawImage(img,0,0,w,h); const data=c.toDataURL('image/jpeg',.72); $("#compOut").innerHTML=`<img src="${data}" style="max-width:100%"><a download="compressed.jpg" href="${data}">Download</a>`}
+function nameDateTool(){workspace.innerHTML=pageHeader("Name / Date Photo","Add text below a photo.")+`<div class="card form"><input type="file" id="ndFile" accept="image/*"><input id="ndName" placeholder="Name"><input id="ndDate" type="date"><button onclick="makeNameDate()">Create</button><div id="ndOut"></div></div>`}
+async function makeNameDate(){const f=$("#ndFile").files[0]; if(!f)return; const img=await loadImage(await readFile(f)); const c=document.createElement('canvas'),ctx=c.getContext('2d'); const w=900,h=Math.round(img.height*900/img.width),cap=110; c.width=w;c.height=h+cap;ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,w,h);ctx.fillStyle='#111';ctx.textAlign='center';ctx.font='bold 34px Arial';ctx.fillText($("#ndName").value,w/2,h+42);ctx.font='24px Arial';ctx.fillText($("#ndDate").value,w/2,h+82); const d=c.toDataURL('image/jpeg',.92);$("#ndOut").innerHTML=`<img src="${d}" style="max-width:100%"><a download="name-date.jpg" href="${d}">Download</a>`}
+function imageResizeTool(){workspace.innerHTML=pageHeader("Resize Image","Resize image by custom dimensions.")+`<div class="card form"><input type="file" id="rsFile" accept="image/*"><input id="rsW" placeholder="Width px"><input id="rsH" placeholder="Height px"><button onclick="resizeImageSimple()">Resize</button><div id="rsOut"></div></div>`}
+async function resizeImageSimple(){const f=$("#rsFile").files[0];if(!f)return; const img=await loadImage(await readFile(f)); const w=Number($("#rsW").value)||img.width,h=Number($("#rsH").value)||Math.round(img.height*w/img.width); const c=document.createElement('canvas'),ctx=c.getContext('2d');c.width=w;c.height=h;ctx.drawImage(img,0,0,w,h); const d=c.toDataURL('image/jpeg',.9);$("#rsOut").innerHTML=`<img src="${d}" style="max-width:100%"><a download="resized.jpg" href="${d}">Download</a>`}
+function imageConverterTool(){workspace.innerHTML=pageHeader("Image Converter","Convert image format.")+`<div class="card form"><input type="file" id="cvFile" accept="image/*"><select id="cvType"><option value="image/jpeg">JPG</option><option value="image/png">PNG</option><option value="image/webp">WEBP</option></select><button onclick="convertImageSimple()">Convert</button><div id="cvOut"></div></div>`}
+async function convertImageSimple(){const f=$("#cvFile").files[0];if(!f)return; const img=await loadImage(await readFile(f)); const c=document.createElement('canvas'),ctx=c.getContext('2d');c.width=img.width;c.height=img.height;ctx.drawImage(img,0,0); const type=$("#cvType").value; const d=c.toDataURL(type,.9);$("#cvOut").innerHTML=`<img src="${d}" style="max-width:100%"><a download="converted.${type.includes('png')?'png':type.includes('webp')?'webp':'jpg'}" href="${d}">Download</a>`}
+function pdfStudio(){workspace.innerHTML=pageHeader("PDF Studio","PDF compression and resize tools.")+`<div class="home-grid"><div class="card home-card"><b>📄</b><h3>PDF Resizer</h3><p>Existing PDF tools will continue here.</p></div><div class="card home-card"><b>🔁</b><h3>Merge / Split</h3><p>Future-ready tool card.</p></div></div>`}
+function loginTool(){workspace.innerHTML=pageHeader("Login / Create Account","Access dashboard, premium and payments.")+`<div class="auth-wrap"><div class="card form"><h3>Login</h3><input id="loginEmail" placeholder="Email"><input id="loginPassword" type="password" placeholder="Password"><button onclick="loginSubmit&&loginSubmit()">Login</button></div><div class="card form"><h3>Create Account</h3><input id="signupName" placeholder="Full Name"><input id="signupEmail" placeholder="Email"><input id="signupMobile" placeholder="Mobile"><textarea id="signupAddress" placeholder="Address"></textarea><input id="signupPassword" type="password" placeholder="Password"><button onclick="signupSubmit&&signupSubmit()">Create Account</button></div></div>`}
+function dashboardTool(t){const u=getUser()||{}; workspace.innerHTML=pageHeader("My Dashboard",`Welcome, ${u.name||'User'}. Manage your profile, premium and documents.`)+`<div class="home-grid"><div class="card home-card"><b>👤</b><h3>${u.name||'Guest User'}</h3><p>${u.email||'Login to sync account'}</p></div><div class="card home-card"><b>👑</b><h3>${u.premium?'Premium':'Free Plan'}</h3><p>Membership status</p></div><div class="card home-card"><b>📁</b><h3>My Workspace</h3><p>Recent projects and downloads.</p></div></div>`}
+function premiumTool(){workspace.innerHTML=pageHeader("Premium Plans","Upgrade for unlimited document tools.")+`<div class="home-grid"><div class="card home-card"><h3>Monthly</h3><b>₹49</b><p>30 days</p></div><div class="card home-card"><h3>Half Year</h3><b>₹149</b><p>180 days</p></div><div class="card home-card"><h3>Yearly</h3><b>₹499</b><p>365 days</p></div></div>`}
+function paymentTool(){workspace.innerHTML=pageHeader("Payment","Generate QR and submit UTR.")+`<div class="card form"><select id="paymentPlan"><option>Monthly Premium - ₹49</option><option>Half Year Premium - ₹149</option><option>Yearly Premium - ₹499</option></select><button>Generate Payment QR</button><img src="payment_qr.jpg" style="max-width:280px;margin:20px auto;display:block"><input id="paymentTxn" placeholder="UTR / Transaction ID"><button onclick="submitPayment&&submitPayment()">Submit Payment</button></div>`}
+function feedbackTool(){workspace.innerHTML=pageHeader("Support / Feedback","Send feedback or report an issue.")+`<div class="card form"><input id="feedbackName" placeholder="Name"><input id="feedbackEmail" placeholder="Email"><textarea id="feedbackMessage" placeholder="Message"></textarea><button onclick="submitFeedback&&submitFeedback()">Submit Feedback</button></div>`}
+function adminTool(){workspace.innerHTML=pageHeader("Admin Panel","Users, payments, feedback and analytics.")+`<div class="home-grid"><div class="card home-card"><h3>Users</h3><p>Manage users</p></div><div class="card home-card"><h3>Payments</h3><p>Verify payments</p></div><div class="card home-card"><h3>Feedback</h3><p>Review messages</p></div></div>`}
+
+
+/* ===== v38.1 Enterprise Stability Update JS overrides ===== */
+(function(){
+  const DOCS_V381={
+    aadhaar:{name:"Aadhaar Card",size:"85.6 × 54 mm",icon:"AADHAAR",cls:"aadhaar"},
+    pan:{name:"PAN Card",size:"85.6 × 54 mm",icon:"PAN",cls:"pan"},
+    voter:{name:"Voter ID Card",size:"85.6 × 54 mm",icon:"VOTER",cls:"voter"},
+    ayush:{name:"Ayushman Card",size:"85.6 × 54 mm",icon:"AYUSH",cls:"ayush"},
+    abha:{name:"ABHA Card",size:"85.6 × 54 mm",icon:"ABHA",cls:"abha"},
+    dl:{name:"Driving Licence",size:"85.6 × 54 mm",icon:"DL",cls:"dl"}
+  };
+  if(typeof DOCS !== 'undefined') Object.assign(DOCS,DOCS_V381);
+
+  function mediaBounds(stage,media){
+    const sr=stage.getBoundingClientRect(), mr=media.getBoundingClientRect();
+    let left=mr.left-sr.left, top=mr.top-sr.top, width=mr.width, height=mr.height;
+    if(!width||!height){left=10;top=10;width=stage.clientWidth-20;height=stage.clientHeight-20;}
+    return {left,top,width,height,right:left+width,bottom:top+height};
+  }
+  window.createCrop=function(stage,media,opt={}){
+    const color=opt.color||"blue", ratio=opt.ratio||null;
+    const box=document.createElement('div');
+    box.className=`crop-selection ${color==='orange'?'orange':''}`;
+    ['nw','n','ne','e','se','s','sw','w'].forEach(p=>{let h=document.createElement('span');h.className='handle '+p;h.dataset.handle=p;box.appendChild(h)});
+    stage.appendChild(box);
+    const s={stage,media,box,ratio,x:0,y:0,w:0,h:0};
+    const init=()=>{
+      const b=mediaBounds(stage,media);
+      let w=b.width*.76, h=b.height*.58;
+      if(ratio){h=w/ratio; if(h>b.height*.86){h=b.height*.86; w=h*ratio;}}
+      s.w=Math.max(60,w); s.h=Math.max(40,h);
+      s.x=b.left+(b.width-s.w)/2; s.y=b.top+(b.height-s.h)/2;
+      Object.assign(box.style,{left:s.x+'px',top:s.y+'px',width:s.w+'px',height:s.h+'px'});
+    };
+    if(media.tagName==='IMG' && !media.complete){media.onload=init; setTimeout(init,80);} else setTimeout(init,20);
+    attachCropEventsV381(s);
+    return s;
+  };
+  window.attachCropEventsV381=function(s){
+    let mode=null,start={};
+    const point=e=>e.touches?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY};
+    const apply=()=>Object.assign(s.box.style,{left:s.x+'px',top:s.y+'px',width:s.w+'px',height:s.h+'px'});
+    function constrain(x,y,w,h){
+      const b=mediaBounds(s.stage,s.media);
+      w=Math.max(44,Math.min(w,b.width)); h=Math.max(32,Math.min(h,b.height));
+      if(s.ratio){
+        if(w/h>s.ratio) w=h*s.ratio; else h=w/s.ratio;
+        if(w>b.width){w=b.width;h=w/s.ratio} if(h>b.height){h=b.height;w=h*s.ratio}
+      }
+      x=Math.max(b.left,Math.min(x,b.right-w)); y=Math.max(b.top,Math.min(y,b.bottom-h));
+      return {x,y,w,h};
+    }
+    function down(e){e.preventDefault();e.stopPropagation();const p=point(e);mode=e.target.dataset.handle||'move';start={px:p.x,py:p.y,x:s.x,y:s.y,w:s.w,h:s.h};document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up)}
+    function move(e){e.preventDefault();const p=point(e),dx=p.x-start.px,dy=p.y-start.py;let x=start.x,y=start.y,w=start.w,h=start.h;
+      if(mode==='move'){x+=dx;y+=dy}else{if(mode.includes('e'))w+=dx;if(mode.includes('s'))h+=dy;if(mode.includes('w')){x+=dx;w-=dx}if(mode.includes('n')){y+=dy;h-=dy}if(s.ratio){if(mode.includes('e')||mode.includes('w'))h=w/s.ratio;else w=h*s.ratio;}}
+      Object.assign(s,constrain(x,y,w,h));apply();}
+    function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);if(typeof updateA4Preview==='function')updateA4Preview();}
+    s.box.addEventListener('mousedown',down);s.box.addEventListener('touchstart',down,{passive:false});
+  };
+
+  window.drawPdfCanvasView=function(){
+    const view=$("#pdfCanvasView"), src=appState.pdfCanvas; if(!view||!src)return;
+    const stage=$("#pdfStage");
+    const maxW=Math.max(500, Math.min(980, (stage?.clientWidth||900)-24));
+    const maxH=Math.max(360, Math.min(520, (stage?.clientHeight||520)-24));
+    const ratio=src.width/src.height; let w=maxW, h=Math.round(w/ratio); if(h>maxH){h=maxH;w=Math.round(h*ratio)}
+    view.width=w; view.height=h; view.getContext('2d').drawImage(src,0,0,w,h);
+  };
+
+  window.updateA4Preview=async function(){
+    const el=$("#a4Preview"); if(!el)return; let imgs=[];
+    try{
+      if(appState.uploadTab==='image'){
+        if(appState.frontCrop)imgs.push(await cropFromElement(appState.frontCrop)); else if(appState.front)imgs.push(appState.front);
+        if(appState.backCrop)imgs.push(await cropFromElement(appState.backCrop)); else if(appState.back)imgs.push(appState.back);
+      } else { if(appState.pdfCrop)imgs.push(await cropFromElement(appState.pdfCrop)); }
+    }catch(e){console.warn(e)}
+    el.innerHTML=imgs.map(s=>`<img src="${s}">`).join("");
+  };
+
+  window.generateDocPDF=async function(){
+    await updateA4Preview(); const imgs=[...$$("#a4Preview img")].map(i=>i.src); if(!imgs.length)return toast("Upload and select printable area first");
+    const {jsPDF}=window.jspdf; const pdf=new jsPDF({unit:"mm",format:"a4"});
+    const copies=Number($("#docCopies")?.value||1); let y=2; const cardW=85.6, cardH=54, gap=2;
+    for(let c=0;c<copies;c++){
+      let total=imgs.length*cardW+(imgs.length-1)*gap; let x=(210-total)/2;
+      for(const s of imgs){pdf.addImage(s,"JPEG",x,y,cardW,cardH); pdf.setDrawColor(0); pdf.setLineWidth(.25); pdf.rect(x,y,cardW,cardH); x+=cardW+gap;}
+      y+=cardH+gap; if(y>260&&c<copies-1){pdf.addPage(); y=2;}
+    }
+    appState.previewPDF=pdf; toast("A4 PDF generated with minimal top spacing");
+  };
+
+  window.pdfStudio=function(){
+    workspace.innerHTML=pageHeader("PDF Studio","Compress, resize and preview PDFs safely.")+`
+      <div class="pdf-tool-grid">
+        <div class="card form">
+          <h3>PDF Resizer / Preview</h3>
+          <p class="tool-status">v38.1 fix: this tool no longer hangs. Upload a PDF and use Open/Download actions.</p>
+          <input type="file" id="pdfStableFile" accept="application/pdf">
+          <button onclick="stablePdfPreview()">Open PDF Preview</button>
+          <button onclick="stablePdfDownload()">Download Same PDF</button>
+          <div id="pdfStableInfo"></div>
+        </div>
+        <div class="card pdf-result"><h3>Preview</h3><iframe id="pdfStableFrame"></iframe></div>
+      </div>`;
+  };
+  window.stablePdfPreview=function(){const f=$("#pdfStableFile")?.files?.[0]; if(!f)return toast("Upload PDF first"); const url=URL.createObjectURL(f); $("#pdfStableFrame").src=url; $("#pdfStableInfo").innerHTML=`<p><b>${f.name}</b><br>${(f.size/1024).toFixed(1)} KB</p>`;};
+  window.stablePdfDownload=function(){const f=$("#pdfStableFile")?.files?.[0]; if(!f)return toast("Upload PDF first"); const a=document.createElement('a'); a.href=URL.createObjectURL(f); a.download=f.name.replace(/\.pdf$/i,'')+'-copy.pdf'; a.click();};
+
+  window.dashboardTool=function(t){
+    const u=getUser()||{}; const name=u.name||"Guest User"; const avatar=(name.trim()[0]||"G").toUpperCase();
+    workspace.innerHTML=pageHeader("My Profile",`Welcome, ${name}. Manage your account details.`)+`
+      <div class="profile-grid">
+        <div class="card profile-card"><div class="profile-avatar" id="profileAvatarBig">${avatar}</div><h2>${name}</h2><p>${u.email||"Login to sync account"}</p><p class="tool-status">${u.premium?"Premium Active":"Free Plan"}</p></div>
+        <div class="card profile-form"><h3>Edit Profile</h3><input id="editName" placeholder="Full Name" value="${u.name||""}"><input id="editMobile" placeholder="Mobile" value="${u.mobile||""}"><textarea id="editAddress" placeholder="Address">${u.address||""}</textarea><input id="editPhoto" placeholder="Profile Photo URL optional" value="${u.profilePhoto||""}"><button onclick="saveLocalProfile()">Save Profile</button><p class="info-note">This updates local profile display immediately. Backend sync can be connected in Apps Script later.</p></div>
+      </div>`;
+  };
+  window.saveLocalProfile=function(){
+    const old=getUser()||{}; const u={...old,name:$("#editName").value.trim()||old.name||"User",mobile:$("#editMobile").value.trim(),address:$("#editAddress").value.trim(),profilePhoto:$("#editPhoto").value.trim()};
+    localStorage.setItem("spt_user",JSON.stringify(u)); if(window.SPT) SPT.user=u; updateTopUser(); toast("Profile updated"); dashboardTool();
+  };
+
+  // Better user avatar with DP URL if available
+  const oldUpdateTopUser=window.updateTopUser;
+  window.updateTopUser=function(){
+    const u=getUser(); const name=u?.name||"Guest User"; const plan=u?.premium?"Premium User":"Login required";
+    const av=$("#headerAvatar"); $("#headerUserName").textContent=name; $("#headerUserPlan").textContent=plan;
+    if(av){ if(u?.profilePhoto){av.style.backgroundImage=`url('${u.profilePhoto}')`; av.style.backgroundSize='cover'; av.textContent='';} else {av.style.backgroundImage=''; av.textContent=(name||"G").trim()[0].toUpperCase();}}
+    const admin=$("#adminDropBtn"); if(admin) admin.style.display=(u&&String(u.role).toLowerCase()==="admin")?"block":"none";
+    const l=$("#logoutDropBtn"); if(l) l.textContent=u?"🚪 Logout":"🔐 Login / Signup";
+  };
+})();
+
+/* ===== v38.2 Stability Hard Fix: media-fit crop, profile edit, PDF safe mode ===== */
+(function(){
+  function safeToast(m){ if(typeof toast==='function') toast(m); else alert(m); }
+  function waitMedia(media, cb){
+    if(!media) return;
+    if(media.tagName==='IMG' && !media.complete){media.onload=()=>setTimeout(cb,30); media.onerror=()=>setTimeout(cb,30);}
+    else setTimeout(cb,60);
+  }
+  function getMediaRect(stage, media){
+    const sr=stage.getBoundingClientRect();
+    const mr=media.getBoundingClientRect();
+    let left=mr.left-sr.left, top=mr.top-sr.top, width=mr.width, height=mr.height;
+    if(!width || !height || width<20 || height<20){left=12; top=12; width=Math.max(80,stage.clientWidth-24); height=Math.max(80,stage.clientHeight-24);}
+    return {left, top, width, height, right:left+width, bottom:top+height};
+  }
+  window.createCrop=function(stage, media, opt={}){
+    if(!stage || !media) return null;
+    stage.querySelectorAll('.crop-selection').forEach(e=>e.remove());
+    const box=document.createElement('div');
+    box.className='crop-selection '+(opt.color==='orange'?'orange':'');
+    ['nw','n','ne','e','se','s','sw','w'].forEach(k=>{const h=document.createElement('span');h.className='handle '+k;h.dataset.handle=k;box.appendChild(h);});
+    stage.appendChild(box);
+    const s={stage,media,box,ratio:opt.ratio||null,x:0,y:0,w:0,h:0};
+    function init(){
+      const b=getMediaRect(stage,media);
+      let w=b.width*0.82, h=b.height*0.60;
+      if(s.ratio){ h=w/s.ratio; if(h>b.height*0.88){h=b.height*0.88; w=h*s.ratio;} }
+      s.w=Math.max(64,Math.min(w,b.width));
+      s.h=Math.max(44,Math.min(h,b.height));
+      s.x=b.left+(b.width-s.w)/2;
+      s.y=b.top+(b.height-s.h)/2;
+      render();
+    }
+    function boundsClamp(x,y,w,h){
+      const b=getMediaRect(stage,media);
+      w=Math.max(42,Math.min(w,b.width)); h=Math.max(30,Math.min(h,b.height));
+      if(s.ratio){
+        if(w/h > s.ratio) w=h*s.ratio; else h=w/s.ratio;
+        if(w>b.width){w=b.width; h=w/s.ratio;}
+        if(h>b.height){h=b.height; w=h*s.ratio;}
+      }
+      x=Math.max(b.left,Math.min(x,b.right-w));
+      y=Math.max(b.top,Math.min(y,b.bottom-h));
+      return {x,y,w,h};
+    }
+    function render(){Object.assign(box.style,{left:s.x+'px',top:s.y+'px',width:s.w+'px',height:s.h+'px'});}
+    let mode=null,start={};
+    const point=e=>e.touches?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY};
+    function down(e){e.preventDefault();e.stopPropagation();const p=point(e);mode=e.target.dataset.handle||'move';start={px:p.x,py:p.y,x:s.x,y:s.y,w:s.w,h:s.h};document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);document.addEventListener('touchmove',move,{passive:false});document.addEventListener('touchend',up);}
+    function move(e){e.preventDefault();const p=point(e),dx=p.x-start.px,dy=p.y-start.py;let x=start.x,y=start.y,w=start.w,h=start.h;
+      if(mode==='move'){x+=dx;y+=dy}else{if(mode.includes('e'))w+=dx;if(mode.includes('s'))h+=dy;if(mode.includes('w')){x+=dx;w-=dx}if(mode.includes('n')){y+=dy;h-=dy}if(s.ratio){if(mode.includes('e')||mode.includes('w'))h=w/s.ratio;else w=h*s.ratio;}}
+      Object.assign(s,boundsClamp(x,y,w,h));render();}
+    function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up); if(typeof updateA4Preview==='function') updateA4Preview();}
+    box.addEventListener('mousedown',down); box.addEventListener('touchstart',down,{passive:false});
+    waitMedia(media,init);
+    window.addEventListener('resize',()=>setTimeout(()=>{Object.assign(s,boundsClamp(s.x,s.y,s.w,s.h));render();},80));
+    return s;
+  };
+
+  window.drawPdfCanvasView=function(){
+    const view=document.querySelector('#pdfCanvasView'), src=appState.pdfCanvas; if(!view||!src)return;
+    const stage=document.querySelector('#pdfStage');
+    const boxW=Math.max(360, (stage?.clientWidth||900)-24);
+    const boxH=Math.max(320, (stage?.clientHeight||560)-24);
+    const ratio=src.width/src.height; let w=Math.min(boxW,900), h=Math.round(w/ratio);
+    if(h>boxH){ h=boxH; w=Math.round(h*ratio); }
+    view.width=w; view.height=h; view.getContext('2d').drawImage(src,0,0,w,h);
+  };
+
+  window.loadPassportImg=async function(e){const f=e.target.files[0]; if(!f)return; appState.passportImg=await readFile(f); const stage=document.querySelector('#passportStage'); stage.innerHTML=`<img src="${appState.passportImg}" id="passportImg" class="fit-media">`; waitMedia(document.querySelector('#passportImg'),()=>{appState.passportCrop=createCrop(stage,document.querySelector('#passportImg'),{ratio:35/45,color:'orange'});});};
+  window.resetPassportCrop=function(){if(!appState.passportImg)return; const stage=document.querySelector('#passportStage'); stage.innerHTML=`<img src="${appState.passportImg}" id="passportImg" class="fit-media">`; waitMedia(document.querySelector('#passportImg'),()=>{appState.passportCrop=createCrop(stage,document.querySelector('#passportImg'),{ratio:35/45,color:'orange'});});};
+
+  window.dashboardTool=function(t){const u=getUser()||JSON.parse(localStorage.getItem('spt_profile_local')||'{}')||{}; workspace.innerHTML=pageHeader('My Profile','Update your profile details saved on this device.')+`
+    <div class="profile-grid">
+      <div class="card profile-card"><div class="profile-avatar" id="profileAvatarBig">${(u.name||'G')[0]?.toUpperCase()}</div><h2>${u.name||'Guest User'}</h2><p>${u.email||'Login to sync account'}</p><p><b>${u.premium?'Premium':'Free Plan'}</b></p></div>
+      <div class="card profile-form"><h3>Edit Profile</h3><input id="profileName" placeholder="Full Name" value="${u.name||''}"><input id="profileEmail" placeholder="Email" value="${u.email||''}"><input id="profileMobile" placeholder="Mobile" value="${u.mobile||''}"><textarea id="profileAddress" placeholder="Address">${u.address||''}</textarea><label>Profile Photo <input id="profilePhoto" type="file" accept="image/*"></label><button onclick="saveLocalProfile()">Save Profile</button><div class="info-note">Profile edit is saved locally now. Backend sync can be enabled in next Apps Script update.</div></div>
+    </div>`;};
+  window.saveLocalProfile=async function(){let photo=''; const file=document.querySelector('#profilePhoto')?.files?.[0]; if(file) photo=await readFile(file); const p={name:val('profileName'),email:val('profileEmail'),mobile:val('profileMobile'),address:val('profileAddress'),photo}; localStorage.setItem('spt_profile_local',JSON.stringify(p)); if(window.SPT){SPT.user={...(SPT.user||{}),...p}; localStorage.setItem('spt_user',JSON.stringify(SPT.user));} updateTopUser(); safeToast('Profile saved');};
+  const oldUpdateTopUser=window.updateTopUser||updateTopUser;
+  window.updateTopUser=function(){let u=getUser()||JSON.parse(localStorage.getItem('spt_profile_local')||'{}')||null; const name=u?.name||'Guest User'; const plan=u?.premium?'Premium User':'Login required'; const av=document.querySelector('#headerAvatar'); if(av){ if(u?.photo){av.style.backgroundImage=`url(${u.photo})`; av.style.backgroundSize='cover'; av.textContent='';} else {av.style.backgroundImage=''; av.textContent=(name||'G')[0].toUpperCase();}} const hn=document.querySelector('#headerUserName'), hp=document.querySelector('#headerUserPlan'); if(hn)hn.textContent=name;if(hp)hp.textContent=plan; const adm=document.querySelector('#adminDropBtn'); if(adm)adm.style.display=(u&&String(u.role).toLowerCase()==='admin')?'block':'none'; const lo=document.querySelector('#logoutDropBtn'); if(lo)lo.textContent=u?'🚪 Logout':'🔐 Login / Signup';};
+
+  window.pdfStudio=function(){workspace.innerHTML=pageHeader('PDF Studio','Safe PDF preview and download tools.')+`<div class="pdf-tool-grid"><div class="card form"><h3>PDF Safe Mode</h3><p class="tool-status">Upload PDF. It will preview without hanging the page.</p><input type="file" id="pdfStableFile" accept="application/pdf"><button onclick="stablePdfPreview()">Open PDF Preview</button><button onclick="stablePdfDownload()">Download Same PDF</button><div id="pdfStableInfo"></div></div><div class="card pdf-result"><h3>Preview</h3><iframe id="pdfStableFrame"></iframe></div></div>`;};
+  window.stablePdfPreview=function(){const f=document.querySelector('#pdfStableFile')?.files?.[0]; if(!f)return safeToast('Upload PDF first'); const url=URL.createObjectURL(f); document.querySelector('#pdfStableFrame').src=url; document.querySelector('#pdfStableInfo').innerHTML=`<p><b>${f.name}</b><br>${(f.size/1024).toFixed(1)} KB</p>`;};
+  window.stablePdfDownload=function(){const f=document.querySelector('#pdfStableFile')?.files?.[0]; if(!f)return safeToast('Upload PDF first'); const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name||'file.pdf';a.click();};
+})();
