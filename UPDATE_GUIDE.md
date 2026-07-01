@@ -1,9 +1,9 @@
-# Update Guide – v39.2
+# Update Guide v39.3
 
 1. Extract this ZIP.
 2. Upload/replace all files directly in the GitHub repository root.
-3. Do not upload any folder for document icons; icons are root files.
-4. Open: https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=39.2-github-web
-5. If old UI appears, clear site data or hard refresh.
+3. Do not upload the ZIP itself.
+4. Open: https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=39.3-foundation
+5. If old version appears, clear browser site data or open in Incognito.
 
-Apps Script update: Not required.
+Apps Script update is not required.

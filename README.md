@@ -1,5 +1,3 @@
-# Smart Photo Toolkit Pro v39.2 – GitHub Web Upload Build
+# Smart Photo Toolkit Pro v39.3 Enterprise Foundation
 
-This build keeps all document icons in the root folder for easy GitHub web upload. No assets/docs folder is required.
-
-Upload all files directly in the repository root.
+Stable base focused on crop, print, PDF tools, profile, payment and GitHub web upload compatibility.
