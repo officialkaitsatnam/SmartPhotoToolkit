@@ -21,3 +21,25 @@ body{background:#f3f6fb;color:var(--text)}
 .upload-card img{height:165px;object-fit:contain}.a4-paper{padding:2mm}.preview-line{gap:2mm}.bottom-actions .print-main,.print-main,.form button,.go-premium button{background:linear-gradient(135deg,#0f5cff,#004bd6)}
 .user-dropdown button{font-weight:700}.user-trigger{box-shadow:0 8px 20px rgba(0,0,0,.12)}
 @media(max-width:760px){.topbar{height:64px}.app-shell{padding:0}.main{padding:14px 10px}.workspace{max-width:100%}.page-title{display:block}.doc-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.doc-tile{min-height:118px;padding:10px}.doc-icon{height:50px}.doc-icon img{max-height:48px}.studio-grid{display:block}.right-panel{margin-top:16px}.crop-stage.large,.crop-stage{height:330px}.home-grid{gap:12px}.top-actions .version{display:none}.premium-top{padding:9px 12px}.circle-btn{width:38px;height:38px}.user-trigger{padding:6px}.sidebar{background:#fff;width:280px}.upload-card img{height:130px}}
+
+
+/* v39.1 Crop + Icon Hard Fix */
+.doc-grid{grid-template-columns:repeat(auto-fit,minmax(155px,1fr));}
+.doc-tile{min-height:148px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px}
+.doc-icon{height:72px!important;width:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+.doc-icon img{max-width:110px!important;max-height:68px!important;width:auto!important;height:auto!important;object-fit:contain!important;display:block!important;border-radius:10px}
+.crop-stage{position:relative!important;overflow:hidden!important;display:flex!important;align-items:center!important;justify-content:center!important;background:#111827!important;border:10px solid #07152f!important}
+.crop-stage.large{height:min(68vh,620px)!important;min-height:430px!important}
+.crop-stage img,.crop-stage canvas{max-width:100%!important;max-height:100%!important;width:auto!important;height:auto!important;object-fit:contain!important;display:block!important}
+.crop-selection{z-index:5!important;box-sizing:border-box!important;cursor:move}
+.crop-badge{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.62);color:#fff;border-radius:7px;padding:4px 8px;font-style:normal;font-size:12px;font-weight:800;pointer-events:none}
+.crop-tools{flex-wrap:wrap}
+.upload-card img{max-height:155px!important;object-fit:contain!important;background:#fff}
+.preview-line img{width:85.6mm;max-width:46%;height:auto;object-fit:contain}
+@media(max-width:900px){
+  .studio-grid{grid-template-columns:1fr!important}
+  .crop-stage.large{height:450px!important;min-height:360px!important}
+  .app-shell{grid-template-columns:82px 1fr!important}
+  .sidebar{padding:14px 8px!important}
+  .nav-item span:not(:first-child), .menu-label, .go-premium{display:none!important}
+}

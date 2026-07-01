@@ -1,8 +1,8 @@
-# Smart Photo Toolkit Pro v39 Enterprise
+# v39.1 Crop Engine + Official Icons Fix
 
-## Changes
-- Official user-provided document icons integrated under assets/docs/.
-- Original Enterprise design system added for consistent cards, sidebar, topbar, spacing and typography.
-- Document Studio card layout improved with real image icons and responsive sizing.
-- Existing v38 tool engine preserved.
-- Apps Script update not required.
+- Official document icon assets normalized and added under `assets/docs/`.
+- Document crop overlay now stays locked inside the visible PDF/image area.
+- Passport crop uses the same bounded 8-handle selection engine.
+- PDF preview and image preview auto-fit to container.
+- Mobile crop workspace improved.
+- Apps Script update: not required.

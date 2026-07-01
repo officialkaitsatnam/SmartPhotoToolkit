@@ -57,9 +57,114 @@ async function generateDocPDF(){await updateA4Preview(); const imgs=[...$$("#a4P
 async function downloadDocPDF(){if(!appState.previewPDF)await generateDocPDF(); if(appState.previewPDF)appState.previewPDF.save(`${DOCS[appState.docType].name.replaceAll(' ','-')}-A4.pdf`)}
 function printGeneratedPDF(type){let pdf= type==='passport'?appState.passportPdf:appState.previewPDF; if(!pdf){if(type==='doc')generateDocPDF(); return toast("Generate PDF first")} pdf.autoPrint(); window.open(URL.createObjectURL(pdf.output('blob')),'_blank')}
 
-function createCrop(stage,media,opt={}){const color=opt.color||"blue", ratio=opt.ratio||null; const box=document.createElement('div'); box.className=`crop-selection ${color==='orange'?'orange':''}`; const sw=stage.clientWidth, sh=stage.clientHeight; let w=sw*.72,h=sh*.55; if(ratio){h=w/ratio;if(h>sh*.8){h=sh*.8;w=h*ratio}} let x=(sw-w)/2,y=(sh-h)/2; Object.assign(box.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px'}); ['nw','n','ne','e','se','s','sw','w'].forEach(p=>{let h=document.createElement('span');h.className='handle '+p;h.dataset.handle=p;box.appendChild(h)}); stage.appendChild(box); let state={stage,media,box,ratio,x,y,w,h}; attachCropEvents(state); return state;}
-function attachCropEvents(s){let mode=null,start={}; const point=e=>e.touches?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY}; s.box.addEventListener('mousedown',down); s.box.addEventListener('touchstart',down,{passive:false}); function down(e){e.preventDefault(); const p=point(e); mode=e.target.dataset.handle||'move'; start={px:p.x,py:p.y,x:s.x,y:s.y,w:s.w,h:s.h}; document.addEventListener('mousemove',move); document.addEventListener('mouseup',up); document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('touchend',up)} function move(e){e.preventDefault(); const p=point(e), dx=p.x-start.px, dy=p.y-start.py; let x=start.x,y=start.y,w=start.w,h=start.h; if(mode==='move'){x+=dx;y+=dy}else{ if(mode.includes('e'))w+=dx; if(mode.includes('s'))h+=dy; if(mode.includes('w')){x+=dx;w-=dx} if(mode.includes('n')){y+=dy;h-=dy} if(s.ratio){ if(['e','w','ne','nw','se','sw'].includes(mode))h=w/s.ratio; else w=h*s.ratio; }} w=Math.max(40,w);h=Math.max(30,h); x=Math.max(0,Math.min(x,s.stage.clientWidth-w)); y=Math.max(0,Math.min(y,s.stage.clientHeight-h)); s.x=x;s.y=y;s.w=w;s.h=h; Object.assign(s.box.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px'});} function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);document.removeEventListener('touchmove',move);document.removeEventListener('touchend',up);updateA4Preview();}}
-async function cropFromElement(s){const media=s.media; let srcW,srcH,drawW,drawH,offX,offY,source; if(media.tagName==='CANVAS'){source=media;srcW=media.width;srcH=media.height;} else {source=await loadImage(media.src);srcW=source.width;srcH=source.height;} const mr=media.getBoundingClientRect(), sr=s.stage.getBoundingClientRect(); drawW=mr.width;drawH=mr.height;offX=mr.left-sr.left;offY=mr.top-sr.top; let rx=(s.x-offX)/drawW, ry=(s.y-offY)/drawH, rw=s.w/drawW, rh=s.h/drawH; rx=Math.max(0,Math.min(rx,1));ry=Math.max(0,Math.min(ry,1));rw=Math.max(.01,Math.min(rw,1-rx));rh=Math.max(.01,Math.min(rh,1-ry)); const c=document.createElement('canvas'), ctx=c.getContext('2d'); c.width=1200; c.height=Math.round(1200*(srcH*rh)/(srcW*rw)); ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height); ctx.drawImage(source,srcW*rx,srcH*ry,srcW*rw,srcH*rh,0,0,c.width,c.height); return c.toDataURL('image/jpeg',.94)}
+function getMediaBounds(stage, media){
+  const sr = stage.getBoundingClientRect();
+  const mr = media.getBoundingClientRect();
+  let x = mr.left - sr.left, y = mr.top - sr.top, w = mr.width, h = mr.height;
+  if(!w || !h || w < 10 || h < 10){
+    x = 0; y = 0; w = stage.clientWidth; h = stage.clientHeight;
+  }
+  return {x,y,w,h,maxX:x+w,maxY:y+h};
+}
+function clampCropToMedia(s, x=s.x, y=s.y, w=s.w, h=s.h){
+  const b = getMediaBounds(s.stage, s.media);
+  const minW = Math.min(60, b.w), minH = Math.min(40, b.h);
+  if(s.ratio){
+    if(w / h > s.ratio) h = w / s.ratio; else w = h * s.ratio;
+  }
+  w = Math.max(minW, Math.min(w, b.w));
+  h = Math.max(minH, Math.min(h, b.h));
+  if(s.ratio){
+    if(w > b.w){ w = b.w; h = w / s.ratio; }
+    if(h > b.h){ h = b.h; w = h * s.ratio; }
+  }
+  x = Math.max(b.x, Math.min(x, b.x + b.w - w));
+  y = Math.max(b.y, Math.min(y, b.y + b.h - h));
+  return {x,y,w,h};
+}
+function paintCrop(s){
+  const c = clampCropToMedia(s);
+  s.x=c.x; s.y=c.y; s.w=c.w; s.h=c.h;
+  Object.assign(s.box.style,{left:s.x+'px',top:s.y+'px',width:s.w+'px',height:s.h+'px'});
+}
+function createCrop(stage,media,opt={}){
+  const color=opt.color||"blue", ratio=opt.ratio||null;
+  stage.querySelectorAll('.crop-selection').forEach(e=>e.remove());
+  const box=document.createElement('div');
+  box.className=`crop-selection ${color==='orange'?'orange':''}`;
+  ['nw','n','ne','e','se','s','sw','w'].forEach(p=>{let h=document.createElement('span');h.className='handle '+p;h.dataset.handle=p;box.appendChild(h)});
+  const label=document.createElement('em'); label.className='crop-badge'; label.textContent='Printable Area'; box.appendChild(label);
+  stage.appendChild(box);
+  const b=getMediaBounds(stage,media);
+  let w=b.w*.72,h=b.h*.55;
+  if(ratio){h=w/ratio;if(h>b.h*.86){h=b.h*.86;w=h*ratio}}
+  let x=b.x+(b.w-w)/2,y=b.y+(b.h-h)/2;
+  let state={stage,media,box,ratio,x,y,w,h};
+  attachCropEvents(state);
+  paintCrop(state);
+  setTimeout(()=>paintCrop(state),250);
+  window.addEventListener('resize',()=>paintCrop(state),{passive:true});
+  return state;
+}
+function attachCropEvents(s){
+  let mode=null,start={};
+  const point=e=>e.touches?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY};
+  s.box.addEventListener('mousedown',down);
+  s.box.addEventListener('touchstart',down,{passive:false});
+  function down(e){
+    e.preventDefault();
+    const p=point(e);
+    mode=e.target.dataset.handle||'move';
+    start={px:p.x,py:p.y,x:s.x,y:s.y,w:s.w,h:s.h};
+    document.addEventListener('mousemove',move);
+    document.addEventListener('mouseup',up);
+    document.addEventListener('touchmove',move,{passive:false});
+    document.addEventListener('touchend',up);
+  }
+  function move(e){
+    e.preventDefault();
+    const p=point(e), dx=p.x-start.px, dy=p.y-start.py;
+    let x=start.x,y=start.y,w=start.w,h=start.h;
+    if(mode==='move'){x+=dx;y+=dy}
+    else{
+      if(mode.includes('e'))w+=dx;
+      if(mode.includes('s'))h+=dy;
+      if(mode.includes('w')){x+=dx;w-=dx}
+      if(mode.includes('n')){y+=dy;h-=dy}
+      if(s.ratio){
+        if(['e','w','ne','nw','se','sw'].includes(mode)) h=w/s.ratio;
+        else w=h*s.ratio;
+      }
+    }
+    const c=clampCropToMedia(s,x,y,w,h);
+    s.x=c.x;s.y=c.y;s.w=c.w;s.h=c.h;
+    Object.assign(s.box.style,{left:s.x+'px',top:s.y+'px',width:s.w+'px',height:s.h+'px'});
+  }
+  function up(){
+    document.removeEventListener('mousemove',move);
+    document.removeEventListener('mouseup',up);
+    document.removeEventListener('touchmove',move);
+    document.removeEventListener('touchend',up);
+    updateA4Preview();
+  }
+}
+async function cropFromElement(s){
+  const media=s.media;
+  let srcW,srcH,source;
+  if(media.tagName==='CANVAS'){source=media;srcW=media.width;srcH=media.height;}
+  else {source=await loadImage(media.src);srcW=source.width;srcH=source.height;}
+  const mr=media.getBoundingClientRect(), sr=s.stage.getBoundingClientRect();
+  const drawW=mr.width, drawH=mr.height, offX=mr.left-sr.left, offY=mr.top-sr.top;
+  let rx=(s.x-offX)/drawW, ry=(s.y-offY)/drawH, rw=s.w/drawW, rh=s.h/drawH;
+  rx=Math.max(0,Math.min(rx,1)); ry=Math.max(0,Math.min(ry,1));
+  rw=Math.max(.01,Math.min(rw,1-rx)); rh=Math.max(.01,Math.min(rh,1-ry));
+  const c=document.createElement('canvas'), ctx=c.getContext('2d');
+  c.width=1200; c.height=Math.max(1,Math.round(1200*(srcH*rh)/(srcW*rw)));
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.drawImage(source,srcW*rx,srcH*ry,srcW*rw,srcH*rh,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',.94);
+}
+
 function readFile(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})} function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src})}
 
 function compressorTool(){workspace.innerHTML=pageHeader("Image Compressor","Compress images to a target size.")+`<div class="card form"><input type="file" id="compFile" accept="image/*"><input id="targetKB" value="100" placeholder="Target KB"><button onclick="compressSimple()">Compress</button><div id="compOut"></div></div>`}
