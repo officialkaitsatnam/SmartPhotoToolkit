@@ -246,7 +246,33 @@ async function updateFeedbackReplyV32(feedbackId){
   toast(r.message); if(r.success) loadFeedbacks();
 }
 
-/* v39.4 UI sync */
-function updateAuthUI(){
-  try{ if(typeof updateTopUser==='function') updateTopUser(); }catch(e){}
+/* v40 Auth UX backend bridge overrides */
+function v40BridgeUser(){try{return SPT.user || JSON.parse(localStorage.getItem('spt_user')||'null')}catch(e){return null}}
+async function loginSubmit(){
+  const email=val('loginEmail'), password=val('loginPassword');
+  if(!email||!password){if(typeof setAuthStatus==='function')setAuthStatus('Email and password required');return toast('Email and password required')}
+  if(typeof setAuthStatus==='function')setAuthStatus('Signing in...'); if(typeof showLoading==='function')showLoading('Signing in...');
+  const r=await SPT.api('login',{email,password}); if(typeof hideLoading==='function')hideLoading();
+  if(!r.success){if(typeof setAuthStatus==='function')setAuthStatus(r.message||'Login failed');return toast(r.message||'Login failed')}
+  SPT.saveLogin(r.user,r.token); if(typeof closeAuthModal==='function')closeAuthModal(); if(typeof updateAuthUI==='function')updateAuthUI(); toast('Login successful'); showTool(document.getElementById('authModalBackdrop')?.dataset.nextTool||'dashboard');
+}
+async function signupSubmit(){
+  const name=val('signupName'), email=val('signupEmail'), mobile=val('signupMobile'), address=val('signupAddress'), password=val('signupPassword'), confirm=val('signupConfirm');
+  if(!name||!email||!mobile||!address||!password)return toast('Please fill all details'); if(confirm && password!==confirm)return toast('Passwords do not match');
+  if(typeof setAuthStatus==='function')setAuthStatus('Creating account...'); if(typeof showLoading==='function')showLoading('Creating account...');
+  const r=await SPT.api('signup',{name,email,mobile,address,password}); if(typeof hideLoading==='function')hideLoading();
+  if(!r.success){if(typeof setAuthStatus==='function')setAuthStatus(r.message||'Signup failed');return toast(r.message||'Signup failed')}
+  SPT.saveLogin(r.user,r.token); if(typeof closeAuthModal==='function')closeAuthModal(); if(typeof updateAuthUI==='function')updateAuthUI(); toast('Account created successfully'); showTool('dashboard');
+}
+async function forgotSubmit(){
+  const email=val('forgotEmail'); if(!email)return toast('Email required'); if(typeof setAuthStatus==='function')setAuthStatus('Sending OTP...'); if(typeof showLoading==='function')showLoading('Sending OTP...');
+  const r=await SPT.api('forgotPassword',{email}); if(typeof hideLoading==='function')hideLoading(); if(typeof setAuthStatus==='function')setAuthStatus(r.message||'OTP request sent'); toast(r.message||'OTP request sent');
+}
+async function resetSubmit(){
+  const email=val('resetEmail'), otp=val('resetOtp'), password=val('resetPassword'); if(!email||!otp||!password)return toast('Email, OTP and password required'); if(typeof showLoading==='function')showLoading('Resetting password...');
+  const r=await SPT.api('resetPassword',{email,otp,newPassword:password}); if(typeof hideLoading==='function')hideLoading(); toast(r.message||'Password reset request completed'); if(r.success && typeof switchAuthMode==='function')switchAuthMode('login');
+}
+function logoutOrLogin(){
+  if(SPT.token || localStorage.getItem('spt_token')){ if(!confirm('Logout from Smart Photo Toolkit?'))return; localStorage.removeItem('spt_user');localStorage.removeItem('spt_token');SPT.user=null;SPT.token=''; if(typeof updateAuthUI==='function')updateAuthUI(); toast('Logout successful'); showTool('home'); }
+  else if(typeof openAuthModal==='function')openAuthModal('login'); else showTool('login');
 }
