@@ -1,1 +1,1 @@
-Smart Photo Toolkit Pro v38.5 Pro Polish. Upload root files to GitHub Pages. Apps Script update not required.
+Smart Photo Toolkit Pro v39 Enterprise - Original Skin + Official Document Icons.
