@@ -245,3 +245,8 @@ async function updateFeedbackReplyV32(feedbackId){
   const r=await SPT.api("adminReplyFeedback",{token:SPT.token,feedbackId,reply});
   toast(r.message); if(r.success) loadFeedbacks();
 }
+
+/* v39.4 UI sync */
+function updateAuthUI(){
+  try{ if(typeof updateTopUser==='function') updateTopUser(); }catch(e){}
+}

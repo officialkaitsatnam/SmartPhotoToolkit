@@ -183,303 +183,192 @@ function paymentTool(){workspace.innerHTML=pageHeader("Payment","Generate QR and
 function feedbackTool(){workspace.innerHTML=pageHeader("Support / Feedback","Send feedback or report an issue.")+`<div class="card form"><input id="feedbackName" placeholder="Name"><input id="feedbackEmail" placeholder="Email"><textarea id="feedbackMessage" placeholder="Message"></textarea><button onclick="submitFeedback&&submitFeedback()">Submit Feedback</button></div>`}
 function adminTool(){workspace.innerHTML=pageHeader("Admin Panel","Users, payments, feedback and analytics.")+`<div class="home-grid"><div class="card home-card"><h3>Users</h3><p>Manage users</p></div><div class="card home-card"><h3>Payments</h3><p>Verify payments</p></div><div class="card home-card"><h3>Feedback</h3><p>Review messages</p></div></div>`}
 
-/* =========================================================
-   v39.3 ENTERPRISE FOUNDATION OVERRIDES
-   Stable crop engine, CamScanner-style auto detect, print engine,
-   payment QR flow, and safer PDF Studio.
-========================================================= */
-(function(){
-  const TOP_MARGIN_MM = 2.2;
-  const CARD_GAP_MM = 2.4;
-  const CARD_W_MM = 85.6;
-  const CARD_H_MM = 54;
-  const PASS_W_MM = 35;
-  const PASS_H_MM = 45;
+/* =====================================================
+   v39.4 Enterprise Stabilization Overrides
+   Print engine, crop engine, payment, auth UI, PDF/Image tools
+===================================================== */
+const SPT_TARGETS = [20,50,100,200,300,400,500,1024];
+function targetOptions(defaultKb=100){return SPT_TARGETS.map(k=>`<option value="${k}" ${k===defaultKb?'selected':''}>${k===1024?'1 MB':k+' KB'}</option>`).join('')+`<option value="custom">Custom KB</option>`}
+function getSelectedTarget(selectId, customId){const v=$(selectId)?.value; if(v==='custom')return Number($(customId)?.value||0); return Number(v||0)}
 
-  window.SPT39 = { TOP_MARGIN_MM, CARD_GAP_MM, CARD_W_MM, CARD_H_MM };
-
-  function safeToast(m){ try{ toast(m); }catch(e){ console.log(m); } }
-
-  window.pageHeader = function(title,sub,extra=""){
-    return `<div class="page-title"><div><h1>${title}</h1><p>${sub}</p></div>${extra||`<span class="status-chip">● All systems operational</span>`}</div>`;
-  };
-
-  window.home = function(){
-    workspace.innerHTML = pageHeader('Smart Photo Toolkit Pro','All-in-one tools for photos, documents and PDF productivity.') + `
-      <div class="home-grid">
-        <div class="card home-card" onclick="showTool('documentStudio')"><b>🪪</b><h3>Document Studio</h3><p>Aadhaar, PAN, Voter ID, Ayushman, ABHA and DL print with smart crop.</p></div>
-        <div class="card home-card" onclick="showTool('imageStudio')"><b>🖼️</b><h3>Image Studio</h3><p>Passport, compressor, resize, crop, convert and name/date tools.</p></div>
-        <div class="card home-card" onclick="showTool('pdfStudio')"><b>📄</b><h3>PDF Studio</h3><p>Resize, crop, merge, split, compress and convert PDF files.</p></div>
-      </div>
-      <div class="home-grid" style="margin-top:18px">
-        <div class="card home-card"><b>🎯</b><h3>Smart Crop</h3><p>Auto-detect document edges and adjust manually with 8 handles.</p></div>
-        <div class="card home-card"><b>🖨️</b><h3>Print Engine</h3><p>A4 top-center output with ${TOP_MARGIN_MM}mm margin and lamination gap.</p></div>
-        <div class="card home-card"><b>👤</b><h3>Workspace</h3><p>Profile, payment, notifications and recent project foundation.</p></div>
-      </div>`;
-  };
-
-  window.documentStudio = function(){ renderDocumentStudio(); };
-  window.renderDocumentStudio = function(){
-    const d = DOCS[appState.docType] || DOCS.aadhaar;
-    workspace.innerHTML = pageHeader('Document Studio', 'Upload front/back images or a full page PDF, auto-detect/select printable area, then generate A4 output.') + `
-      <div class="section-title">1. Select Document</div>
-      <div class="doc-grid">${Object.entries(DOCS).map(([k,v])=>`
-        <button class="doc-tile ${appState.docType===k?'active':''}" onclick="setDocType('${k}')">
-          <span class="doc-icon ${v.cls}"><img src="${v.icon}" alt="${v.name}" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<b>${v.name.split(' ')[0]}</b>')"></span>
-          <b>${v.name}</b><small>${v.size}</small>
-        </button>`).join('')}</div>
-      <div class="section-title">2. Select Mode</div>
-      <div class="mode-row">
-        <button class="mode-btn ${appState.docMode==='front'?'active':''}" onclick="setDocMode('front')">▣ Front</button>
-        <button class="mode-btn ${appState.docMode==='back'?'active':''}" onclick="setDocMode('back')">▣ Back</button>
-        <button class="mode-btn ${appState.docMode==='both'?'active':''}" onclick="setDocMode('both')">▣ Front + Back</button>
-      </div>
-      <div class="studio-grid">
-        <div class="left-flow">
-          <div class="flow-card">
-            <h3>3. Upload Document</h3>
-            <div class="tabs">
-              <button class="tab ${appState.uploadTab==='image'?'active':''}" onclick="setUploadTab('image')">Image Upload</button>
-              <button class="tab ${appState.uploadTab==='pdf'?'active':''}" onclick="setUploadTab('pdf')">Full Page PDF</button>
-            </div>
-            <div id="uploadArea">${appState.uploadTab==='image'?imageUploadHTML():pdfUploadHTML()}</div>
-          </div>
-          <div class="flow-card">
-            <h3>4. Select Printable Area</h3>
-            <p class="tool-subtitle">Auto Detect is applied after upload. You can still move/resize manually like CamScanner.</p>
-            <div id="cropArea">${appState.uploadTab==='image'?imageCropHTML():pdfCropHTML()}</div>
-            <div class="info-note">ⓘ Drag inside the box to move. Drag corners/sides to resize. Use Auto Detect if the selected area is not correct.</div>
-          </div>
-          <div class="bottom-actions">
-            <button class="ghost-btn" onclick="showTool('documentStudio')">↺ Reset View</button>
-            <button class="download-preview" onclick="downloadDocPDF()">⇩ Download PDF</button>
-            <button class="print-main" onclick="printGeneratedPDF('doc')">▣ Print / Save as PDF</button>
-          </div>
-        </div>
-        <div class="right-panel">
-          <div class="preview-a4"><h3>5. Print Preview (A4)</h3><div class="a4-paper"><div class="preview-line" id="a4Preview"></div></div><div class="ok-note">✓ Top margin ${TOP_MARGIN_MM}mm and ${CARD_GAP_MM}mm gap for lamination</div></div>
-          <div class="print-settings"><h3>6. Print Settings</h3>
-            <div class="setting-row"><span>Paper Size</span><b>A4 (210 × 297 mm)</b></div>
-            <div class="setting-row"><span>Orientation</span><b>Portrait</b></div>
-            <div class="setting-row"><span>Top Margin</span><b>${TOP_MARGIN_MM} mm</b></div>
-            <div class="setting-row"><span>Front - Back Gap</span><b>${CARD_GAP_MM} mm</b></div>
-            <label>Copies<select id="docCopies" onchange="updateA4Preview()"><option value="1">1 Copy</option><option value="2">2 Copies</option><option value="4">4 Copies</option><option value="6">6 Copies</option></select></label>
-          </div>
-        </div>
-      </div>`;
-    initAfterRender();
-  };
-
-  window.imageCropHTML = function(){
-    let needBack=appState.docMode!=="front", needFront=appState.docMode!=="back";
-    return `<div class="crop-grid">${needFront?`<div class="crop-box-panel"><div class="crop-label">Front - Select Area</div><div class="crop-stage" id="frontStage">${appState.front?`<img src="${appState.front}" id="frontCropImg">`:`Upload front image first`}</div>${cropToolbar('front')}</div>`:""}${needBack?`<div class="crop-box-panel"><div class="crop-label">Back - Select Area</div><div class="crop-stage" id="backStage">${appState.back?`<img src="${appState.back}" id="backCropImg">`:`Upload back image first`}</div>${cropToolbar('back')}</div>`:""}</div>`;
-  };
-
-  window.pdfCropHTML = function(){
-    return `<div class="crop-stage large" id="pdfStage">${appState.pdfCanvas?`<canvas id="pdfCanvasView"></canvas>`:`Upload full page PDF first`}</div>${cropToolbar('pdf')}<div class="crop-tools"><button class="primary" onclick="generateDocPDF()">Crop & Generate A4 PDF</button></div>`;
-  };
-
-  function cropToolbar(side){
-    return `<div class="crop-toolbar-pro">
-      <button onclick="rotateCropMedia('${side}',-90)">↶ Left</button>
-      <button onclick="rotateCropMedia('${side}',90)">↷ Right</button>
-      <button class="primary" onclick="autoDetectSide('${side}')">▣ Auto Detect</button>
-      <button onclick="fitCropSide('${side}')">⛶ Fit All</button>
-      <button onclick="resetDocCrop('${side}')">Reset</button>
-    </div>`;
+function updateTopUser(){
+  const u=getUser();
+  const name=u?.name||localStorage.getItem('spt_profile_name')||'Guest User';
+  const plan=u?.premium?'Premium User':'Login required';
+  const dp=localStorage.getItem('spt_profile_dp');
+  const avatar=$('#headerAvatar');
+  if($('#headerUserName')) $('#headerUserName').textContent=name;
+  if($('#headerUserPlan')) $('#headerUserPlan').textContent=plan;
+  if(avatar){
+    if(dp){avatar.style.backgroundImage=`url(${dp})`; avatar.style.backgroundSize='cover'; avatar.style.backgroundPosition='center'; avatar.textContent='';}
+    else {avatar.style.backgroundImage=''; avatar.textContent=(name||'G').trim()[0].toUpperCase();}
   }
+  if($('#adminDropBtn')) $('#adminDropBtn').style.display=(u&&String(u.role).toLowerCase()==='admin')?'block':'none';
+  if($('#logoutDropBtn')) $('#logoutDropBtn').textContent=u?'🚪 Logout':'🔐 Login / Signup';
+  if($('#sideLogin')) $('#sideLogin').style.display=u?'none':'flex';
+  if($('#sideLogout')) $('#sideLogout').style.display=u?'flex':'none';
+}
 
-  const oldLoadDocImage = window.loadDocImage;
-  window.loadDocImage = async function(e,side){
-    const f=e.target.files[0]; if(!f)return;
-    appState[side]=await readFile(f); appState[side+'Crop']=null; renderDocumentStudio();
-    setTimeout(()=>autoDetectSide(side),250);
-  };
+function addHandleCenter(box){
+  if(!box.querySelector('.crop-center-marker')){
+    const center=document.createElement('span');
+    center.className='crop-center-marker';
+    center.title='Move selection';
+    box.appendChild(center);
+  }
+}
+const _createCropV394=createCrop;
+createCrop=function(stage,media,opt={}){
+  const s=_createCropV394(stage,media,opt);
+  addHandleCenter(s.box);
+  return s;
+}
+function autoDetectCrop(side){
+  const s = side==='passport'?appState.passportCrop: side==='pdf'?appState.pdfCrop: appState[side+'Crop'];
+  if(!s)return toast('Upload file first');
+  const b=getMediaBounds(s.stage,s.media);
+  let w=b.w*.86,h=b.h*.62;
+  if(s.ratio){ h=w/s.ratio; if(h>b.h*.90){h=b.h*.90; w=h*s.ratio;} }
+  s.x=b.x+(b.w-w)/2; s.y=b.y+(b.h-h)/2; s.w=w; s.h=h; paintCrop(s); toast('Auto detect applied. Adjust manually if needed.');
+  updateA4Preview();
+}
+function fitCrop(side){
+  const s = side==='passport'?appState.passportCrop: side==='pdf'?appState.pdfCrop: appState[side+'Crop'];
+  if(!s)return toast('Upload file first');
+  const b=getMediaBounds(s.stage,s.media);
+  s.x=b.x+8; s.y=b.y+8; s.w=b.w-16; s.h=b.h-16;
+  if(s.ratio){ if(s.w/s.h>s.ratio)s.w=s.h*s.ratio; else s.h=s.w/s.ratio; s.x=b.x+(b.w-s.w)/2; s.y=b.y+(b.h-s.h)/2; }
+  paintCrop(s); updateA4Preview();
+}
 
-  const oldLoadPassportImg = window.loadPassportImg;
-  window.loadPassportImg = async function(e){
-    const f=e.target.files[0]; if(!f)return;
-    appState.passportImg=await readFile(f);
-    const stage=$("#passportStage");
-    stage.innerHTML=`<img src="${appState.passportImg}" id="passportImg">`;
-    setTimeout(()=>{appState.passportCrop=createCrop(stage,$("#passportImg"),{ratio:35/45,color:"orange"}); autoDetectCrop(appState.passportCrop,{keepRatio:true});},120);
-  };
-
-  window.resetPassportCrop = function(){
-    if(!appState.passportImg)return;
-    const stage=$("#passportStage"); stage.innerHTML=`<img src="${appState.passportImg}" id="passportImg">`;
-    setTimeout(()=>{appState.passportCrop=createCrop(stage,$("#passportImg"),{ratio:35/45,color:"orange"}); autoDetectCrop(appState.passportCrop,{keepRatio:true});},80);
-  };
-
-  window.makePassportPDF = async function(){
-    if(!appState.passportCrop)return safeToast('Upload and select photo area first');
-    const src=await cropFromElement(appState.passportCrop);
-    const n=Number($("#passLayout")?.value||5);
-    const {jsPDF}=window.jspdf; const pdf=new jsPDF({unit:'mm',format:'a4'});
-    const gap=3, cols=Math.max(1,Math.floor((210-2*TOP_MARGIN_MM+gap)/(PASS_W_MM+gap)));
-    let x=TOP_MARGIN_MM, y=TOP_MARGIN_MM;
-    for(let i=0;i<n;i++){
-      if(i>0 && i%cols===0){x=TOP_MARGIN_MM; y+=PASS_H_MM+gap+6;}
-      pdf.addImage(src,'JPEG',x,y,PASS_W_MM,PASS_H_MM); pdf.setDrawColor(0); pdf.rect(x,y,PASS_W_MM,PASS_H_MM); x+=PASS_W_MM+gap;
+async function generateDocPDF(){
+  await updateA4Preview();
+  const imgs=[...$$('#a4Preview img')].map(i=>i.src);
+  if(!imgs.length)return toast('Upload and select printable area first');
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({unit:'mm',format:'a4'});
+  const copies=Number($('#docCopies')?.value||1);
+  const cardW=85.6, cardH=54, gap=2.4, top=2.2;
+  let y=top;
+  for(let c=0;c<copies;c++){
+    const totalW=imgs.length*cardW+(imgs.length-1)*gap;
+    let x=(210-totalW)/2;
+    for(const s of imgs){
+      pdf.addImage(s,'JPEG',x,y,cardW,cardH);
+      pdf.setDrawColor(20); pdf.setLineWidth(.25); pdf.rect(x,y,cardW,cardH);
+      x+=cardW+gap;
     }
-    appState.passportPdf=pdf;
-    $("#passportOutput").innerHTML=`<div class="preview-a4"><b>Passport PDF Ready</b><p>Top margin ${TOP_MARGIN_MM}mm. Final print size ${PASS_W_MM}×${PASS_H_MM}mm.</p></div>`;
-    safeToast('Passport PDF generated');
-  };
+    y+=cardH+gap;
+    if(y>270&&c<copies-1){pdf.addPage(); y=top;}
+  }
+  appState.previewPDF=pdf;
+  toast('A4 PDF generated with 2.2mm top margin');
+}
+async function updateA4Preview(){
+  const el=$('#a4Preview'); if(!el)return;
+  let imgs=[];
+  if(appState.uploadTab==='image'){
+    if(appState.frontCrop)imgs.push(await cropFromElement(appState.frontCrop)); else if(appState.front)imgs.push(appState.front);
+    if(appState.backCrop)imgs.push(await cropFromElement(appState.backCrop)); else if(appState.back)imgs.push(appState.back);
+  } else {
+    if(appState.pdfCrop)imgs.push(await cropFromElement(appState.pdfCrop));
+  }
+  el.innerHTML=imgs.map(s=>`<img src="${s}" alt="preview">`).join('');
+}
 
-  window.initAfterRender = function(){
-    setTimeout(()=>{
-      if(appState.uploadTab==='image'){
-        if(appState.front&&$("#frontStage")){appState.frontCrop=createCrop($("#frontStage"),$("#frontCropImg"),{color:'blue'}); setTimeout(()=>autoDetectCrop(appState.frontCrop),60);}
-        if(appState.back&&$("#backStage")){appState.backCrop=createCrop($("#backStage"),$("#backCropImg"),{color:'blue'}); setTimeout(()=>autoDetectCrop(appState.backCrop),60);}
-      }
-      if(appState.uploadTab==='pdf'&&appState.pdfCanvas&&$("#pdfCanvasView")){
-        drawPdfCanvasView(); appState.pdfCrop=createCrop($("#pdfStage"),$("#pdfCanvasView"),{color:'orange'}); setTimeout(()=>autoDetectCrop(appState.pdfCrop),80);
-      }
-      updateA4Preview();
-    },100);
-  };
+function passportStudio(){workspace.innerHTML=pageHeader('Passport Photo Studio','Upload a photo, auto-detect/manual crop, then generate exact 35×45 mm A4 sheet.')+`<div class="card flow-card"><h3>Upload Full Photo</h3><label class="dropzone"><input type="file" accept="image/*" onchange="loadPassportImg(event)"><div>📤 Click to upload photo<br><small>JPG, PNG, WEBP</small></div></label><div class="pdf-settings"><input id="passName" placeholder="Name optional"><select id="passLayout"><option value="5">5 Photos</option><option value="4">4 Photos</option><option value="6">6 Photos</option><option value="8">8 Photos</option><option value="12">12 Photos</option></select></div></div><div class="card flow-card"><h3>Select Passport Area</h3><div class="crop-stage passport-stage" id="passportStage"><div class="info-note">Upload a photo to start. Use Auto Detect or adjust manually using 8 handles.</div></div><div class="crop-tools"><button onclick="autoDetectCrop('passport')">Auto Detect</button><button onclick="fitCrop('passport')">Fit</button><button onclick="resetPassportCrop()">Reset</button><button onclick="makePassportPDF()">Generate A4 PDF</button><button onclick="downloadPassportPDF()">Download PDF</button><button onclick="printGeneratedPDF('passport')">Print</button></div></div><div id="passportOutput"></div>`}
+async function makePassportPDF(){
+  if(!appState.passportCrop)return toast('Upload and select photo area first');
+  const src=await cropFromElement(appState.passportCrop);
+  const n=Number($('#passLayout').value||5);
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({unit:'mm',format:'a4'});
+  const w=35,h=45,gap=3,top=2.2;
+  let x=5,y=top;
+  for(let i=0;i<n;i++){
+    if(x+w>205){x=5;y+=h+gap+6}
+    pdf.addImage(src,'JPEG',x,y,w,h);
+    pdf.setDrawColor(0); pdf.setLineWidth(.25); pdf.rect(x,y,w,h);
+    x+=w+gap;
+  }
+  appState.passportPdf=pdf;
+  $('#passportOutput').innerHTML=`<div class="preview-a4"><b>Passport PDF Ready</b><p>35×45 mm exact output. Top margin: 2.2mm.</p><div class="passport-mini"><img src="${src}"></div></div>`;
+  toast('Passport PDF generated');
+}
 
-  window.drawPdfCanvasView = function(){
-    const view=$("#pdfCanvasView"), src=appState.pdfCanvas; if(!view||!src)return;
-    const ctx=view.getContext('2d');
-    const stage=$("#pdfStage");
-    const maxW=Math.min(980, Math.max(320, stage?.clientWidth-30 || 900));
-    const maxH=Math.min(760, Math.max(300, stage?.clientHeight-30 || 650));
-    const ratio=src.width/src.height;
-    let w=maxW, h=Math.round(w/ratio); if(h>maxH){h=maxH; w=Math.round(h*ratio);}
-    view.width=w; view.height=h; ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(src,0,0,w,h);
-  };
+function compressorTool(){workspace.innerHTML=pageHeader('Image Compressor','Compress images to fixed target size.')+`<div class="card form"><input type="file" id="compFile" accept="image/*"><select id="targetKB" onchange="$('#customImgKB').style.display=this.value==='custom'?'block':'none'">${targetOptions(100)}</select><input id="customImgKB" style="display:none" placeholder="Custom KB"><button onclick="compressSimple()">Compress Image</button><div id="compOut"></div></div>`}
+async function compressSimple(){
+  const f=$('#compFile').files[0]; if(!f)return toast('Select image first');
+  const target=getSelectedTarget('#targetKB','#customImgKB'); if(!target||target<5)return toast('Select valid target size');
+  const img=await loadImage(await readFile(f));
+  let best='',bestKB=Infinity;
+  for(let scale=1;scale>=0.12;scale-=0.06){
+    const w=Math.max(120,Math.round(img.width*scale)), h=Math.max(120,Math.round(img.height*scale));
+    const c=document.createElement('canvas'),ctx=c.getContext('2d'); c.width=w;c.height=h;ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+    let lo=.12,hi=.92;
+    for(let i=0;i<10;i++){const q=(lo+hi)/2,d=c.toDataURL('image/jpeg',q),kb=(d.length*3/4)/1024;if(kb<=target){best=d;bestKB=kb;lo=q}else hi=q}
+    if(bestKB<=target&&bestKB>target*.75)break;
+  }
+  if(!best){const c=document.createElement('canvas'),ctx=c.getContext('2d');c.width=300;c.height=Math.round(img.height*300/img.width);ctx.drawImage(img,0,0,c.width,c.height);best=c.toDataURL('image/jpeg',.35);bestKB=(best.length*3/4)/1024;}
+  $('#compOut').innerHTML=`<div class="result-box"><p><b>Original:</b> ${(f.size/1024).toFixed(1)} KB</p><p><b>Output:</b> ${bestKB.toFixed(1)} KB</p><img src="${best}"><a class="download-preview" download="compressed.jpg" href="${best}">Download</a></div>`;
+}
+function imageResizeTool(){workspace.innerHTML=pageHeader('Image Resizer','Resize/compress image to selected target size.')+`<div class="card form"><input type="file" id="rsFile" accept="image/*"><div class="pdf-settings"><input id="rsW" placeholder="Width px optional"><input id="rsH" placeholder="Height px optional"></div><select id="rsTargetKB" onchange="$('#rsCustomKB').style.display=this.value==='custom'?'block':'none'">${targetOptions(200)}</select><input id="rsCustomKB" style="display:none" placeholder="Custom KB"><button onclick="resizeImageSimple()">Resize / Compress</button><div id="rsOut"></div></div>`}
+async function resizeImageSimple(){
+  const f=$('#rsFile').files[0]; if(!f)return toast('Select image first');
+  const img=await loadImage(await readFile(f));
+  const w=Number($('#rsW').value)||img.width, h=Number($('#rsH').value)||Math.round(img.height*w/img.width);
+  const target=getSelectedTarget('#rsTargetKB','#rsCustomKB')||500;
+  const c=document.createElement('canvas'),ctx=c.getContext('2d'); c.width=w;c.height=h;ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+  let best=c.toDataURL('image/jpeg',.88),bestKB=(best.length*3/4)/1024;
+  if(bestKB>target){let lo=.1,hi=.9;for(let i=0;i<12;i++){let q=(lo+hi)/2,d=c.toDataURL('image/jpeg',q),kb=(d.length*3/4)/1024;if(kb<=target){best=d;bestKB=kb;lo=q}else hi=q}}
+  $('#rsOut').innerHTML=`<div class="result-box"><p><b>Output:</b> ${w}×${h}px, ${bestKB.toFixed(1)} KB</p><img src="${best}"><a class="download-preview" download="resized.jpg" href="${best}">Download</a></div>`;
+}
 
-  window.generateDocPDF = async function(){
-    await updateA4Preview();
-    const imgs=[...$$("#a4Preview img")].map(i=>i.src);
-    if(!imgs.length)return safeToast('Upload and select printable area first');
-    const {jsPDF}=window.jspdf; const pdf=new jsPDF({unit:'mm',format:'a4'});
-    const copies=Number($("#docCopies")?.value||1);
-    let y=TOP_MARGIN_MM;
-    for(let c=0;c<copies;c++){
-      const rowW = imgs.length*CARD_W_MM + (imgs.length-1)*CARD_GAP_MM;
-      let x=(210-rowW)/2;
-      for(const s of imgs){pdf.addImage(s,'JPEG',x,y,CARD_W_MM,CARD_H_MM); pdf.setDrawColor(0); pdf.rect(x,y,CARD_W_MM,CARD_H_MM); x+=CARD_W_MM+CARD_GAP_MM;}
-      y+=CARD_H_MM+CARD_GAP_MM;
-      if(y>260&&c<copies-1){pdf.addPage(); y=TOP_MARGIN_MM;}
+function pdfStudio(){workspace.innerHTML=pageHeader('PDF Studio','Resize, compress, merge, split, rotate and convert PDFs.')+`<div class="pdf-tool-grid"><button class="card home-card" onclick="pdfResizeTool()"><b>📉</b><h3>PDF Resizer</h3><p>20KB to 1MB target options</p></button><button class="card home-card" onclick="pdfMergeTool()"><b>🔗</b><h3>Merge PDFs</h3><p>Combine multiple PDFs</p></button><button class="card home-card" onclick="pdfSplitTool()"><b>✂️</b><h3>Split PDF</h3><p>Extract page range</p></button><button class="card home-card" onclick="pdfRotateTool()"><b>🔄</b><h3>Rotate PDF</h3><p>Rotate all pages</p></button><button class="card home-card" onclick="jpgToPdfTool()"><b>🖼️</b><h3>JPG to PDF</h3><p>Convert images to PDF</p></button><button class="card home-card" onclick="pdfToJpgTool()"><b>📷</b><h3>PDF to JPG</h3><p>Export pages as images</p></button></div><div id="pdfWork"></div>`}
+function pdfResizeTool(){html('pdfWork',`<div class="card form"><h3>PDF Resizer / Compressor</h3><input type="file" id="pdfResizeFile" accept="application/pdf"><select id="pdfTargetKB" onchange="$('#pdfCustomKB').style.display=this.value==='custom'?'block':'none'">${targetOptions(500)}</select><input id="pdfCustomKB" style="display:none" placeholder="Custom KB"><button onclick="compressPdfV394()">Resize PDF</button><div id="pdfOut"></div></div>`)}
+async function compressPdfV394(){
+  const f=$('#pdfResizeFile').files[0]; if(!f)return toast('Select PDF first');
+  if(!window.pdfjsLib||!window.jspdf)return toast('PDF libraries not loaded');
+  const target=getSelectedTarget('#pdfTargetKB','#pdfCustomKB'); if(!target)return toast('Select target size');
+  html('pdfOut','<div class="info-note">Processing PDF. Please wait...</div>');
+  const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+  const {jsPDF}=window.jspdf;
+  let finalPdf=null, finalKB=Infinity;
+  for(const attempt of [{scale:1.35,q:.68},{scale:1.05,q:.55},{scale:.85,q:.45},{scale:.7,q:.35}]){
+    const out=new jsPDF({unit:'mm',format:'a4'});
+    for(let i=1;i<=pdf.numPages;i++){
+      const page=await pdf.getPage(i), vp=page.getViewport({scale:attempt.scale});
+      const c=document.createElement('canvas'); c.width=vp.width;c.height=vp.height;
+      await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+      if(i>1)out.addPage(); out.addImage(c.toDataURL('image/jpeg',attempt.q),'JPEG',0,0,210,297);
     }
-    appState.previewPDF=pdf; safeToast(`A4 PDF generated: top ${TOP_MARGIN_MM}mm, gap ${CARD_GAP_MM}mm`);
-  };
+    const blob=out.output('blob'); finalPdf=out; finalKB=blob.size/1024; if(finalKB<=target)break;
+  }
+  const url=URL.createObjectURL(finalPdf.output('blob'));
+  html('pdfOut',`<div class="result-box"><p><b>Output:</b> ${finalKB.toFixed(1)} KB</p><a class="download-preview" href="${url}" download="resized-compressed.pdf">Download PDF</a></div>`);
+}
+function pdfMergeTool(){html('pdfWork',`<div class="card form"><h3>Merge PDFs</h3><input type="file" id="mergeFiles" accept="application/pdf" multiple><button onclick="mergePdfV394()">Merge PDFs</button><div id="mergeOut"></div></div>`)}
+async function mergePdfV394(){const files=[...$('#mergeFiles').files]; if(files.length<2)return toast('Select at least 2 PDFs'); const {PDFDocument}=PDFLib; const out=await PDFDocument.create(); for(const f of files){const d=await PDFDocument.load(await f.arrayBuffer()); const pages=await out.copyPages(d,d.getPageIndices()); pages.forEach(p=>out.addPage(p));} const bytes=await out.save(); const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})); html('mergeOut',`<a class="download-preview" href="${url}" download="merged.pdf">Download Merged PDF</a>`)}
+function pdfSplitTool(){html('pdfWork',`<div class="card form"><h3>Split PDF</h3><input type="file" id="splitFile" accept="application/pdf"><input id="splitRange" placeholder="Pages e.g. 1-3 or 2"><button onclick="splitPdfV394()">Extract Pages</button><div id="splitOut"></div></div>`)}
+async function splitPdfV394(){const f=$('#splitFile').files[0]; if(!f)return toast('Select PDF'); const range=$('#splitRange').value.trim()||'1'; const {PDFDocument}=PDFLib; const src=await PDFDocument.load(await f.arrayBuffer()), out=await PDFDocument.create(); let pages=[]; if(range.includes('-')){let [a,b]=range.split('-').map(n=>Number(n)); for(let i=a;i<=b;i++)pages.push(i-1)} else pages=[Number(range)-1]; pages=pages.filter(i=>i>=0&&i<src.getPageCount()); const copied=await out.copyPages(src,pages); copied.forEach(p=>out.addPage(p)); const bytes=await out.save(); const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})); html('splitOut',`<a class="download-preview" href="${url}" download="split.pdf">Download Split PDF</a>`)}
+function pdfRotateTool(){html('pdfWork',`<div class="card form"><h3>Rotate PDF</h3><input type="file" id="rotFile" accept="application/pdf"><select id="rotDeg"><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select><button onclick="rotatePdfV394()">Rotate</button><div id="rotOut"></div></div>`)}
+async function rotatePdfV394(){const f=$('#rotFile').files[0]; if(!f)return toast('Select PDF'); const {PDFDocument,degrees}=PDFLib; const pdf=await PDFDocument.load(await f.arrayBuffer()); const deg=Number($('#rotDeg').value); pdf.getPages().forEach(p=>p.setRotation(degrees(deg))); const bytes=await pdf.save(); const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})); html('rotOut',`<a class="download-preview" href="${url}" download="rotated.pdf">Download Rotated PDF</a>`)}
+function jpgToPdfTool(){html('pdfWork',`<div class="card form"><h3>JPG / PNG to PDF</h3><input type="file" id="imgPdfFiles" accept="image/*" multiple><button onclick="jpgToPdfV394()">Create PDF</button><div id="imgPdfOut"></div></div>`)}
+async function jpgToPdfV394(){const files=[...$('#imgPdfFiles').files]; if(!files.length)return toast('Select images'); const {jsPDF}=window.jspdf; const pdf=new jsPDF({unit:'mm',format:'a4'}); for(let i=0;i<files.length;i++){const data=await readFile(files[i]); const img=await loadImage(data); if(i>0)pdf.addPage(); const ratio=img.width/img.height; let w=190,h=w/ratio; if(h>277){h=277;w=h*ratio} pdf.addImage(data,'JPEG',(210-w)/2,10,w,h);} const url=URL.createObjectURL(pdf.output('blob')); html('imgPdfOut',`<a class="download-preview" href="${url}" download="images.pdf">Download PDF</a>`)}
+function pdfToJpgTool(){html('pdfWork',`<div class="card form"><h3>PDF to JPG</h3><input type="file" id="pdfJpgFile" accept="application/pdf"><button onclick="pdfToJpgV394()">Export Pages</button><div id="pdfJpgOut"></div></div>`)}
+async function pdfToJpgV394(){const f=$('#pdfJpgFile').files[0]; if(!f)return toast('Select PDF'); const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise; let htmls=''; for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i),vp=page.getViewport({scale:1.5}); const c=document.createElement('canvas'); c.width=vp.width;c.height=vp.height; await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise; const d=c.toDataURL('image/jpeg',.9); htmls+=`<a class="download-preview" href="${d}" download="page-${i}.jpg">Download Page ${i}</a> `} html('pdfJpgOut',htmls)}
 
-  // New crop engine with 8 handles + center mark
-  window.createCrop = function(stage,media,opt={}){
-    const color=opt.color||'blue', ratio=opt.ratio||null;
-    stage.querySelectorAll('.crop-selection').forEach(e=>e.remove());
-    const box=document.createElement('div'); box.className=`crop-selection ${color==='orange'?'orange':''}`;
-    ['nw','n','ne','e','se','s','sw','w'].forEach(p=>{let h=document.createElement('span'); h.className='handle '+p; h.dataset.handle=p; box.appendChild(h);});
-    const label=document.createElement('em'); label.className='crop-badge'; label.textContent='Printable Area'; box.appendChild(label);
-    const center=document.createElement('span'); center.className='crop-center'; center.textContent='↕'; box.appendChild(center);
-    stage.appendChild(box);
-    const b=getMediaBounds(stage,media);
-    let w=b.w*.78, h=b.h*.50;
-    if(ratio){h=w/ratio; if(h>b.h*.88){h=b.h*.88; w=h*ratio;}}
-    let state={stage,media,box,ratio,x:b.x+(b.w-w)/2,y:b.y+(b.h-h)/2,w,h,rotation:0};
-    attachCropEvents(state); paintCrop(state); setTimeout(()=>paintCrop(state),250); window.addEventListener('resize',()=>paintCrop(state),{passive:true}); return state;
-  };
+function paymentTool(){workspace.innerHTML=pageHeader('Payment','Select plan, generate QR, then submit transaction details.')+`<div class="payment-grid"><div class="card form"><h3>Select Premium Plan</h3><select id="paymentPlan" onchange="updatePaymentAmountV394()"><option value="Monthly Premium" data-amount="49">Monthly Premium - ₹49</option><option value="Half Year Premium" data-amount="149">Half Year Premium - ₹149</option><option value="Yearly Premium" data-amount="499">Yearly Premium - ₹499</option></select><input id="paymentAmount" readonly value="49"><input id="paymentMethod" value="UPI / QR"><button type="button" onclick="generatePaymentQRV394()">Generate Payment QR</button><div id="qrBox" class="qr-hidden"><img src="payment_qr.jpg" alt="Payment QR"><p>Scan QR and pay selected amount.</p></div></div><div class="card form"><h3>Submit Payment Details</h3><input id="paymentTxn" placeholder="UTR / Transaction ID"><input id="paymentScreenshot" placeholder="Payment screenshot URL optional"><button onclick="submitPayment&&submitPayment()">Submit Payment Request</button><div class="info-note">QR appears only after clicking Generate Payment QR.</div></div></div>`}
+function updatePaymentAmountV394(){const opt=$('#paymentPlan').selectedOptions[0]; $('#paymentAmount').value=opt?.dataset?.amount||''; $('#qrBox')?.classList.add('qr-hidden')}
+function generatePaymentQRV394(){updatePaymentAmountV394(); $('#qrBox')?.classList.remove('qr-hidden'); toast('Payment QR generated')}
 
-  window.autoDetectSide = function(side){
-    const s = side==='front'?appState.frontCrop:side==='back'?appState.backCrop:side==='pdf'?appState.pdfCrop:side==='passport'?appState.passportCrop:null;
-    if(!s)return safeToast('Upload file first');
-    autoDetectCrop(s); updateA4Preview(); safeToast('Auto Detect applied. Adjust manually if needed.');
-  };
+function loginTool(){workspace.innerHTML=pageHeader('Login / Create Account','Access dashboard, premium and payments.')+`<div class="auth-wrap"><div class="card form"><h3>Login</h3><input id="loginEmail" placeholder="Email"><input id="loginPassword" type="password" placeholder="Password"><button onclick="loginSubmit&&loginSubmit()">Login</button><button class="link-like" onclick="toggleForgotV394()">Forgot Password?</button><div id="forgotBox" class="forgot-box" style="display:none"><input id="forgotEmail" placeholder="Registered Email"><button onclick="forgotSubmit&&forgotSubmit()">Send OTP</button><input id="resetEmail" placeholder="Email"><input id="resetOtp" placeholder="OTP"><input id="resetPassword" type="password" placeholder="New Password"><button onclick="resetSubmit&&resetSubmit()">Reset Password</button></div></div><div class="card form"><h3>Create Account</h3><input id="signupName" placeholder="Full Name"><input id="signupEmail" placeholder="Email"><input id="signupMobile" placeholder="Mobile"><textarea id="signupAddress" placeholder="Address"></textarea><input id="signupPassword" type="password" placeholder="Password"><button onclick="signupSubmit&&signupSubmit()">Create Account</button></div></div>`}
+function toggleForgotV394(){const b=$('#forgotBox'); b.style.display=b.style.display==='none'?'grid':'none'}
 
-  window.fitCropSide = function(side){
-    const s = side==='front'?appState.frontCrop:side==='back'?appState.backCrop:side==='pdf'?appState.pdfCrop:side==='passport'?appState.passportCrop:null;
-    if(!s)return;
-    const b=getMediaBounds(s.stage,s.media); const c=clampCropToMedia(s,b.x+4,b.y+4,b.w-8,b.h-8); Object.assign(s,c); paintCrop(s); updateA4Preview();
-  };
+function dashboardTool(t){const u=getUser()||{}; const local={name:localStorage.getItem('spt_profile_name')||u.name||'Guest User',mobile:localStorage.getItem('spt_profile_mobile')||u.mobile||'',address:localStorage.getItem('spt_profile_address')||u.address||'',dp:localStorage.getItem('spt_profile_dp')||''}; workspace.innerHTML=pageHeader('My Dashboard',`Welcome, ${local.name}. Manage profile, premium and workspace.`)+`<div class="dashboard-grid"><div class="card form profile-editor"><h3>Profile</h3><div class="big-avatar" style="${local.dp?`background-image:url(${local.dp});background-size:cover;background-position:center`:''}">${local.dp?'':local.name[0]}</div><input type="file" id="dpFile" accept="image/*"><input id="profileName" value="${local.name}" placeholder="Name"><input id="profileMobile" value="${local.mobile}" placeholder="Mobile"><textarea id="profileAddress" placeholder="Address">${local.address}</textarea><button onclick="saveProfileLocalV394()">Save Profile</button></div><div class="card home-card"><b>👑</b><h3>${u.premium?'Premium':'Free Plan'}</h3><p>Membership status</p></div><div class="card home-card"><b>📁</b><h3>My Workspace</h3><p>Recent projects and downloads.</p></div></div>`}
+async function saveProfileLocalV394(){localStorage.setItem('spt_profile_name',$('#profileName').value||'User');localStorage.setItem('spt_profile_mobile',$('#profileMobile').value||'');localStorage.setItem('spt_profile_address',$('#profileAddress').value||''); const f=$('#dpFile').files[0]; if(f)localStorage.setItem('spt_profile_dp',await readFile(f)); updateTopUser(); toast('Profile saved on this device'); dashboardTool('dashboard')}
 
-  window.autoDetectCrop = async function(s,opt={}){
-    try{
-      const media=s.media; let src, sw, sh;
-      if(media.tagName==='CANVAS'){src=media; sw=media.width; sh=media.height;} else {src=await loadImage(media.src); sw=src.width; sh=src.height;}
-      const scale=Math.min(1,600/sw,600/sh), cw=Math.max(1,Math.round(sw*scale)), ch=Math.max(1,Math.round(sh*scale));
-      const c=document.createElement('canvas'), ctx=c.getContext('2d',{willReadFrequently:true}); c.width=cw; c.height=ch; ctx.drawImage(src,0,0,cw,ch);
-      const data=ctx.getImageData(0,0,cw,ch).data;
-      const sample=(x,y)=>{const i=(Math.max(0,Math.min(ch-1,y))*cw+Math.max(0,Math.min(cw-1,x)))*4; return [data[i],data[i+1],data[i+2]];};
-      const corners=[sample(4,4),sample(cw-5,4),sample(4,ch-5),sample(cw-5,ch-5)];
-      const bg=[0,1,2].map(k=>corners.reduce((a,p)=>a+p[k],0)/4);
-      let minX=cw,minY=ch,maxX=0,maxY=0,count=0;
-      for(let y=0;y<ch;y+=3){for(let x=0;x<cw;x+=3){const p=sample(x,y); const dist=Math.abs(p[0]-bg[0])+Math.abs(p[1]-bg[1])+Math.abs(p[2]-bg[2]); const bright=(p[0]+p[1]+p[2])/3; if(dist>70 || bright<235 && dist>45){minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);count++;}}}
-      const b=getMediaBounds(s.stage,s.media);
-      if(count<80 || maxX<=minX || maxY<=minY){ // safe default central card
-        const w=b.w*.82,h=s.ratio?(b.w*.82)/s.ratio:b.h*.62; const c2=clampCropToMedia(s,b.x+(b.w-w)/2,b.y+(b.h-h)/2,w,h); Object.assign(s,c2); paintCrop(s); return;
-      }
-      const pad=0.02; let rx=Math.max(0,minX/cw-pad), ry=Math.max(0,minY/ch-pad), rw=Math.min(1,maxX/cw+pad)-rx, rh=Math.min(1,maxY/ch+pad)-ry;
-      let x=b.x+rx*b.w,y=b.y+ry*b.h,w=rw*b.w,h=rh*b.h;
-      if(s.ratio){ const current=w/h; if(current>s.ratio){h=w/s.ratio}else{w=h*s.ratio} }
-      const c3=clampCropToMedia(s,x,y,w,h); Object.assign(s,c3); paintCrop(s);
-    }catch(err){ console.warn(err); }
-  };
+setTimeout(updateTopUser,500);
 
-  window.rotateCropMedia = async function(side,deg){
-    try{
-      if(side==='pdf')return safeToast('PDF page rotation coming next; use manual selection for now.');
-      let key = side==='passport'?'passportImg':side;
-      let src = appState[key]; if(!src)return safeToast('Upload image first');
-      const img=await loadImage(src); const c=document.createElement('canvas'), ctx=c.getContext('2d');
-      const rad=deg*Math.PI/180; if(Math.abs(deg)%180===90){c.width=img.height;c.height=img.width;} else {c.width=img.width;c.height=img.height;}
-      ctx.translate(c.width/2,c.height/2); ctx.rotate(rad); ctx.drawImage(img,-img.width/2,-img.height/2);
-      appState[key]=c.toDataURL('image/jpeg',.94);
-      if(side==='passport') resetPassportCrop(); else renderDocumentStudio();
-    }catch(e){safeToast('Rotate failed');}
-  };
-
-  window.paymentTool = function(){
-    workspace.innerHTML=pageHeader('Payment','Select plan, generate QR, then submit UTR for verification.')+`
-    <div class="card form"><label>Plan</label><select id="paymentPlan"><option data-amt="49">Monthly Premium - ₹49</option><option data-amt="149">Half Year Premium - ₹149</option><option data-amt="499">Yearly Premium - ₹499</option></select>
-    <button onclick="generatePayQR()">Generate Payment QR</button>
-    <div id="payQrBox" class="payment-qr-box"><img src="payment_qr.jpg" style="max-width:280px;margin:20px auto;display:block;border-radius:18px"><b>UPI: kait.satnam@sbi</b><p>Scan and pay the selected amount.</p></div>
-    <input id="paymentTxn" placeholder="UTR / Transaction ID"><input id="paymentScreenshot" placeholder="Payment screenshot URL optional"><button onclick="submitPayment&&submitPayment()">Submit Payment</button></div>`;
-  };
-  window.generatePayQR=function(){ const box=$("#payQrBox"); box?.classList.add('show'); safeToast('QR generated. Complete payment and enter UTR.'); };
-
-  window.pdfStudio = function(){
-    workspace.innerHTML=pageHeader('PDF Studio','Resize, crop, merge, split, compress and convert PDF files.')+`
-      <div class="pdf-tool-grid">
-        <div class="pdf-tool-card" onclick="pdfToolUI('safe')"><b>📄</b><h3>PDF Resizer / Safe Export</h3><p>Upload and export PDF safely without hanging.</p></div>
-        <div class="pdf-tool-card" onclick="pdfToolUI('merge')"><b>➕</b><h3>Merge PDFs</h3><p>Combine multiple PDFs into one file.</p></div>
-        <div class="pdf-tool-card" onclick="pdfToolUI('split')"><b>✂️</b><h3>Split PDF</h3><p>Extract selected page range.</p></div>
-        <div class="pdf-tool-card" onclick="pdfToolUI('rotate')"><b>↻</b><h3>Rotate PDF</h3><p>Rotate pages left/right.</p></div>
-        <div class="pdf-tool-card" onclick="pdfToolUI('jpgpdf')"><b>🖼️</b><h3>Image to PDF</h3><p>Create PDF from JPG/PNG.</p></div>
-        <div class="pdf-tool-card" onclick="pdfToolUI('pdfjpg')"><b>🧾</b><h3>PDF to JPG</h3><p>Export first page as image.</p></div>
-      </div><div id="pdfWork" class="pdf-work-area"></div>`;
-  };
-
-  window.pdfToolUI=function(type){
-    const box=$("#pdfWork");
-    if(type==='merge') box.innerHTML=`<div class="card form"><h3>Merge PDFs</h3><input id="pdfMergeFiles" type="file" accept="application/pdf" multiple><button onclick="mergePDFs()">Merge & Download</button></div>`;
-    else if(type==='split') box.innerHTML=`<div class="card form"><h3>Split PDF</h3><input id="pdfSplitFile" type="file" accept="application/pdf"><input id="splitFrom" placeholder="From page" value="1"><input id="splitTo" placeholder="To page" value="1"><button onclick="splitPDF()">Split & Download</button></div>`;
-    else if(type==='rotate') box.innerHTML=`<div class="card form"><h3>Rotate PDF</h3><input id="pdfRotateFile" type="file" accept="application/pdf"><select id="rotateDeg"><option value="90">90° Right</option><option value="-90">90° Left</option><option value="180">180°</option></select><button onclick="rotatePDF()">Rotate & Download</button></div>`;
-    else if(type==='jpgpdf') box.innerHTML=`<div class="card form"><h3>Image to PDF</h3><input id="imgPdfFiles" type="file" accept="image/*" multiple><button onclick="imagesToPDF()">Create PDF</button></div>`;
-    else if(type==='pdfjpg') box.innerHTML=`<div class="card form"><h3>PDF to JPG</h3><input id="pdfJpgFile" type="file" accept="application/pdf"><button onclick="pdfFirstPageToJPG()">Export First Page</button><div id="pdfJpgOut"></div></div>`;
-    else box.innerHTML=`<div class="card form"><h3>PDF Safe Export</h3><input id="pdfSafeFile" type="file" accept="application/pdf"><button onclick="safePDFExport()">Download Optimized Copy</button></div>`;
-  };
-  async function pdfBytesFromInput(input){const f=input.files[0]; if(!f)throw new Error('Select PDF first'); return new Uint8Array(await f.arrayBuffer());}
-  window.safePDFExport=async function(){try{const bytes=await pdfBytesFromInput($("#pdfSafeFile")); const doc=await PDFLib.PDFDocument.load(bytes); const out=await doc.save(); downloadBlob(out,'optimized.pdf','application/pdf');}catch(e){safeToast(e.message)}};
-  window.mergePDFs=async function(){try{const files=[...$("#pdfMergeFiles").files]; if(!files.length)return safeToast('Select PDFs'); const out=await PDFLib.PDFDocument.create(); for(const f of files){const d=await PDFLib.PDFDocument.load(await f.arrayBuffer()); const pages=await out.copyPages(d,d.getPageIndices()); pages.forEach(p=>out.addPage(p));} downloadBlob(await out.save(),'merged.pdf','application/pdf');}catch(e){safeToast(e.message)}};
-  window.splitPDF=async function(){try{const bytes=await pdfBytesFromInput($("#pdfSplitFile")); const src=await PDFLib.PDFDocument.load(bytes); const out=await PDFLib.PDFDocument.create(); let from=Math.max(1,Number($("#splitFrom").value||1)), to=Math.min(src.getPageCount(),Number($("#splitTo").value||from)); const pages=await out.copyPages(src,Array.from({length:to-from+1},(_,i)=>from-1+i)); pages.forEach(p=>out.addPage(p)); downloadBlob(await out.save(),`pages-${from}-${to}.pdf`,'application/pdf');}catch(e){safeToast(e.message)}};
-  window.rotatePDF=async function(){try{const bytes=await pdfBytesFromInput($("#pdfRotateFile")); const doc=await PDFLib.PDFDocument.load(bytes); const deg=Number($("#rotateDeg").value); doc.getPages().forEach(p=>p.setRotation(PDFLib.degrees(deg))); downloadBlob(await doc.save(),'rotated.pdf','application/pdf');}catch(e){safeToast(e.message)}};
-  window.imagesToPDF=async function(){try{const files=[...$("#imgPdfFiles").files]; if(!files.length)return safeToast('Select images'); const {jsPDF}=window.jspdf; const pdf=new jsPDF({unit:'mm',format:'a4'}); for(let i=0;i<files.length;i++){if(i)pdf.addPage(); const data=await readFile(files[i]); const img=await loadImage(data); const w=190,h=Math.min(277,190*img.height/img.width); pdf.addImage(data,'JPEG',10,10,w,h);} pdf.save('images.pdf');}catch(e){safeToast(e.message)}};
-  window.pdfFirstPageToJPG=async function(){try{const f=$("#pdfJpgFile").files[0]; if(!f)return safeToast('Select PDF'); const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise; const page=await pdf.getPage(1); const vp=page.getViewport({scale:2}); const c=document.createElement('canvas'); c.width=vp.width;c.height=vp.height; await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise; const data=c.toDataURL('image/jpeg',.92); $("#pdfJpgOut").innerHTML=`<img src="${data}" style="max-width:100%"><a download="pdf-page-1.jpg" href="${data}">Download JPG</a>`;}catch(e){safeToast(e.message)}};
-  function downloadBlob(bytes,name,type){const blob=new Blob([bytes],{type}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
-
-  const oldUpdateTopUser=window.updateTopUser;
-  window.updateTopUser=function(){oldUpdateTopUser&&oldUpdateTopUser(); try{const saved=JSON.parse(localStorage.getItem('spt_profile')||'{}'); if(saved.name){$("#headerUserName").textContent=saved.name;$("#headerAvatar").textContent=saved.name[0].toUpperCase();}}catch(e){}};
-
-  window.dashboardTool=function(t){
-    const u=getUser()||{}; const saved=JSON.parse(localStorage.getItem('spt_profile')||'{}'); const name=saved.name||u.name||'Guest User';
-    workspace.innerHTML=pageHeader('My Dashboard',`Welcome, ${name}. Manage your profile, premium and workspace.`)+`
-    <div class="home-grid"><div class="card home-card"><b>👤</b><h3>${name}</h3><p>${u.email||saved.email||'Login to sync account'}</p></div><div class="card home-card"><b>👑</b><h3>${u.premium?'Premium':'Free Plan'}</h3><p>Membership status</p></div><div class="card home-card"><b>🔔</b><h3>Notifications</h3><p>3 unread system updates</p></div></div>
-    <div class="card form" style="margin-top:18px"><h3>Edit Profile</h3><input id="profileName" value="${name}" placeholder="Full name"><input id="profileMobile" value="${saved.mobile||''}" placeholder="Mobile"><textarea id="profileAddress" placeholder="Address">${saved.address||''}</textarea><input id="profileDp" type="file" accept="image/*"><button onclick="saveLocalProfile()">Save Profile</button></div>`;
-  };
-  window.saveLocalProfile=async function(){const p={name:$("#profileName").value.trim(),mobile:$("#profileMobile").value.trim(),address:$("#profileAddress").value.trim()}; const f=$("#profileDp").files[0]; if(f)p.dp=await readFile(f); localStorage.setItem('spt_profile',JSON.stringify(p)); updateTopUser(); safeToast('Profile saved on this device');};
-
-})();
+function imageCropHTML(){let needBack=appState.docMode!=="front", needFront=appState.docMode!=="back"; return `<div class="crop-grid">${needFront?`<div class="crop-box-panel"><div class="crop-label">Front - Select Printable Area</div><div class="crop-stage" id="frontStage">${appState.front?`<img src="${appState.front}" id="frontCropImg">`:`Upload front image first`}</div><div class="crop-tools"><button onclick="autoDetectCrop('front')">Auto Detect</button><button onclick="fitCrop('front')">Fit</button><button onclick="resetDocCrop('front')">Reset</button></div></div>`:""}${needBack?`<div class="crop-box-panel"><div class="crop-label">Back - Select Printable Area</div><div class="crop-stage" id="backStage">${appState.back?`<img src="${appState.back}" id="backCropImg">`:`Upload back image first`}</div><div class="crop-tools"><button onclick="autoDetectCrop('back')">Auto Detect</button><button onclick="fitCrop('back')">Fit</button><button onclick="resetDocCrop('back')">Reset</button></div></div>`:""}</div>`}
+function pdfCropHTML(){return `<div class="crop-stage large" id="pdfStage">${appState.pdfCanvas?`<canvas id="pdfCanvasView"></canvas>`:`Upload full page PDF first`}</div><div class="crop-tools"><button onclick="autoDetectCrop('pdf')">Auto Detect</button><button onclick="fitCrop('pdf')">Fit</button><button onclick="resetDocCrop('pdf')">Reset</button><button onclick="generateDocPDF()">Crop & Generate A4 PDF</button></div>`}

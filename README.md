@@ -1,3 +1,3 @@
-# Smart Photo Toolkit Pro v39.3 Enterprise Foundation
+# Smart Photo Toolkit Pro v39.4
 
-Stable base focused on crop, print, PDF tools, profile, payment and GitHub web upload compatibility.
+Enterprise stabilization build based on the latest V39.2 GitHub-web root workflow. Upload all files directly to the GitHub repository root.

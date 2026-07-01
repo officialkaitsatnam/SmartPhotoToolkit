@@ -1,13 +1,13 @@
-# Smart Photo Toolkit Pro v39.3 Enterprise Foundation
+# Smart Photo Toolkit Pro v39.4 Enterprise Stabilization
 
-## Added / Fixed
-- CamScanner-style crop foundation: auto detect + manual 8-handle crop.
-- Document print engine: A4 top-center, 2.2mm top margin, 2.4mm front/back gap.
-- Passport print engine: same crop engine, 35x45mm, 2.2mm top margin.
-- Payment QR is hidden by default; shows only after Generate Payment QR.
-- PDF Studio safer working tools: safe export, merge, split, rotate, image-to-PDF, PDF-to-JPG.
-- Local profile edit foundation: name, mobile, address, DP local save.
-- Official document icon root-file compatibility retained.
+- Fixed A4 print engine sizing: 85.6 x 54 mm cards, 2.2 mm top margin, 2.4 mm front/back gap.
+- Added passport output 35 x 45 mm with 2.2 mm top margin.
+- Added center move marker and auto-detect/fit crop controls.
+- Added fixed target size options for image compressor and image resizer: 20, 50, 100, 200, 300, 400, 500 KB, 1 MB, custom.
+- Rebuilt PDF Studio tools: PDF resizer/compressor, merge, split, rotate, JPG to PDF, PDF to JPG.
+- Payment QR hidden until Generate Payment QR is clicked.
+- Login/logout UI sync improved.
+- Forgot password UI added to login screen.
+- Local profile edit improved: name, mobile, address, DP.
 
-## Apps Script
-- Not required for this version unless you want server-side profile saving.
+Apps Script update: Not required.

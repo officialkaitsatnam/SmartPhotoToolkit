@@ -1,9 +1,7 @@
-# Update Guide v39.3
+# Update Guide v39.4
 
-1. Extract this ZIP.
-2. Upload/replace all files directly in the GitHub repository root.
-3. Do not upload the ZIP itself.
-4. Open: https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=39.3-foundation
-5. If old version appears, clear browser site data or open in Incognito.
-
-Apps Script update is not required.
+1. Extract ZIP.
+2. Upload/replace all files directly in GitHub repository root.
+3. Do not update Apps Script for this version.
+4. Open: https://officialkaitsatnam.github.io/SmartPhotoToolkit/?v=39.4-stable
+5. If old UI appears, clear site data / unregister service worker once.
