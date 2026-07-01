@@ -23,7 +23,7 @@ body{background:#f3f6fb;color:var(--text)}
 @media(max-width:760px){.topbar{height:64px}.app-shell{padding:0}.main{padding:14px 10px}.workspace{max-width:100%}.page-title{display:block}.doc-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.doc-tile{min-height:118px;padding:10px}.doc-icon{height:50px}.doc-icon img{max-height:48px}.studio-grid{display:block}.right-panel{margin-top:16px}.crop-stage.large,.crop-stage{height:330px}.home-grid{gap:12px}.top-actions .version{display:none}.premium-top{padding:9px 12px}.circle-btn{width:38px;height:38px}.user-trigger{padding:6px}.sidebar{background:#fff;width:280px}.upload-card img{height:130px}}
 
 
-/* v39.1 Crop + Icon Hard Fix */
+/* v39.2 Crop + Icon Hard Fix */
 .doc-grid{grid-template-columns:repeat(auto-fit,minmax(155px,1fr));}
 .doc-tile{min-height:148px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px}
 .doc-icon{height:72px!important;width:100%!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}

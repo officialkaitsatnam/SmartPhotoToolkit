@@ -2,12 +2,12 @@ if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudf
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s), workspace=$("#workspace");
 let appState={tool:"home", docType:"aadhaar", docMode:"both", uploadTab:"image", front:null, back:null, pdfCanvas:null, pdfPages:0, pdfPage:1, frontCrop:null, backCrop:null, pdfCrop:null, previewPDF:null, passportImg:null, passportCrop:null, passportPdf:null};
 const DOCS={
-  aadhaar:{name:"Aadhaar Card",size:"85.6 × 54 mm",icon:"assets/docs/aadhaar.jpg",cls:"aadhaar"},
-  pan:{name:"PAN Card",size:"85.6 × 54 mm",icon:"assets/docs/pan.jpg",cls:"pan"},
-  voter:{name:"Voter ID Card",size:"85.6 × 54 mm",icon:"assets/docs/voter.jpg",cls:"voter"},
-  ayush:{name:"Ayushman Card",size:"85.6 × 54 mm",icon:"assets/docs/ayushman.jpg",cls:"ayush"},
-  abha:{name:"ABHA Card",size:"85.6 × 54 mm",icon:"assets/docs/abha.jpg",cls:"abha"},
-  dl:{name:"Driving Licence",size:"85.6 × 54 mm",icon:"assets/docs/dl.jpg",cls:"dl"}
+  aadhaar:{name:"Aadhaar Card",size:"85.6 × 54 mm",icon:"aadhaar.jpg",cls:"aadhaar"},
+  pan:{name:"PAN Card",size:"85.6 × 54 mm",icon:"pan.jpg",cls:"pan"},
+  voter:{name:"Voter ID Card",size:"85.6 × 54 mm",icon:"voter.jpg",cls:"voter"},
+  ayush:{name:"Ayushman Card",size:"85.6 × 54 mm",icon:"ayushman.jpg",cls:"ayush"},
+  abha:{name:"ABHA Card",size:"85.6 × 54 mm",icon:"abha.jpg",cls:"abha"},
+  dl:{name:"Driving Licence",size:"85.6 × 54 mm",icon:"dl.jpg",cls:"dl"}
 };
 
 window.addEventListener("load",()=>{setTimeout(()=>{$("#loader").style.display="none"},350);initApp();});
